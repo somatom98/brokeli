@@ -12,7 +12,11 @@ var (
 	ErrInvalidAmountOrCurrency = errors.New("invalid_amount_or_currency")
 )
 
-func HandleCreateExpense(cmd CreateExpense) (evt events.ExpenseCreated, err error) {
+func (a *Transaction) HandleCreateExpense(cmd CreateExpense) (evt events.ExpenseCreated, err error) {
+	if a.State > State_Created {
+		return evt, nil
+	}
+
 	if !cmd.Amount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount
 	}
@@ -26,7 +30,11 @@ func HandleCreateExpense(cmd CreateExpense) (evt events.ExpenseCreated, err erro
 	}, nil
 }
 
-func HandleCreateIncome(cmd CreateIncome) (evt events.IncomeCreated, err error) {
+func (a *Transaction) HandleCreateIncome(cmd CreateIncome) (evt events.IncomeCreated, err error) {
+	if a.State > State_Created {
+		return evt, nil
+	}
+
 	if !cmd.Amount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount
 	}
@@ -40,7 +48,11 @@ func HandleCreateIncome(cmd CreateIncome) (evt events.IncomeCreated, err error) 
 	}, nil
 }
 
-func HandleCreateTransfer(cmd CreateTransfer) (evt events.TransferCreated, err error) {
+func (a *Transaction) HandleCreateTransfer(cmd CreateTransfer) (evt events.TransferCreated, err error) {
+	if a.State > State_Created {
+		return evt, nil
+	}
+
 	if !cmd.FromAmount.IsPositive() ||
 		!cmd.ToAmount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount

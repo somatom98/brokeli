@@ -5,8 +5,16 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
+type State int
+
+const (
+	State_Created State = iota
+	State_Deleted
+)
+
 type Transaction struct {
 	ID          uuid.UUID
+	State       State
 	Entries     []values.Entry
 	Category    string
 	Description string
