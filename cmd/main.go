@@ -1,41 +1,46 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
+
+	"github.com/somatom98/brokeli/internal/setup"
 )
 
 func main() {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "OK")
-	})
-
-	port := os.Getenv("PORT")
-
-	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: loggingMiddleware(mux),
+	app, err := setup.Setup()
+	if err != nil {
+		log.Fatalf("Setup: %v", err)
 	}
 
-	// Run server in a goroutine so that it doesn't block.
-	go func() {
-		log.Printf("Starting server on :%s", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("ListenAndServe(): %s", err)
-		}
-	}()
-}
+	errCh := app.Start()
 
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
-	})
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
+
+	select {
+	case err := <-errCh:
+		// Server crashed or failed to bind
+		if err != nil {
+			log.Fatalf("server error: %v", err)
+		}
+		log.Println("server stopped cleanly")
+
+	case sig := <-sigCh:
+		log.Printf("caught %s, stopping server…", sig)
+
+		// Give outstanding requests up to 5 s to finish.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := app.Stop(ctx); err != nil {
+			log.Fatalf("server stop failed: %v", err)
+		}
+		log.Println("server stop complete")
+	}
 }
