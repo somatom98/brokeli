@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/somatom98/brokeli/internal/features/create_transactions"
 )
 
 type App struct {
@@ -14,8 +16,15 @@ type App struct {
 }
 
 func Setup() (*App, error) {
+	httpHandler := HttpHandler()
+	dispatcher := Dispatcher()
+
+	create_transactions.
+		New(httpHandler, dispatcher).
+		Setup()
+
 	return &App{
-		httpHandler: HttpHandler(),
+		httpHandler: httpHandler,
 	}, nil
 }
 
