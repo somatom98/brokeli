@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/features/create_transactions"
+	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
 type App struct {
@@ -17,10 +19,11 @@ type App struct {
 
 func Setup() (*App, error) {
 	httpHandler := HttpHandler()
-	dispatcher := Dispatcher()
+	es := event_store.NewInMemory[*transaction.Transaction]()
+	transactionDispatcher := TransactionDispatcher(es)
 
 	create_transactions.
-		New(httpHandler, dispatcher).
+		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	return &App{

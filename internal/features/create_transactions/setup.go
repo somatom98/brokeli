@@ -4,13 +4,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gofrs/uuid"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 )
 
 type Dispatcher interface {
-	CreateExpense(ctx context.Context, cmd transaction.CreateExpense) error
-	CreateIncome(ctx context.Context, cmd transaction.CreateIncome) error
-	CreateTransfer(ctx context.Context, cmd transaction.CreateTransfer) error
+	CreateExpense(ctx context.Context, id uuid.UUID, cmd transaction.CreateExpense) error
+	CreateIncome(ctx context.Context, id uuid.UUID, cmd transaction.CreateIncome) error
+	CreateTransfer(ctx context.Context, id uuid.UUID, cmd transaction.CreateTransfer) error
 }
 
 type Feature struct {

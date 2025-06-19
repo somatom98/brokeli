@@ -1,42 +1,81 @@
 package transaction
 
-import "context"
+import (
+	"context"
+	"fmt"
 
-type Dispatcher struct{}
+	"github.com/gofrs/uuid"
+	"github.com/somatom98/brokeli/pkg/event_store"
+)
 
-func NewDispatcher() *Dispatcher {
-	return &Dispatcher{}
+type Dispatcher struct {
+	es event_store.Store[*Transaction]
 }
 
-func (d *Dispatcher) CreateExpense(ctx context.Context, cmd CreateExpense) error {
-	_, err := HandleCreateExpense(cmd)
+func NewDispatcher(
+	es event_store.Store[*Transaction],
+) *Dispatcher {
+	return &Dispatcher{
+		es: es,
+	}
+}
+
+func (d *Dispatcher) CreateExpense(ctx context.Context, id uuid.UUID, cmd CreateExpense) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.HandleCreateExpense(cmd)
 	if err != nil {
 		return err
 	}
 
-	// TODO: store event
+	d.es.Append(ctx, id, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
 
 	return nil
 }
 
-func (d *Dispatcher) CreateIncome(ctx context.Context, cmd CreateIncome) error {
-	_, err := HandleCreateIncome(cmd)
+func (d *Dispatcher) CreateIncome(ctx context.Context, id uuid.UUID, cmd CreateIncome) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.HandleCreateIncome(cmd)
 	if err != nil {
 		return err
 	}
 
-	// TODO: store event
+	d.es.Append(ctx, id, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
 
 	return nil
 }
 
-func (d *Dispatcher) CreateTransfer(ctx context.Context, cmd CreateTransfer) error {
-	_, err := HandleCreateTransfer(cmd)
+func (d *Dispatcher) CreateTransfer(ctx context.Context, id uuid.UUID, cmd CreateTransfer) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.HandleCreateTransfer(cmd)
 	if err != nil {
 		return err
 	}
 
-	// TODO: store event
+	d.es.Append(ctx, id, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
 
 	return nil
 }

@@ -25,7 +25,7 @@ func (f *Feature) handleCreateExpense(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateExpense(r.Context(), transaction.CreateExpense{
+	if err := f.dispatcher.CreateExpense(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateExpense{
 		AccountID:   req.AccountID,
 		Currency:    req.Currency,
 		Amount:      req.Amount,
@@ -55,7 +55,7 @@ func (f *Feature) handleCreateIncome(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateIncome(r.Context(), transaction.CreateIncome{
+	if err := f.dispatcher.CreateIncome(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateIncome{
 		AccountID:   req.AccountID,
 		Currency:    req.Currency,
 		Amount:      req.Amount,
@@ -88,7 +88,7 @@ func (f *Feature) handleCreateTransfer(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateTransfer(r.Context(), transaction.CreateTransfer{
+	if err := f.dispatcher.CreateTransfer(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateTransfer{
 		FromAccountID: req.FromAccountID,
 		FromCurrency:  req.FromCurrency,
 		FromAmount:    req.FromAmount,

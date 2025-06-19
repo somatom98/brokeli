@@ -1,8 +1,12 @@
 package transaction
 
 import (
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/somatom98/brokeli/internal/domain/values"
+)
+
+const (
+	Version = 0
 )
 
 type State int

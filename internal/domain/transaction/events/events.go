@@ -14,12 +14,28 @@ type ExpenseCreated struct {
 	Description string
 }
 
+func (e ExpenseCreated) Type() string {
+	return "ExpenseCreated"
+}
+
+func (e ExpenseCreated) Content() any {
+	return e
+}
+
 type IncomeCreated struct {
 	AccountID   uuid.UUID
 	Currency    values.Currency
 	Amount      decimal.Decimal
 	Category    string
 	Description string
+}
+
+func (e IncomeCreated) Type() string {
+	return "IncomeCreated"
+}
+
+func (e IncomeCreated) Content() any {
+	return e
 }
 
 type TransferCreated struct {
@@ -31,4 +47,12 @@ type TransferCreated struct {
 	ToAmount      decimal.Decimal
 	Category      string
 	Description   string
+}
+
+func (e TransferCreated) Type() string {
+	return "TransferCreated"
+}
+
+func (e TransferCreated) Content() any {
+	return e
 }
