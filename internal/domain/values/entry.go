@@ -5,7 +5,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Movement struct {
+type Entry struct {
 	AccountID uuid.UUID
 	Currency  Currency
 	Amount    decimal.Decimal
