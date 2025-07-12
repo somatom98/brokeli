@@ -22,6 +22,7 @@ type Aggregate interface {
 }
 
 type Store[A Aggregate] interface {
+	Subscribe(ctx context.Context) <-chan Record
 	GetAggregate(ctx context.Context, id uuid.UUID) (A, error)
-	Append(ctx context.Context, id uuid.UUID, record Record) error
+	Append(ctx context.Context, record Record) error
 }

@@ -31,7 +31,7 @@ func (d *Dispatcher) CreateExpense(ctx context.Context, id uuid.UUID, cmd Create
 		return err
 	}
 
-	d.es.Append(ctx, id, event_store.Record{
+	d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
@@ -51,7 +51,7 @@ func (d *Dispatcher) CreateIncome(ctx context.Context, id uuid.UUID, cmd CreateI
 		return err
 	}
 
-	d.es.Append(ctx, id, event_store.Record{
+	d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
@@ -71,7 +71,7 @@ func (d *Dispatcher) CreateTransfer(ctx context.Context, id uuid.UUID, cmd Creat
 		return err
 	}
 
-	d.es.Append(ctx, id, event_store.Record{
+	d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,

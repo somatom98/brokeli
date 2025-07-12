@@ -9,6 +9,7 @@ import (
 
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/features/create_transactions"
+	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
@@ -17,13 +18,19 @@ type App struct {
 	httpServer  *http.Server
 }
 
-func Setup() (*App, error) {
+func Setup(ctx context.Context) (*App, error) {
 	httpHandler := HttpHandler()
-	es := event_store.NewInMemory(transaction.New)
-	transactionDispatcher := TransactionDispatcher(es)
+	transactionES := event_store.NewInMemory(transaction.New)
+	transactionDispatcher := TransactionDispatcher(transactionES)
+
+	accountsView := AccountsView(ctx, transactionES)
 
 	create_transactions.
 		New(httpHandler, transactionDispatcher).
+		Setup()
+
+	manage_accounts.
+		New(httpHandler, accountsView).
 		Setup()
 
 	return &App{

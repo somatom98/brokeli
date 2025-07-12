@@ -6,6 +6,12 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
+const (
+	Type_ExpenseCreated  string = "ExpenseCreated"
+	Type_IncomeCreated   string = "IncomeCreated"
+	Type_TransferCreated string = "TransferCreated"
+)
+
 type ExpenseCreated struct {
 	AccountID   uuid.UUID
 	Currency    values.Currency
@@ -15,7 +21,7 @@ type ExpenseCreated struct {
 }
 
 func (e ExpenseCreated) Type() string {
-	return "ExpenseCreated"
+	return Type_ExpenseCreated
 }
 
 func (e ExpenseCreated) Content() any {
@@ -31,7 +37,7 @@ type IncomeCreated struct {
 }
 
 func (e IncomeCreated) Type() string {
-	return "IncomeCreated"
+	return Type_IncomeCreated
 }
 
 func (e IncomeCreated) Content() any {
@@ -50,7 +56,7 @@ type TransferCreated struct {
 }
 
 func (e TransferCreated) Type() string {
-	return "TransferCreated"
+	return Type_TransferCreated
 }
 
 func (e TransferCreated) Content() any {

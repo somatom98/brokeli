@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	app, err := setup.Setup()
+	ctx := context.Background()
+	app, err := setup.Setup(ctx)
 	if err != nil {
 		log.Fatalf("Setup: %v", err)
 	}
