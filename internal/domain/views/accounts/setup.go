@@ -14,7 +14,7 @@ import (
 
 type Repository interface {
 	UpdateAccountBalance(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error
-	GetAll(ctx context.Context) ([]Account, error)
+	GetAll(ctx context.Context) (map[uuid.UUID]Account, error)
 }
 
 type View struct {
@@ -22,8 +22,11 @@ type View struct {
 	transactionsCh <-chan event_store.Record
 }
 
-func New(transactionES event_store.Store[*transaction.Transaction]) *View {
+func New(
+	transactionES event_store.Store[*transaction.Transaction],
+) *View {
 	return &View{
+		repository:     NewInMemoryRepository(),
 		transactionsCh: transactionES.Subscribe(context.Background()),
 	}
 }
@@ -64,6 +67,6 @@ func (v *View) Update(ctx context.Context) <-chan error {
 	return errCh
 }
 
-func (v *View) GetAll(ctx context.Context) ([]Account, error) {
+func (v *View) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {
 	return v.repository.GetAll(ctx)
 }

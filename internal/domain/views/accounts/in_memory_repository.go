@@ -12,6 +12,12 @@ type InMemoryRepository struct {
 	accounts map[uuid.UUID]Account
 }
 
+func NewInMemoryRepository() *InMemoryRepository {
+	return &InMemoryRepository{
+		accounts: make(map[uuid.UUID]Account),
+	}
+}
+
 func (r *InMemoryRepository) UpdateAccountBalance(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error {
 	if _, ok := r.accounts[id]; !ok {
 		r.accounts[id] = NewAccount()
@@ -21,16 +27,11 @@ func (r *InMemoryRepository) UpdateAccountBalance(ctx context.Context, id uuid.U
 		r.accounts[id].Balance[currency] = decimal.Zero
 	}
 
-	r.accounts[id].Balance[currency].Add(amount)
+	r.accounts[id].Balance[currency] = r.accounts[id].Balance[currency].Add(amount)
 
 	return nil
 }
 
-func (r *InMemoryRepository) GetAll(ctx context.Context) ([]Account, error) {
-	accounts := []Account{}
-	for _, account := range r.accounts {
-		accounts = append(accounts, account)
-	}
-
-	return accounts, nil
+func (r *InMemoryRepository) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {
+	return r.accounts, nil
 }
