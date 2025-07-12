@@ -21,6 +21,7 @@ const (
 type Transaction struct {
 	ID          uuid.UUID
 	State       State
+	Type        values.TransactionType
 	Entries     []values.Entry
 	Category    string
 	Description string

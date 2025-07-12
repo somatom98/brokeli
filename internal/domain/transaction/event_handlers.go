@@ -7,6 +7,7 @@ import (
 
 func (t *Transaction) ApplyExpenseCreated(e events.ExpenseCreated) {
 	t.State = State_Created
+	t.Type = values.TransactionType_Expense
 	entry := values.Entry{
 		AccountID: e.AccountID,
 		Currency:  e.Currency,
@@ -20,6 +21,7 @@ func (t *Transaction) ApplyExpenseCreated(e events.ExpenseCreated) {
 
 func (t *Transaction) ApplyIncomeCreated(e events.IncomeCreated) {
 	t.State = State_Created
+	t.Type = values.TransactionType_Income
 	entry := values.Entry{
 		AccountID: e.AccountID,
 		Currency:  e.Currency,
@@ -33,6 +35,7 @@ func (t *Transaction) ApplyIncomeCreated(e events.IncomeCreated) {
 
 func (t *Transaction) ApplyTransferCreated(e events.TransferCreated) {
 	t.State = State_Created
+	t.Type = values.TransactionType_Transfer
 	from := values.Entry{
 		AccountID: e.FromAccountID,
 		Currency:  e.FromCurrency,
