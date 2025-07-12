@@ -3,23 +3,7 @@ package transaction
 import (
 	"github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/domain/values"
-	"github.com/somatom98/brokeli/pkg/event_store"
 )
-
-func (t *Transaction) Hydrate(records []event_store.Record) error {
-	for _, record := range records {
-		switch record.Event.Type() {
-		case "ExpenseCreated":
-			t.ApplyExpenseCreated(record.Event.Content().(events.ExpenseCreated))
-		case "IncomeCreated":
-			t.ApplyIncomeCreated(record.Event.Content().(events.IncomeCreated))
-		case "TransferCreated":
-			t.ApplyTransferCreated(record.Event.Content().(events.TransferCreated))
-		}
-	}
-
-	return nil
-}
 
 func (t *Transaction) ApplyExpenseCreated(e events.ExpenseCreated) {
 	t.State = State_Created

@@ -12,13 +12,15 @@ var ErrEventsNotFound = errors.New("no_events_found")
 
 type InMemoryStore[A Aggregate] struct {
 	Records map[uuid.UUID][]Record
+	New     func(uuid.UUID) A
 }
 
 var _ Store[Aggregate] = &InMemoryStore[Aggregate]{}
 
-func NewInMemory[A Aggregate]() *InMemoryStore[A] {
+func NewInMemory[A Aggregate](new func(uuid.UUID) A) *InMemoryStore[A] {
 	return &InMemoryStore[A]{
 		Records: make(map[uuid.UUID][]Record),
+		New:     new,
 	}
 }
 
@@ -35,7 +37,7 @@ func (s *InMemoryStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, e
 
 	records, ok := s.Records[id]
 	if !ok {
-		return aggregate, ErrEventsNotFound
+		aggregate = s.New(id)
 	}
 
 	err := aggregate.Hydrate(records)

@@ -19,7 +19,7 @@ type App struct {
 
 func Setup() (*App, error) {
 	httpHandler := HttpHandler()
-	es := event_store.NewInMemory[*transaction.Transaction]()
+	es := event_store.NewInMemory(transaction.New)
 	transactionDispatcher := TransactionDispatcher(es)
 
 	create_transactions.
