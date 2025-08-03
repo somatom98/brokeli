@@ -10,17 +10,23 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/features/create_transactions"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
-	"github.com/somatom98/brokeli/pkg/event_store"
+	event_store "github.com/somatom98/brokeli/pkg/event_store/sqlite"
 )
 
 type App struct {
-	httpHandler *http.ServeMux
-	httpServer  *http.Server
+	httpHandler   *http.ServeMux
+	httpServer    *http.Server
+	transactionES *event_store.SQLiteStore[*transaction.Transaction]
 }
 
 func Setup(ctx context.Context) (*App, error) {
 	httpHandler := HttpHandler()
-	transactionES := event_store.NewInMemory(transaction.New)
+
+	transactionES, err := event_store.Setup(os.Getenv("DB_PATH"), transaction.New)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup transaction event store: %w", err)
+	}
+
 	transactionDispatcher := TransactionDispatcher(transactionES)
 
 	accountsView := AccountsView(ctx, transactionES)
@@ -34,11 +40,13 @@ func Setup(ctx context.Context) (*App, error) {
 		Setup()
 
 	return &App{
-		httpHandler: httpHandler,
+		httpHandler:   httpHandler,
+		transactionES: transactionES,
 	}, nil
 }
 
 func (a *App) Start() <-chan error {
+
 	port := os.Getenv("PORT")
 
 	a.httpServer = &http.Server{
@@ -62,5 +70,12 @@ func (a *App) Start() <-chan error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
-	return a.httpServer.Shutdown(ctx)
+	err := a.httpServer.Shutdown(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to shutdown http server: %w", err)
+	}
+
+	a.transactionES.Close()
+
+	return nil
 }
