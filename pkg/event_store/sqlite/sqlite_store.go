@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 
 	"github.com/somatom98/brokeli/pkg/event_store"
 	"github.com/somatom98/brokeli/pkg/event_store/sqlite/generated"
@@ -60,7 +60,7 @@ func (s *SQLiteStore[A]) Append(ctx context.Context, record event_store.Record) 
 		return fmt.Errorf("failed to marshal event data: %w", err)
 	}
 
-	eventID := uuid.Must(uuid.NewV4())
+	eventID := uuid.New()
 
 	_, err = s.queries.InsertEvent(ctx, generated.InsertEventParams{
 		ID:            eventID.String(),
@@ -139,7 +139,7 @@ func (s *SQLiteStore[A]) Close() error {
 }
 
 func (s *SQLiteStore[A]) getAggregateType() string {
-	aggregate := s.new(uuid.Must(uuid.NewV4()))
+	aggregate := s.new(uuid.New())
 	aggregateType := reflect.TypeOf(aggregate)
 	if aggregateType.Kind() == reflect.Ptr {
 		aggregateType = aggregateType.Elem()

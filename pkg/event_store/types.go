@@ -3,7 +3,7 @@ package event_store
 import (
 	"context"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 )
 
 type Event interface {

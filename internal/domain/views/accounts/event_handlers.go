@@ -6,15 +6,15 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/transaction/events"
 )
 
-func (v *View) ApplyExpenseCreated(ctx context.Context, e events.ExpenseCreated) error {
+func (v *View) ApplyExpenseCreated(ctx context.Context, e events.MoneySpent) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount.Neg(), e.Currency)
 }
 
-func (v *View) ApplyIncomeCreated(ctx context.Context, e events.IncomeCreated) error {
+func (v *View) ApplyIncomeCreated(ctx context.Context, e events.MoneyReceived) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount, e.Currency)
 }
 
-func (v *View) ApplyTransferCreated(ctx context.Context, e events.TransferCreated) error {
+func (v *View) ApplyTransferCreated(ctx context.Context, e events.MoneyTransfered) error {
 	err := v.repository.UpdateAccountBalance(ctx, e.FromAccountID, e.FromAmount.Neg(), e.FromCurrency)
 	if err != nil {
 		return err

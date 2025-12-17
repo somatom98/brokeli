@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
@@ -48,12 +48,12 @@ func (v *View) Update(ctx context.Context) <-chan error {
 
 				var err error
 				switch record.Type() {
-				case transaction_events.Type_ExpenseCreated:
-					err = v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.ExpenseCreated))
-				case transaction_events.Type_IncomeCreated:
-					err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.IncomeCreated))
-				case transaction_events.Type_TransferCreated:
-					err = v.ApplyTransferCreated(ctx, record.Content().(transaction_events.TransferCreated))
+				case transaction_events.Type_MoneySpent:
+					err = v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.MoneySpent))
+				case transaction_events.Type_MoneyReceived:
+					err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
+				case transaction_events.Type_MoneyTransfered:
+					err = v.ApplyTransferCreated(ctx, record.Content().(transaction_events.MoneyTransfered))
 				}
 
 				if err != nil {

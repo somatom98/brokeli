@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"github.com/somatom98/brokeli/internal/domain/values"
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
@@ -20,13 +22,27 @@ func NewDispatcher(
 	}
 }
 
-func (d *Dispatcher) CreateExpense(ctx context.Context, id uuid.UUID, cmd CreateExpense) error {
+func (d *Dispatcher) CreateExpense(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.HandleCreateExpense(cmd)
+	event, err := aggr.RegisterExpense(
+		accountID,
+		currency,
+		amount,
+		category,
+		description,
+	)
 	if err != nil {
 		return err
 	}
@@ -40,13 +56,27 @@ func (d *Dispatcher) CreateExpense(ctx context.Context, id uuid.UUID, cmd Create
 	return nil
 }
 
-func (d *Dispatcher) CreateIncome(ctx context.Context, id uuid.UUID, cmd CreateIncome) error {
+func (d *Dispatcher) CreateIncome(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.HandleCreateIncome(cmd)
+	event, err := aggr.RegisterIncome(
+		accountID,
+		currency,
+		amount,
+		category,
+		description,
+	)
 	if err != nil {
 		return err
 	}
@@ -60,13 +90,33 @@ func (d *Dispatcher) CreateIncome(ctx context.Context, id uuid.UUID, cmd CreateI
 	return nil
 }
 
-func (d *Dispatcher) CreateTransfer(ctx context.Context, id uuid.UUID, cmd CreateTransfer) error {
+func (d *Dispatcher) CreateTransfer(
+	ctx context.Context,
+	id uuid.UUID,
+	fromAccountID uuid.UUID,
+	fromCurrency values.Currency,
+	fromAmount decimal.Decimal,
+	toAccountID uuid.UUID,
+	toCurrency values.Currency,
+	toAmount decimal.Decimal,
+	category string,
+	description string,
+) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.HandleCreateTransfer(cmd)
+	event, err := aggr.RegisterTransfer(
+		fromAccountID,
+		fromCurrency,
+		fromAmount,
+		toAccountID,
+		toCurrency,
+		toAmount,
+		category,
+		description,
+	)
 	if err != nil {
 		return err
 	}

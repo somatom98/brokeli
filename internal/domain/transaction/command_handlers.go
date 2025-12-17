@@ -3,7 +3,10 @@ package transaction
 import (
 	"errors"
 
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/transaction/events"
+	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
 var (
@@ -12,70 +15,91 @@ var (
 	ErrInvalidAmountOrCurrency = errors.New("invalid_amount_or_currency")
 )
 
-func (a *Transaction) HandleCreateExpense(cmd CreateExpense) (evt events.ExpenseCreated, err error) {
+func (a *Transaction) RegisterExpense(
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) (evt events.MoneySpent, err error) {
 	if a.State > State_Created {
 		return evt, nil
 	}
 
-	if !cmd.Amount.IsPositive() {
+	if !amount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount
 	}
 
-	return events.ExpenseCreated{
-		AccountID:   cmd.AccountID,
-		Currency:    cmd.Currency,
-		Amount:      cmd.Amount,
-		Category:    cmd.Category,
-		Description: cmd.Description,
+	return events.MoneySpent{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
 	}, nil
 }
 
-func (a *Transaction) HandleCreateIncome(cmd CreateIncome) (evt events.IncomeCreated, err error) {
+func (a *Transaction) RegisterIncome(
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) (evt events.MoneyReceived, err error) {
 	if a.State > State_Created {
 		return evt, nil
 	}
 
-	if !cmd.Amount.IsPositive() {
+	if !amount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount
 	}
 
-	return events.IncomeCreated{
-		AccountID:   cmd.AccountID,
-		Currency:    cmd.Currency,
-		Amount:      cmd.Amount,
-		Category:    cmd.Category,
-		Description: cmd.Description,
+	return events.MoneyReceived{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
 	}, nil
 }
 
-func (a *Transaction) HandleCreateTransfer(cmd CreateTransfer) (evt events.TransferCreated, err error) {
+func (a *Transaction) RegisterTransfer(
+	fromAccountID uuid.UUID,
+	fromCurrency values.Currency,
+	fromAmount decimal.Decimal,
+	toAccountID uuid.UUID,
+	toCurrency values.Currency,
+	toAmount decimal.Decimal,
+	category string,
+	description string,
+) (evt events.MoneyTransfered, err error) {
 	if a.State > State_Created {
 		return evt, nil
 	}
 
-	if !cmd.FromAmount.IsPositive() ||
-		!cmd.ToAmount.IsPositive() {
+	if !fromAmount.IsPositive() ||
+		!toAmount.IsPositive() {
 		return evt, ErrNegativeOrNullAmount
 	}
 
-	if cmd.FromAccountID == cmd.ToAccountID {
+	if fromAccountID == toAccountID {
 		return evt, ErrInvalidAccount
 	}
 
-	if cmd.FromCurrency == cmd.ToCurrency {
-		if !cmd.FromAmount.Equal(cmd.ToAmount) {
+	if fromCurrency == toCurrency {
+		if !fromAmount.Equal(toAmount) {
 			return evt, ErrInvalidAmountOrCurrency
 		}
 	}
 
-	return events.TransferCreated{
-		FromAccountID: cmd.FromAccountID,
-		FromCurrency:  cmd.FromCurrency,
-		FromAmount:    cmd.FromAmount,
-		ToAccountID:   cmd.ToAccountID,
-		ToCurrency:    cmd.ToCurrency,
-		ToAmount:      cmd.ToAmount,
-		Category:      cmd.Category,
-		Description:   cmd.Description,
+	return events.MoneyTransfered{
+		FromAccountID: fromAccountID,
+		FromCurrency:  fromCurrency,
+		FromAmount:    fromAmount,
+		ToAccountID:   toAccountID,
+		ToCurrency:    toCurrency,
+		ToAmount:      toAmount,
+		Category:      category,
+		Description:   description,
 	}, nil
 }

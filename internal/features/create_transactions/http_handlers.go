@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
@@ -25,13 +24,15 @@ func (f *Feature) handleCreateExpense(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateExpense(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateExpense{
-		AccountID:   req.AccountID,
-		Currency:    req.Currency,
-		Amount:      req.Amount,
-		Category:    req.Category,
-		Description: req.Description,
-	}); err != nil {
+	if err := f.dispatcher.CreateExpense(
+		r.Context(),
+		uuid.Must(uuid.NewV7()),
+		req.AccountID,
+		req.Currency,
+		req.Amount,
+		req.Category,
+		req.Description,
+	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -55,13 +56,15 @@ func (f *Feature) handleCreateIncome(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateIncome(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateIncome{
-		AccountID:   req.AccountID,
-		Currency:    req.Currency,
-		Amount:      req.Amount,
-		Category:    req.Category,
-		Description: req.Description,
-	}); err != nil {
+	if err := f.dispatcher.CreateIncome(
+		r.Context(),
+		uuid.Must(uuid.NewV7()),
+		req.AccountID,
+		req.Currency,
+		req.Amount,
+		req.Category,
+		req.Description,
+	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -88,16 +91,18 @@ func (f *Feature) handleCreateTransfer(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateTransfer(r.Context(), uuid.Must(uuid.NewV7()), transaction.CreateTransfer{
-		FromAccountID: req.FromAccountID,
-		FromCurrency:  req.FromCurrency,
-		FromAmount:    req.FromAmount,
-		ToAccountID:   req.ToAccountID,
-		ToCurrency:    req.ToCurrency,
-		ToAmount:      req.ToAmount,
-		Category:      req.Category,
-		Description:   req.Description,
-	}); err != nil {
+	if err := f.dispatcher.CreateTransfer(
+		r.Context(),
+		uuid.Must(uuid.NewV7()),
+		req.FromAccountID,
+		req.FromCurrency,
+		req.FromAmount,
+		req.ToAccountID,
+		req.ToCurrency,
+		req.ToAmount,
+		req.Category,
+		req.Description,
+	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}

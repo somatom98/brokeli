@@ -5,7 +5,7 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
-func (t *Transaction) ApplyExpenseCreated(e events.ExpenseCreated) {
+func (t *Transaction) ApplyExpenseCreated(e events.MoneySpent) {
 	t.State = State_Created
 	t.Type = values.TransactionType_Expense
 	entry := values.Entry{
@@ -19,7 +19,7 @@ func (t *Transaction) ApplyExpenseCreated(e events.ExpenseCreated) {
 	t.Description = e.Description
 }
 
-func (t *Transaction) ApplyIncomeCreated(e events.IncomeCreated) {
+func (t *Transaction) ApplyIncomeCreated(e events.MoneyReceived) {
 	t.State = State_Created
 	t.Type = values.TransactionType_Income
 	entry := values.Entry{
@@ -33,7 +33,7 @@ func (t *Transaction) ApplyIncomeCreated(e events.IncomeCreated) {
 	t.Description = e.Description
 }
 
-func (t *Transaction) ApplyTransferCreated(e events.TransferCreated) {
+func (t *Transaction) ApplyTransferCreated(e events.MoneyTransfered) {
 	t.State = State_Created
 	t.Type = values.TransactionType_Transfer
 	from := values.Entry{

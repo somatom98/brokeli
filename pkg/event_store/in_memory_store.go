@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 )
 
 var ErrEventsNotFound = errors.New("no_events_found")

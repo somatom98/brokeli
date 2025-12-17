@@ -1,7 +1,7 @@
 package values
 
 import (
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
