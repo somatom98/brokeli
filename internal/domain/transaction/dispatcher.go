@@ -129,3 +129,65 @@ func (d *Dispatcher) RegisterTransfer(
 
 	return nil
 }
+
+func (d *Dispatcher) SetExpectedReimbursement(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.SetExpectedReimbursement(
+		accountID,
+		currency,
+		amount,
+	)
+	if err != nil {
+		return err
+	}
+
+	d.es.Append(ctx, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
+
+	return nil
+}
+
+func (d *Dispatcher) RegisterReimbursement(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	from string,
+	currency values.Currency,
+	amount decimal.Decimal,
+) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.RegisterReimbursement(
+		accountID,
+		from,
+		currency,
+		amount,
+	)
+	if err != nil {
+		return err
+	}
+
+	d.es.Append(ctx, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
+
+	return nil
+}

@@ -5,6 +5,12 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
+func (t *Transaction) ApplyExpectedReimbursementSet(e events.ExpectedReimbursementSet) {
+	t.State = State_Created
+	t.Type = values.TransactionType_ExpectedReimbursement
+	t.Description = ""
+}
+
 func (t *Transaction) ApplyExpenseCreated(e events.MoneySpent) {
 	t.State = State_Created
 	t.Type = values.TransactionType_Expense
@@ -51,4 +57,17 @@ func (t *Transaction) ApplyTransferCreated(e events.MoneyTransfered) {
 	t.Entries = append(t.Entries, from, to)
 	t.Category = e.Category
 	t.Description = e.Description
+}
+
+func (t *Transaction) ApplyReimbursementReceived(e events.ReimbursementReceived) {
+	t.State = State_Created
+	t.Type = values.TransactionType_Reimbursement
+	entry := values.Entry{
+		AccountID: e.AccountID,
+		Currency:  e.Currency,
+		Amount:    e.Amount,
+		Side:      values.Side_Credit,
+	}
+	t.Entries = append(t.Entries, entry)
+	t.Description = e.From
 }

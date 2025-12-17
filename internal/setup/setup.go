@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/somatom98/brokeli/internal/domain/account"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
@@ -16,31 +17,39 @@ import (
 type App struct {
 	httpHandler   *http.ServeMux
 	httpServer    *http.Server
+	accountES     *event_store.SQLiteStore[*account.Account]
 	transactionES *event_store.SQLiteStore[*transaction.Transaction]
 }
 
 func Setup(ctx context.Context) (*App, error) {
 	httpHandler := HttpHandler()
 
+	accountES, err := event_store.Setup(os.Getenv("DB_PATH"), account.New)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup account event store: %w", err)
+	}
+
 	transactionES, err := event_store.Setup(os.Getenv("DB_PATH"), transaction.New)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup transaction event store: %w", err)
 	}
 
+	accountDispatcher := AccountDispatcher(accountES)
 	transactionDispatcher := TransactionDispatcher(transactionES)
 
-	accountsProjection := AccountsProjection(ctx, transactionES)
+	accountsProjection := AccountsProjection(ctx, transactionES, accountES)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection).
+		New(httpHandler, accountsProjection, accountDispatcher).
 		Setup()
 
 	return &App{
 		httpHandler:   httpHandler,
+		accountES:     accountES,
 		transactionES: transactionES,
 	}, nil
 }
@@ -74,6 +83,7 @@ func (a *App) Stop(ctx context.Context) error {
 		return fmt.Errorf("failed to shutdown http server: %w", err)
 	}
 
+	a.accountES.Close()
 	a.transactionES.Close()
 
 	return nil

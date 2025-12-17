@@ -110,3 +110,75 @@ func (f *Feature) handleRegisterTransfer(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Request) {
+	transactionID := r.PathValue("transaction_id")
+	if transactionID == "" {
+		http.Error(w, "bad request: missing transaction id", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(transactionID)
+	if err != nil {
+		http.Error(w, "bad request: invalid transaction id", http.StatusBadRequest)
+		return
+	}
+
+	type RegisterReimbursementRequest struct {
+		AccountID uuid.UUID       `json:"account_id"`
+		From      string          `json:"from"`
+		Currency  values.Currency `json:"currency"`
+		Amount    decimal.Decimal `json:"amount"`
+	}
+
+	var req RegisterReimbursementRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := f.dispatcher.RegisterReimbursement(
+		r.Context(),
+		id,
+		req.AccountID,
+		req.From,
+		req.Currency,
+		req.Amount,
+	); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.Request) {
+	type SetExpectedReimbursementRequest struct {
+		AccountID uuid.UUID       `json:"account_id"`
+		Currency  values.Currency `json:"currency"`
+		Amount    decimal.Decimal `json:"amount"`
+	}
+
+	var req SetExpectedReimbursementRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := f.dispatcher.SetExpectedReimbursement(
+		r.Context(),
+		uuid.Must(uuid.NewV7()),
+		req.AccountID,
+		req.Currency,
+		req.Amount,
+	); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+}

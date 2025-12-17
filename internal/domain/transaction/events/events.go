@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	Type_MoneySpent     string = "MoneySpent"
-	Type_MoneyReceived  string = "MoneyReceived"
-	Type_MoneyTransfered string = "MoneyTransfered"
+	Type_MoneySpent               string = "MoneySpent"
+	Type_MoneyReceived            string = "MoneyReceived"
+	Type_MoneyTransfered          string = "MoneyTransfered"
+	Type_ReimbursementReceived    string = "ReimbursementReceived"
+	Type_ExpectedReimbursementSet string = "ExpectedReimbursementSet"
 )
 
 type MoneySpent struct {
@@ -60,5 +62,34 @@ func (e MoneyTransfered) Type() string {
 }
 
 func (e MoneyTransfered) Content() any {
+	return e
+}
+
+type ReimbursementReceived struct {
+	AccountID uuid.UUID
+	From      string
+	Currency  values.Currency
+	Amount    decimal.Decimal
+}
+
+type ExpectedReimbursementSet struct {
+	AccountID uuid.UUID
+	Currency  values.Currency
+	Amount    decimal.Decimal
+}
+
+func (e ExpectedReimbursementSet) Type() string {
+	return Type_ExpectedReimbursementSet
+}
+
+func (e ExpectedReimbursementSet) Content() any {
+	return e
+}
+
+func (e ReimbursementReceived) Type() string {
+	return Type_ReimbursementReceived
+}
+
+func (e ReimbursementReceived) Content() any {
 	return e
 }

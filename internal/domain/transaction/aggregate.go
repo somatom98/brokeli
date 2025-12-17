@@ -37,12 +37,16 @@ func New(id uuid.UUID) *Transaction {
 func (t *Transaction) Hydrate(records []event_store.Record) error {
 	for _, record := range records {
 		switch record.Type() {
+		case events.Type_ExpectedReimbursementSet:
+			t.ApplyExpectedReimbursementSet(record.Content().(events.ExpectedReimbursementSet))
 		case events.Type_MoneySpent:
 			t.ApplyExpenseCreated(record.Content().(events.MoneySpent))
 		case events.Type_MoneyReceived:
 			t.ApplyIncomeCreated(record.Content().(events.MoneyReceived))
 		case events.Type_MoneyTransfered:
 			t.ApplyTransferCreated(record.Content().(events.MoneyTransfered))
+		case events.Type_ReimbursementReceived:
+			t.ApplyReimbursementReceived(record.Content().(events.ReimbursementReceived))
 		}
 	}
 

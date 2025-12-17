@@ -15,6 +15,26 @@ var (
 	ErrInvalidAmountOrCurrency = errors.New("invalid_amount_or_currency")
 )
 
+func (a *Transaction) SetExpectedReimbursement(
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+) (evt events.ExpectedReimbursementSet, err error) {
+	if a.State > State_Created {
+		return evt, nil
+	}
+
+	if !amount.IsPositive() {
+		return evt, ErrNegativeOrNullAmount
+	}
+
+	return events.ExpectedReimbursementSet{
+		AccountID: accountID,
+		Currency:  currency,
+		Amount:    amount,
+	}, nil
+}
+
 func (a *Transaction) RegisterExpense(
 	accountID uuid.UUID,
 	currency values.Currency,
@@ -101,5 +121,27 @@ func (a *Transaction) RegisterTransfer(
 		ToAmount:      toAmount,
 		Category:      category,
 		Description:   description,
+	}, nil
+}
+
+func (a *Transaction) RegisterReimbursement(
+	accountID uuid.UUID,
+	from string,
+	currency values.Currency,
+	amount decimal.Decimal,
+) (evt events.ReimbursementReceived, err error) {
+	if a.State > State_Created {
+		return evt, nil
+	}
+
+	if !amount.IsPositive() {
+		return evt, ErrNegativeOrNullAmount
+	}
+
+	return events.ReimbursementReceived{
+		AccountID: accountID,
+		From:      from,
+		Currency:  currency,
+		Amount:    amount,
 	}, nil
 }
