@@ -17,21 +17,21 @@ type Repository interface {
 	GetAll(ctx context.Context) (map[uuid.UUID]Account, error)
 }
 
-type View struct {
+type Projection struct {
 	repository     Repository
 	transactionsCh <-chan event_store.Record
 }
 
 func New(
 	transactionES event_store.Store[*transaction.Transaction],
-) *View {
-	return &View{
+) *Projection {
+	return &Projection{
 		repository:     NewInMemoryRepository(),
 		transactionsCh: transactionES.Subscribe(context.Background()),
 	}
 }
 
-func (v *View) Update(ctx context.Context) <-chan error {
+func (v *Projection) Update(ctx context.Context) <-chan error {
 	errCh := make(chan error, 1)
 
 	go func() {
@@ -67,6 +67,6 @@ func (v *View) Update(ctx context.Context) <-chan error {
 	return errCh
 }
 
-func (v *View) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {
+func (v *Projection) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {
 	return v.repository.GetAll(ctx)
 }

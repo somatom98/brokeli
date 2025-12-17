@@ -22,7 +22,7 @@ func NewDispatcher(
 	}
 }
 
-func (d *Dispatcher) CreateExpense(
+func (d *Dispatcher) RegisterExpense(
 	ctx context.Context,
 	id uuid.UUID,
 	accountID uuid.UUID,
@@ -56,7 +56,7 @@ func (d *Dispatcher) CreateExpense(
 	return nil
 }
 
-func (d *Dispatcher) CreateIncome(
+func (d *Dispatcher) RegisterIncome(
 	ctx context.Context,
 	id uuid.UUID,
 	accountID uuid.UUID,
@@ -90,7 +90,7 @@ func (d *Dispatcher) CreateIncome(
 	return nil
 }
 
-func (d *Dispatcher) CreateTransfer(
+func (d *Dispatcher) RegisterTransfer(
 	ctx context.Context,
 	id uuid.UUID,
 	fromAccountID uuid.UUID,

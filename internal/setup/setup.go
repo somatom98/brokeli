@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/somatom98/brokeli/internal/domain/transaction"
-	"github.com/somatom98/brokeli/internal/features/create_transactions"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
+	"github.com/somatom98/brokeli/internal/features/manage_transactions"
 	event_store "github.com/somatom98/brokeli/pkg/event_store/sqlite"
 )
 
@@ -29,14 +29,14 @@ func Setup(ctx context.Context) (*App, error) {
 
 	transactionDispatcher := TransactionDispatcher(transactionES)
 
-	accountsView := AccountsView(ctx, transactionES)
+	accountsProjection := AccountsProjection(ctx, transactionES)
 
-	create_transactions.
+	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsView).
+		New(httpHandler, accountsProjection).
 		Setup()
 
 	return &App{
@@ -46,7 +46,6 @@ func Setup(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Start() <-chan error {
-
 	port := os.Getenv("PORT")
 
 	a.httpServer = &http.Server{

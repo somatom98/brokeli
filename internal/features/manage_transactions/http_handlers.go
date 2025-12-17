@@ -1,4 +1,4 @@
-package create_transactions
+package manage_transactions
 
 import (
 	"encoding/json"
@@ -9,22 +9,22 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
-func (f *Feature) handleCreateExpense(w http.ResponseWriter, r *http.Request) {
-	type CreateExpenseRequest struct {
+func (f *Feature) handleRegisterExpense(w http.ResponseWriter, r *http.Request) {
+	type RegisterExpenseRequest struct {
 		AccountID   uuid.UUID       `json:"account_id"`
 		Currency    values.Currency `json:"currency"`
 		Amount      decimal.Decimal `json:"amount"`
 		Category    string          `json:"category"`
 		Description string          `json:"description"`
 	}
-	var req CreateExpenseRequest
+	var req RegisterExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateExpense(
+	if err := f.dispatcher.RegisterExpense(
 		r.Context(),
 		uuid.Must(uuid.NewV7()),
 		req.AccountID,
@@ -41,22 +41,22 @@ func (f *Feature) handleCreateExpense(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (f *Feature) handleCreateIncome(w http.ResponseWriter, r *http.Request) {
-	type CreateIncomeRequest struct {
+func (f *Feature) handleRegisterIncome(w http.ResponseWriter, r *http.Request) {
+	type RegisterIncomeRequest struct {
 		AccountID   uuid.UUID       `json:"account_id"`
 		Currency    values.Currency `json:"currency"`
 		Amount      decimal.Decimal `json:"amount"`
 		Category    string          `json:"category"`
 		Description string          `json:"description"`
 	}
-	var req CreateIncomeRequest
+	var req RegisterIncomeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateIncome(
+	if err := f.dispatcher.RegisterIncome(
 		r.Context(),
 		uuid.Must(uuid.NewV7()),
 		req.AccountID,
@@ -73,8 +73,8 @@ func (f *Feature) handleCreateIncome(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (f *Feature) handleCreateTransfer(w http.ResponseWriter, r *http.Request) {
-	type CreateTransferRequest struct {
+func (f *Feature) handleRegisterTransfer(w http.ResponseWriter, r *http.Request) {
+	type RegisterTransferRequest struct {
 		FromAccountID uuid.UUID       `json:"from_account_id"`
 		FromCurrency  values.Currency `json:"from_currency"`
 		FromAmount    decimal.Decimal `json:"from_amount"`
@@ -84,14 +84,14 @@ func (f *Feature) handleCreateTransfer(w http.ResponseWriter, r *http.Request) {
 		Category      string          `json:"category"`
 		Description   string          `json:"description"`
 	}
-	var req CreateTransferRequest
+	var req RegisterTransferRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := f.dispatcher.CreateTransfer(
+	if err := f.dispatcher.RegisterTransfer(
 		r.Context(),
 		uuid.Must(uuid.NewV7()),
 		req.FromAccountID,
