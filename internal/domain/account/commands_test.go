@@ -25,7 +25,7 @@ func TestAccountCreate(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.Created{Time: createdAt}, evt)
+		assert.Equal(t, &events.Created{Time: createdAt}, evt)
 	})
 
 	t.Run("should not emit event when account is already created", func(t *testing.T) {
@@ -38,7 +38,7 @@ func TestAccountCreate(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.Created{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should not return validation errors when timestamp is zero", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestAccountCreate(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.Created{Time: time.Time{}}, evt)
+		assert.Equal(t, &events.Created{Time: time.Time{}}, evt)
 	})
 }
 
@@ -66,7 +66,7 @@ func TestAccountDeposit(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyDeposited{
+		assert.Equal(t, &events.MoneyDeposited{
 			User:     "user-123",
 			Currency: values.Currency("USD"),
 			Amount:   amount,
@@ -84,7 +84,7 @@ func TestAccountDeposit(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyDeposited{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when amount is not positive", func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestAccountDeposit(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, account.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.MoneyDeposited{}, evt)
+		assert.Nil(t, evt)
 	})
 }
 
@@ -112,7 +112,7 @@ func TestAccountClose(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.AccountClosed{Time: now}, evt)
+		assert.Equal(t, &events.AccountClosed{Time: now}, evt)
 	})
 
 	t.Run("should no-op when account is already closed", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestAccountClose(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.AccountClosed{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should not return validation errors when closing unknown account", func(t *testing.T) {
@@ -138,6 +138,6 @@ func TestAccountClose(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.AccountClosed{Time: now}, evt)
+		assert.Equal(t, &events.AccountClosed{Time: now}, evt)
 	})
 }

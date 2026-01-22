@@ -6,7 +6,7 @@ CREATE TABLE events (
     event_type TEXT NOT NULL,
     event_data TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(aggregate_type, aggregate_id, version)
+    UNIQUE(aggregate_type, id, version)
 );
 
 CREATE INDEX idx_aggregate_type_id ON events(aggregate_type, aggregate_id);

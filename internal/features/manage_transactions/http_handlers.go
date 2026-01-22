@@ -155,6 +155,18 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 }
 
 func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.Request) {
+	transactionID := r.PathValue("transaction_id")
+	if transactionID == "" {
+		http.Error(w, "bad request: missing transaction id", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(transactionID)
+	if err != nil {
+		http.Error(w, "bad request: invalid transaction id", http.StatusBadRequest)
+		return
+	}
+
 	type SetExpectedReimbursementRequest struct {
 		AccountID uuid.UUID       `json:"account_id"`
 		Currency  values.Currency `json:"currency"`
@@ -170,7 +182,7 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 
 	if err := f.dispatcher.SetExpectedReimbursement(
 		r.Context(),
-		uuid.Must(uuid.NewV7()),
+		id,
 		req.AccountID,
 		req.Currency,
 		req.Amount,

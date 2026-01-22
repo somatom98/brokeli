@@ -48,15 +48,6 @@ func (r *InMemoryRepository) UpdateAccountBalance(ctx context.Context, id uuid.U
 	return nil
 }
 
-func (r *InMemoryRepository) SetExpectedReimbursement(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error {
-	acc := r.getOrCreate(id)
-
-	acc.ExpectedReimbursements[currency] = amount
-	r.accounts[id] = acc
-
-	return nil
-}
-
 func (r *InMemoryRepository) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {
 	return r.accounts, nil
 }

@@ -19,16 +19,16 @@ func (a *Transaction) SetExpectedReimbursement(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-) (evt events.ExpectedReimbursementSet, err error) {
+) (evt *events.ExpectedReimbursementSet, err error) {
 	if a.State > State_Created {
-		return evt, nil
+		return nil, nil
 	}
 
 	if !amount.IsPositive() {
-		return evt, ErrNegativeOrNullAmount
+		return nil, ErrNegativeOrNullAmount
 	}
 
-	return events.ExpectedReimbursementSet{
+	return &events.ExpectedReimbursementSet{
 		AccountID: accountID,
 		Currency:  currency,
 		Amount:    amount,
@@ -41,16 +41,16 @@ func (a *Transaction) RegisterExpense(
 	amount decimal.Decimal,
 	category string,
 	description string,
-) (evt events.MoneySpent, err error) {
+) (evt *events.MoneySpent, err error) {
 	if a.State > State_Created {
-		return evt, nil
+		return nil, nil
 	}
 
 	if !amount.IsPositive() {
-		return evt, ErrNegativeOrNullAmount
+		return nil, ErrNegativeOrNullAmount
 	}
 
-	return events.MoneySpent{
+	return &events.MoneySpent{
 		AccountID:   accountID,
 		Currency:    currency,
 		Amount:      amount,
@@ -65,16 +65,16 @@ func (a *Transaction) RegisterIncome(
 	amount decimal.Decimal,
 	category string,
 	description string,
-) (evt events.MoneyReceived, err error) {
+) (evt *events.MoneyReceived, err error) {
 	if a.State > State_Created {
-		return evt, nil
+		return nil, nil
 	}
 
 	if !amount.IsPositive() {
-		return evt, ErrNegativeOrNullAmount
+		return nil, ErrNegativeOrNullAmount
 	}
 
-	return events.MoneyReceived{
+	return &events.MoneyReceived{
 		AccountID:   accountID,
 		Currency:    currency,
 		Amount:      amount,
@@ -92,27 +92,27 @@ func (a *Transaction) RegisterTransfer(
 	toAmount decimal.Decimal,
 	category string,
 	description string,
-) (evt events.MoneyTransfered, err error) {
+) (evt *events.MoneyTransfered, err error) {
 	if a.State > State_Created {
-		return evt, nil
+		return nil, nil
 	}
 
 	if !fromAmount.IsPositive() ||
 		!toAmount.IsPositive() {
-		return evt, ErrNegativeOrNullAmount
+		return nil, ErrNegativeOrNullAmount
 	}
 
 	if fromAccountID == toAccountID {
-		return evt, ErrInvalidAccount
+		return nil, ErrInvalidAccount
 	}
 
 	if fromCurrency == toCurrency {
 		if !fromAmount.Equal(toAmount) {
-			return evt, ErrInvalidAmountOrCurrency
+			return nil, ErrInvalidAmountOrCurrency
 		}
 	}
 
-	return events.MoneyTransfered{
+	return &events.MoneyTransfered{
 		FromAccountID: fromAccountID,
 		FromCurrency:  fromCurrency,
 		FromAmount:    fromAmount,
@@ -129,16 +129,16 @@ func (a *Transaction) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
-) (evt events.ReimbursementReceived, err error) {
+) (evt *events.ReimbursementReceived, err error) {
 	if a.State > State_Created {
-		return evt, nil
+		return nil, nil
 	}
 
 	if !amount.IsPositive() {
-		return evt, ErrNegativeOrNullAmount
+		return nil, ErrNegativeOrNullAmount
 	}
 
-	return events.ReimbursementReceived{
+	return &events.ReimbursementReceived{
 		AccountID: accountID,
 		From:      from,
 		Currency:  currency,

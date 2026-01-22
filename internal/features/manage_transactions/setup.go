@@ -36,6 +36,6 @@ func (f *Feature) Setup() {
 	f.httpHandler.HandleFunc("POST /api/expenses", f.handleRegisterExpense)
 	f.httpHandler.HandleFunc("POST /api/incomes", f.handleRegisterIncome)
 	f.httpHandler.HandleFunc("POST /api/transfers", f.handleRegisterTransfer)
-	f.httpHandler.HandleFunc("POST /api/reimbursements/{transaction_id}", f.handleRegisterReimbursement)
-	f.httpHandler.HandleFunc("POST /api/expected-reimbursements", f.handleSetExpectedReimbursement)
+	f.httpHandler.HandleFunc("POST /api/{transaction_id}/reimbursement", f.handleRegisterReimbursement)
+	f.httpHandler.HandleFunc("POST /api/{transaction_id}/expected-reimbursements", f.handleSetExpectedReimbursement)
 }

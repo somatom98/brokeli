@@ -35,5 +35,5 @@ func New(
 func (f *Feature) Setup() {
 	f.httpHandler.HandleFunc("GET /api/accounts", f.handleGetAccounts)
 	f.httpHandler.HandleFunc("POST /api/accounts", f.handleCreateAccount)
-	f.httpHandler.HandleFunc("DELETE /api/accounts", f.handleCloseAccount)
+	f.httpHandler.HandleFunc("DELETE /api/accounts/{id}", f.handleCloseAccount)
 }

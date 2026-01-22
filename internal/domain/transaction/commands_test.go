@@ -25,7 +25,7 @@ func TestSetExpectedReimbursement(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.ExpectedReimbursementSet{
+		assert.Equal(t, &events.ExpectedReimbursementSet{
 			AccountID: accountID,
 			Currency:  values.Currency("USD"),
 			Amount:    amount,
@@ -42,7 +42,7 @@ func TestSetExpectedReimbursement(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.ExpectedReimbursementSet{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when amount is not positive", func(t *testing.T) {
@@ -54,7 +54,7 @@ func TestSetExpectedReimbursement(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.ExpectedReimbursementSet{}, evt)
+		assert.Nil(t, evt)
 	})
 }
 
@@ -70,7 +70,7 @@ func TestRegisterExpense(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneySpent{
+		assert.Equal(t, &events.MoneySpent{
 			AccountID:   accountID,
 			Currency:    values.Currency("EUR"),
 			Amount:      amount,
@@ -89,7 +89,7 @@ func TestRegisterExpense(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneySpent{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when amount is not positive", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestRegisterExpense(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.MoneySpent{}, evt)
+		assert.Nil(t, evt)
 	})
 }
 
@@ -117,7 +117,7 @@ func TestRegisterIncome(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyReceived{
+		assert.Equal(t, &events.MoneyReceived{
 			AccountID:   accountID,
 			Currency:    values.Currency("GBP"),
 			Amount:      amount,
@@ -136,7 +136,7 @@ func TestRegisterIncome(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyReceived{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when amount is not positive", func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestRegisterIncome(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.MoneyReceived{}, evt)
+		assert.Nil(t, evt)
 	})
 }
 
@@ -173,7 +173,7 @@ func TestRegisterTransfer(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyTransfered{
+		assert.Equal(t, &events.MoneyTransfered{
 			FromAccountID: fromAccountID,
 			FromCurrency:  values.Currency("USD"),
 			FromAmount:    decimal.NewFromInt(100),
@@ -204,7 +204,7 @@ func TestRegisterTransfer(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.MoneyTransfered{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when any amount is not positive", func(t *testing.T) {
@@ -225,7 +225,7 @@ func TestRegisterTransfer(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.MoneyTransfered{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when accounts are the same", func(t *testing.T) {
@@ -247,7 +247,7 @@ func TestRegisterTransfer(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrInvalidAccount)
-		assert.Equal(t, events.MoneyTransfered{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when currencies match but amounts differ", func(t *testing.T) {
@@ -268,7 +268,7 @@ func TestRegisterTransfer(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrInvalidAmountOrCurrency)
-		assert.Equal(t, events.MoneyTransfered{}, evt)
+		assert.Nil(t, evt)
 	})
 }
 
@@ -284,7 +284,7 @@ func TestRegisterReimbursement(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.ReimbursementReceived{
+		assert.Equal(t, &events.ReimbursementReceived{
 			AccountID: accountID,
 			From:      "company",
 			Currency:  values.Currency("USD"),
@@ -302,7 +302,7 @@ func TestRegisterReimbursement(t *testing.T) {
 
 		// assert
 		require.NoError(t, err)
-		assert.Equal(t, events.ReimbursementReceived{}, evt)
+		assert.Nil(t, evt)
 	})
 
 	t.Run("should return error when amount is not positive", func(t *testing.T) {
@@ -314,6 +314,6 @@ func TestRegisterReimbursement(t *testing.T) {
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
-		assert.Equal(t, events.ReimbursementReceived{}, evt)
+		assert.Nil(t, evt)
 	})
 }

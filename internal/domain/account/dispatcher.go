@@ -32,13 +32,15 @@ func (d *Dispatcher) CreateAccount(ctx context.Context, id uuid.UUID, createdAt 
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) DepositMoney(ctx context.Context, id uuid.UUID, user string, currency values.Currency, amount decimal.Decimal, time time.Time) error {
@@ -52,13 +54,15 @@ func (d *Dispatcher) DepositMoney(ctx context.Context, id uuid.UUID, user string
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) CloseAccount(ctx context.Context, id uuid.UUID, time time.Time) error {
@@ -72,11 +76,13 @@ func (d *Dispatcher) CloseAccount(ctx context.Context, id uuid.UUID, time time.T
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }

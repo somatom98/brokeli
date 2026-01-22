@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/domain/values"
@@ -38,15 +40,35 @@ func (t *Transaction) Hydrate(records []event_store.Record) error {
 	for _, record := range records {
 		switch record.Type() {
 		case events.Type_ExpectedReimbursementSet:
-			t.ApplyExpectedReimbursementSet(record.Content().(events.ExpectedReimbursementSet))
+			event, err := event_store.DecodeEvent[events.ExpectedReimbursementSet](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode ExpectedReimbursementSet event: %w", err)
+			}
+			t.ApplyExpectedReimbursementSet(event)
 		case events.Type_MoneySpent:
-			t.ApplyExpenseCreated(record.Content().(events.MoneySpent))
+			event, err := event_store.DecodeEvent[events.MoneySpent](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneySpent event: %w", err)
+			}
+			t.ApplyExpenseCreated(event)
 		case events.Type_MoneyReceived:
-			t.ApplyIncomeCreated(record.Content().(events.MoneyReceived))
+			event, err := event_store.DecodeEvent[events.MoneyReceived](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneyReceived event: %w", err)
+			}
+			t.ApplyIncomeCreated(event)
 		case events.Type_MoneyTransfered:
-			t.ApplyTransferCreated(record.Content().(events.MoneyTransfered))
+			event, err := event_store.DecodeEvent[events.MoneyTransfered](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneyTransfered event: %w", err)
+			}
+			t.ApplyTransferCreated(event)
 		case events.Type_ReimbursementReceived:
-			t.ApplyReimbursementReceived(record.Content().(events.ReimbursementReceived))
+			event, err := event_store.DecodeEvent[events.ReimbursementReceived](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode ReimbursementReceived event: %w", err)
+			}
+			t.ApplyReimbursementReceived(event)
 		}
 	}
 

@@ -44,20 +44,21 @@ func (f *Feature) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (f *Feature) handleCloseAccount(w http.ResponseWriter, r *http.Request) {
-	type CloseRequest struct {
-		AccountID uuid.UUID `json:"account_id"`
-	}
-
-	var req CloseRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+	transactionID := r.PathValue("id")
+	if transactionID == "" {
+		http.Error(w, "bad request: missing account id", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+
+	id, err := uuid.Parse(transactionID)
+	if err != nil {
+		http.Error(w, "bad request: invalid account id", http.StatusBadRequest)
+		return
+	}
 
 	if err := f.dispatcher.CloseAccount(
 		r.Context(),
-		req.AccountID,
+		id,
 		time.Now(),
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)

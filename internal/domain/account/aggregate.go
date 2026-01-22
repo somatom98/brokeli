@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,11 +40,23 @@ func (a *Account) Hydrate(records []event_store.Record) error {
 	for _, record := range records {
 		switch record.Type() {
 		case events.Type_Created:
-			a.ApplyCreated(record.Content().(events.Created))
+			event, err := event_store.DecodeEvent[events.Created](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode Created event: %w", err)
+			}
+			a.ApplyCreated(event)
 		case events.Type_MoneyDeposited:
-			a.ApplyMoneyDeposited(record.Content().(events.MoneyDeposited))
+			event, err := event_store.DecodeEvent[events.MoneyDeposited](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneyDeposited event: %w", err)
+			}
+			a.ApplyMoneyDeposited(event)
 		case events.Type_AccountClosed:
-			a.ApplyAccountClosed(record.Content().(events.AccountClosed))
+			event, err := event_store.DecodeEvent[events.AccountClosed](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode AccountClosed event: %w", err)
+			}
+			a.ApplyAccountClosed(event)
 		}
 	}
 

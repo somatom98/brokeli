@@ -47,13 +47,15 @@ func (d *Dispatcher) RegisterExpense(
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) RegisterIncome(
@@ -81,13 +83,15 @@ func (d *Dispatcher) RegisterIncome(
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) RegisterTransfer(
@@ -121,13 +125,15 @@ func (d *Dispatcher) RegisterTransfer(
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) SetExpectedReimbursement(
@@ -151,13 +157,15 @@ func (d *Dispatcher) SetExpectedReimbursement(
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }
 
 func (d *Dispatcher) RegisterReimbursement(
@@ -183,11 +191,13 @@ func (d *Dispatcher) RegisterReimbursement(
 		return err
 	}
 
-	d.es.Append(ctx, event_store.Record{
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
 		Version:     Version,
 		Event:       event,
 	})
-
-	return nil
 }

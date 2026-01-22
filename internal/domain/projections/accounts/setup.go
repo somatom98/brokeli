@@ -19,7 +19,6 @@ type Repository interface {
 	CreateAccount(ctx context.Context, id uuid.UUID, createdAt time.Time) error
 	CloseAccount(ctx context.Context, id uuid.UUID, closedAt time.Time) error
 	UpdateAccountBalance(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error
-	SetExpectedReimbursement(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error
 	GetAll(ctx context.Context) (map[uuid.UUID]Account, error)
 }
 
@@ -68,8 +67,6 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 					err = v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.MoneySpent))
 				case transaction_events.Type_MoneyReceived:
 					err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
-				case transaction_events.Type_ExpectedReimbursementSet:
-					err = v.ApplyExpectedReimbursementSet(ctx, record.Content().(transaction_events.ExpectedReimbursementSet))
 				case transaction_events.Type_ReimbursementReceived:
 					err = v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
 				case transaction_events.Type_MoneyTransfered:
@@ -94,8 +91,6 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 				switch record.Type() {
 				case account_events.Type_Created:
 					err = v.ApplyAccountCreated(ctx, record.AggregateID, record.Content().(account_events.Created))
-				case account_events.Type_MoneyDeposited:
-					err = v.ApplyAccountDeposited(ctx, record.AggregateID, record.Content().(account_events.MoneyDeposited))
 				case account_events.Type_AccountClosed:
 					err = v.ApplyAccountClosed(ctx, record.AggregateID, record.Content().(account_events.AccountClosed))
 				}
