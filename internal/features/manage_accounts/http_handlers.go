@@ -22,8 +22,8 @@ func (f *Feature) handleGetAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsonAccounts)
-	w.WriteHeader(http.StatusCreated)
 }
 
 func (f *Feature) handleCreateAccount(w http.ResponseWriter, r *http.Request) {

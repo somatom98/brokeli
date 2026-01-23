@@ -38,6 +38,8 @@ func NewKafkaStore[A event_store.Aggregate](
 	config.Producer.Return.Successes = true
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
+	config.Producer.Idempotent = true
+	config.Net.MaxOpenRequests = 5
 
 	client, err := sarama.NewClient(brokers, config)
 	if err != nil {

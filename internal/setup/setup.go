@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/somatom98/brokeli/internal/domain/account"
@@ -18,11 +17,11 @@ import (
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
 	"github.com/somatom98/brokeli/pkg/event_store"
-	"github.com/somatom98/brokeli/pkg/event_store/kafka"
+	"github.com/somatom98/brokeli/pkg/event_store/postgres"
 )
 
 type App struct {
-	httpHandler   *http.ServeMux
+	HttpHandler   *http.ServeMux
 	httpServer    *http.Server
 	accountES     event_store.Store[*account.Account]
 	transactionES event_store.Store[*transaction.Transaction]
@@ -48,20 +47,15 @@ func Setup(ctx context.Context) (*App, error) {
 	var accountES event_store.Store[*account.Account]
 	var transactionES event_store.Store[*transaction.Transaction]
 
-	brokers := []string{"localhost:29092"}
-	if b := os.Getenv("KAFKA_BROKERS"); b != "" {
-		brokers = strings.Split(b, ",")
-	}
-
 	accountEventsFactory := map[string]func() interface{}{
 		account_events.Type_Created:        func() interface{} { return &account_events.Created{} },
 		account_events.Type_MoneyDeposited: func() interface{} { return &account_events.MoneyDeposited{} },
 		account_events.Type_AccountClosed:  func() interface{} { return &account_events.AccountClosed{} },
 	}
 
-	accountES, err = kafka.NewKafkaStore(brokers, account.New, accountEventsFactory)
+	accountES, err = postgres.NewPostgresStore(db, account.New, accountEventsFactory)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup account kafka store: %w", err)
+		return nil, fmt.Errorf("failed to setup account postgres store: %w", err)
 	}
 
 	transactionEventsFactory := map[string]func() interface{}{
@@ -72,9 +66,9 @@ func Setup(ctx context.Context) (*App, error) {
 		transaction_events.Type_ExpectedReimbursementSet: func() interface{} { return &transaction_events.ExpectedReimbursementSet{} },
 	}
 
-	transactionES, err = kafka.NewKafkaStore(brokers, transaction.New, transactionEventsFactory)
+	transactionES, err = postgres.NewPostgresStore(db, transaction.New, transactionEventsFactory)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup transaction kafka store: %w", err)
+		return nil, fmt.Errorf("failed to setup transaction postgres store: %w", err)
 	}
 
 	accountDispatcher := AccountDispatcher(accountES)
@@ -91,7 +85,7 @@ func Setup(ctx context.Context) (*App, error) {
 		Setup()
 
 	return &App{
-		httpHandler:   httpHandler,
+		HttpHandler:   httpHandler,
 		accountES:     accountES,
 		transactionES: transactionES,
 		db:            db,
@@ -103,7 +97,7 @@ func (a *App) Start() <-chan error {
 
 	a.httpServer = &http.Server{
 		Addr:    ":" + port,
-		Handler: a.httpHandler,
+		Handler: a.HttpHandler,
 	}
 
 	errCh := make(chan error)
