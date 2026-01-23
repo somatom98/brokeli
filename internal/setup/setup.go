@@ -11,25 +11,25 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
-	event_store "github.com/somatom98/brokeli/pkg/event_store/sqlite"
+	"github.com/somatom98/brokeli/pkg/event_store/postgres"
 )
 
 type App struct {
 	httpHandler   *http.ServeMux
 	httpServer    *http.Server
-	accountES     *event_store.SQLiteStore[*account.Account]
-	transactionES *event_store.SQLiteStore[*transaction.Transaction]
+	accountES     *postgres.PostgresStore[*account.Account]
+	transactionES *postgres.PostgresStore[*transaction.Transaction]
 }
 
 func Setup(ctx context.Context) (*App, error) {
 	httpHandler := HttpHandler()
 
-	accountES, err := event_store.Setup(os.Getenv("DB_PATH"), account.New)
+	accountES, err := postgres.Setup(os.Getenv("DB_DSN"), account.New)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup account event store: %w", err)
 	}
 
-	transactionES, err := event_store.Setup(os.Getenv("DB_PATH"), transaction.New)
+	transactionES, err := postgres.Setup(os.Getenv("DB_DSN"), transaction.New)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup transaction event store: %w", err)
 	}

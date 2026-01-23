@@ -1,4 +1,4 @@
-package sqlite
+package postgres
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/somatom98/brokeli/pkg/event_store"
-	"github.com/somatom98/brokeli/pkg/event_store/sqlite/generated"
+	"github.com/somatom98/brokeli/pkg/event_store/postgres/generated"
 )
 
-type SQLiteStore[A event_store.Aggregate] struct {
+type PostgresStore[A event_store.Aggregate] struct {
 	db          *sql.DB
 	queries     *generated.Queries
 	new         func(uuid.UUID) A
@@ -25,10 +25,10 @@ type SQLiteStore[A event_store.Aggregate] struct {
 	stopped     bool
 }
 
-var _ event_store.Store[event_store.Aggregate] = &SQLiteStore[event_store.Aggregate]{}
+var _ event_store.Store[event_store.Aggregate] = &PostgresStore[event_store.Aggregate]{}
 
-func NewSQLiteStore[A event_store.Aggregate](db *sql.DB, new func(uuid.UUID) A) *SQLiteStore[A] {
-	return &SQLiteStore[A]{
+func NewPostgresStore[A event_store.Aggregate](db *sql.DB, new func(uuid.UUID) A) *PostgresStore[A] {
+	return &PostgresStore[A]{
 		db:          db,
 		queries:     generated.New(db),
 		new:         new,
@@ -37,7 +37,7 @@ func NewSQLiteStore[A event_store.Aggregate](db *sql.DB, new func(uuid.UUID) A) 
 	}
 }
 
-func (s *SQLiteStore[A]) Subscribe(ctx context.Context) <-chan event_store.Record {
+func (s *PostgresStore[A]) Subscribe(ctx context.Context) <-chan event_store.Record {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -52,7 +52,7 @@ func (s *SQLiteStore[A]) Subscribe(ctx context.Context) <-chan event_store.Recor
 	return ch
 }
 
-func (s *SQLiteStore[A]) Append(ctx context.Context, record event_store.Record) error {
+func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record) error {
 	aggregateType := s.getAggregateType()
 
 	eventData, err := json.Marshal(record.Event.Content())
@@ -80,7 +80,7 @@ func (s *SQLiteStore[A]) Append(ctx context.Context, record event_store.Record) 
 	return nil
 }
 
-func (s *SQLiteStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, error) {
+func (s *PostgresStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, error) {
 	var zero A
 	aggregateType := s.getAggregateType()
 
@@ -119,7 +119,7 @@ func (s *SQLiteStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, err
 	return aggregate, nil
 }
 
-func (s *SQLiteStore[A]) Close() error {
+func (s *PostgresStore[A]) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -138,7 +138,7 @@ func (s *SQLiteStore[A]) Close() error {
 	return s.db.Close()
 }
 
-func (s *SQLiteStore[A]) getAggregateType() string {
+func (s *PostgresStore[A]) getAggregateType() string {
 	aggregate := s.new(uuid.New())
 	aggregateType := reflect.TypeOf(aggregate)
 	if aggregateType.Kind() == reflect.Ptr {
@@ -149,7 +149,7 @@ func (s *SQLiteStore[A]) getAggregateType() string {
 	return parts[len(parts)-1]
 }
 
-func (s *SQLiteStore[A]) publishToSubscribers(record event_store.Record) {
+func (s *PostgresStore[A]) publishToSubscribers(record event_store.Record) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

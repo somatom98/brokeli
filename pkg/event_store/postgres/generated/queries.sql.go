@@ -50,7 +50,7 @@ func (q *Queries) GetAllEvents(ctx context.Context) ([]Event, error) {
 const getEventsByAggregateID = `-- name: GetEventsByAggregateID :many
 SELECT id, aggregate_type, aggregate_id, version, event_type, event_data, created_at
 FROM events 
-WHERE aggregate_type = ? AND aggregate_id = ? 
+WHERE aggregate_type = $1 AND aggregate_id = $2
 ORDER BY version ASC
 `
 
@@ -93,7 +93,7 @@ func (q *Queries) GetEventsByAggregateID(ctx context.Context, arg GetEventsByAgg
 const getLatestVersionForAggregate = `-- name: GetLatestVersionForAggregate :one
 SELECT COALESCE(MAX(version), 0) as latest_version
 FROM events 
-WHERE aggregate_type = ? AND aggregate_id = ?
+WHERE aggregate_type = $1 AND aggregate_id = $2
 `
 
 type GetLatestVersionForAggregateParams struct {
@@ -110,7 +110,7 @@ func (q *Queries) GetLatestVersionForAggregate(ctx context.Context, arg GetLates
 
 const insertEvent = `-- name: InsertEvent :execresult
 INSERT INTO events (id, aggregate_type, aggregate_id, version, event_type, event_data)
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertEventParams struct {
