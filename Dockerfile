@@ -14,8 +14,6 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/brokeli .
-# Copy migrations preserving the path structure expected by the app
-COPY --from=builder /app/pkg/event_store/postgres/migrations ./pkg/event_store/postgres/migrations
 
 EXPOSE 8080
 

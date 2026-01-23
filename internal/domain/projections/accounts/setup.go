@@ -31,9 +31,10 @@ type Projection struct {
 func New(
 	transactionES event_store.Store[*transaction.Transaction],
 	accountES event_store.Store[*account.Account],
+	repository Repository,
 ) *Projection {
 	return &Projection{
-		repository:     NewInMemoryRepository(),
+		repository:     repository,
 		transactionsCh: transactionES.Subscribe(context.Background()),
 		accountsCh:     accountES.Subscribe(context.Background()),
 	}

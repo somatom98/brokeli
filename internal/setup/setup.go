@@ -2,42 +2,85 @@ package setup
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
+	_ "github.com/lib/pq"
 	"github.com/somatom98/brokeli/internal/domain/account"
+	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
+	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
+	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
-	"github.com/somatom98/brokeli/pkg/event_store/postgres"
+	"github.com/somatom98/brokeli/pkg/event_store"
+	"github.com/somatom98/brokeli/pkg/event_store/kafka"
 )
 
 type App struct {
 	httpHandler   *http.ServeMux
 	httpServer    *http.Server
-	accountES     *postgres.PostgresStore[*account.Account]
-	transactionES *postgres.PostgresStore[*transaction.Transaction]
+	accountES     event_store.Store[*account.Account]
+	transactionES event_store.Store[*transaction.Transaction]
+	db            *sql.DB
 }
 
 func Setup(ctx context.Context) (*App, error) {
 	httpHandler := HttpHandler()
 
-	accountES, err := postgres.Setup(os.Getenv("DB_DSN"), account.New)
+	db, err := sql.Open("postgres", os.Getenv("DB_DSN"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup account event store: %w", err)
+		return nil, fmt.Errorf("failed to open db: %w", err)
+	}
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
-	transactionES, err := postgres.Setup(os.Getenv("DB_DSN"), transaction.New)
+	accountsRepository, err := accounts.NewPostgresRepository(db)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup transaction event store: %w", err)
+		return nil, fmt.Errorf("failed to create accounts repository: %w", err)
+	}
+
+	var accountES event_store.Store[*account.Account]
+	var transactionES event_store.Store[*transaction.Transaction]
+
+	brokers := []string{"localhost:29092"}
+	if b := os.Getenv("KAFKA_BROKERS"); b != "" {
+		brokers = strings.Split(b, ",")
+	}
+
+	accountEventsFactory := map[string]func() interface{}{
+		account_events.Type_Created:        func() interface{} { return &account_events.Created{} },
+		account_events.Type_MoneyDeposited: func() interface{} { return &account_events.MoneyDeposited{} },
+		account_events.Type_AccountClosed:  func() interface{} { return &account_events.AccountClosed{} },
+	}
+
+	accountES, err = kafka.NewKafkaStore(brokers, account.New, accountEventsFactory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup account kafka store: %w", err)
+	}
+
+	transactionEventsFactory := map[string]func() interface{}{
+		transaction_events.Type_MoneySpent:               func() interface{} { return &transaction_events.MoneySpent{} },
+		transaction_events.Type_MoneyReceived:            func() interface{} { return &transaction_events.MoneyReceived{} },
+		transaction_events.Type_MoneyTransfered:          func() interface{} { return &transaction_events.MoneyTransfered{} },
+		transaction_events.Type_ReimbursementReceived:    func() interface{} { return &transaction_events.ReimbursementReceived{} },
+		transaction_events.Type_ExpectedReimbursementSet: func() interface{} { return &transaction_events.ExpectedReimbursementSet{} },
+	}
+
+	transactionES, err = kafka.NewKafkaStore(brokers, transaction.New, transactionEventsFactory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup transaction kafka store: %w", err)
 	}
 
 	accountDispatcher := AccountDispatcher(accountES)
 	transactionDispatcher := TransactionDispatcher(transactionES)
 
-	accountsProjection := AccountsProjection(ctx, transactionES, accountES)
+	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
@@ -51,6 +94,7 @@ func Setup(ctx context.Context) (*App, error) {
 		httpHandler:   httpHandler,
 		accountES:     accountES,
 		transactionES: transactionES,
+		db:            db,
 	}, nil
 }
 
@@ -83,8 +127,16 @@ func (a *App) Stop(ctx context.Context) error {
 		return fmt.Errorf("failed to shutdown http server: %w", err)
 	}
 
-	a.accountES.Close()
-	a.transactionES.Close()
+	if a.db != nil {
+		a.db.Close()
+	}
+
+	if closer, ok := a.accountES.(interface{ Close() error }); ok {
+		closer.Close()
+	}
+	if closer, ok := a.transactionES.(interface{ Close() error }); ok {
+		closer.Close()
+	}
 
 	return nil
 }
