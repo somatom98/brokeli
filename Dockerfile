@@ -14,6 +14,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/brokeli .
+COPY internal/features/import_transactions/transactions.csv internal/features/import_transactions/transactions.csv
 
 EXPOSE 8080
 

@@ -14,6 +14,7 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
+	"github.com/somatom98/brokeli/internal/features/import_transactions"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
 	"github.com/somatom98/brokeli/pkg/event_store"
@@ -82,6 +83,10 @@ func Setup(ctx context.Context) (*App, error) {
 
 	manage_accounts.
 		New(httpHandler, accountsProjection, accountDispatcher).
+		Setup()
+
+	import_transactions.
+		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	return &App{
