@@ -19,6 +19,7 @@ type PostgresStore[A event_store.Aggregate] struct {
 	eventFactory map[string]func() interface{}
 	subscribers  []chan event_store.Record
 	mu           sync.RWMutex
+	aggregateType string
 }
 
 var _ event_store.Store[event_store.Aggregate] = &PostgresStore[event_store.Aggregate]{}
@@ -32,12 +33,14 @@ func NewPostgresStore[A event_store.Aggregate](
 		return nil, fmt.Errorf("failed to ensure schema: %w", err)
 	}
 
-	return &PostgresStore[A]{
+	store := &PostgresStore[A]{
 		db:           db,
 		new:          new,
 		eventFactory: eventFactory,
 		subscribers:  make([]chan event_store.Record, 0),
-	}, nil
+	}
+	store.aggregateType = store.getAggregateType()
+	return store, nil
 }
 
 func (s *PostgresStore[A]) Subscribe(ctx context.Context) <-chan event_store.Record {
@@ -50,7 +53,7 @@ func (s *PostgresStore[A]) Subscribe(ctx context.Context) <-chan event_store.Rec
 }
 
 func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record) error {
-	aggregateType := s.getAggregateType()
+	aggregateType := s.aggregateType
 
 	// 1. Serialize Event
 	eventData, err := json.Marshal(record.Event.Content())
@@ -110,7 +113,7 @@ func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record
 	
 	// Fetch current snapshot
 	var stateJSON []byte
-	err = tx.QueryRowContext(ctx, `SELECT state FROM snapshots WHERE aggregate_id = $1`, record.AggregateID).Scan(&stateJSON)
+	err = tx.QueryRowContext(ctx, `SELECT state FROM snapshots WHERE aggregate_id = $1 FOR UPDATE`, record.AggregateID).Scan(&stateJSON)
 	
 	aggregate := s.new(record.AggregateID)
 	if err == nil {

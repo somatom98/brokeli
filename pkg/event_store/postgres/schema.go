@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE INDEX IF NOT EXISTS idx_events_aggregate_id ON events (aggregate_id);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_aggregate_id_version ON events (aggregate_id, version);
+
 CREATE TABLE IF NOT EXISTS snapshots (
     aggregate_id UUID PRIMARY KEY,
     aggregate_type VARCHAR(255) NOT NULL,
