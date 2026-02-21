@@ -108,10 +108,11 @@ func TestImportTransactions(t *testing.T) {
 		feature := import_transactions.New(nil, dispatcher)
 
 		csvContent := `Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR
-6/26/2025 0:00:00,Lunar,,148.00,DKK,,,Groceries,Expense,A&M coffee+bread,,,
-6/3/2025 0:00:00,,Lunar,,,123.82,DKK,Investments,Income,Interests,,,
-5/29/2025 0:00:00,Intesa San Paolo,Directa,"1,350.00",EUR,1350,EUR,Investments,Transfer,,,,
-5/19/2025 0:00:00,,Lunar,,,80,DKK,Home,Expense,Reimbursement dirt,,,`
+6/26/2025 0:00:00,Account A,,148.00,DKK,,,Groceries,Expense,Coffee and bread,,,
+6/3/2025 0:00:00,,Account A,,,123.82,DKK,Investments,Income,Interests,,,
+5/29/2025 0:00:00,Bank B,Broker C,"1,350.00",EUR,1350,EUR,Investments,Transfer,,,,
+5/19/2025 0:00:00,,Account A,,,80,DKK,Home,Expense,Refund for repairs,,,
+5/21/2025 0:00:00,,Account A,,,150,DKK,Bills,,Implicit Income bonus,,,`
 
 		tmpFile, err := os.CreateTemp("", "transactions*.csv")
 		require.NoError(t, err)
@@ -121,9 +122,9 @@ func TestImportTransactions(t *testing.T) {
 		require.NoError(t, err)
 		tmpFile.Close()
 
-		lunarID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Lunar"))
-		intesaID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Intesa San Paolo"))
-		directaID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Directa"))
+		accountAID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Account A"))
+		bankBID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Bank B"))
+		brokerCID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Broker C"))
 
 		// act
 		err = feature.ImportTransactions(context.Background(), tmpFile.Name())
@@ -134,26 +135,35 @@ func TestImportTransactions(t *testing.T) {
 		t.Run("expense correctly registered", func(t *testing.T) {
 			require.Len(t, dispatcher.Expenses, 1)
 			expense := dispatcher.Expenses[0]
-			assert.Equal(t, lunarID, expense.AccountID)
+			assert.Equal(t, accountAID, expense.AccountID)
 			assert.Equal(t, values.Currency("DKK"), expense.Currency)
 			assert.True(t, decimal.NewFromInt(148).Equal(expense.Amount))
 			assert.Equal(t, "Groceries", expense.Category)
 		})
 
 		t.Run("income correctly registered", func(t *testing.T) {
-			require.Len(t, dispatcher.Incomes, 1)
-			income := dispatcher.Incomes[0]
-			assert.Equal(t, lunarID, income.AccountID)
-			assert.Equal(t, values.Currency("DKK"), income.Currency)
-			assert.True(t, decimal.NewFromFloat(123.82).Equal(income.Amount))
-			assert.Equal(t, "Investments", income.Category)
+			require.Len(t, dispatcher.Incomes, 2)
+
+			// 6/3/2025 0:00:00,,Account A,,,123.82,DKK,Investments,Income,Interests,,,
+			income1 := dispatcher.Incomes[0]
+			assert.Equal(t, accountAID, income1.AccountID)
+			assert.Equal(t, values.Currency("DKK"), income1.Currency)
+			assert.True(t, decimal.NewFromFloat(123.82).Equal(income1.Amount))
+			assert.Equal(t, "Investments", income1.Category)
+
+			// 5/21/2025 0:00:00,,Account A,,,150,DKK,Bills,,Implicit Income bonus,,,
+			income2 := dispatcher.Incomes[1]
+			assert.Equal(t, accountAID, income2.AccountID)
+			assert.Equal(t, values.Currency("DKK"), income2.Currency)
+			assert.True(t, decimal.NewFromInt(150).Equal(income2.Amount))
+			assert.Equal(t, "Bills", income2.Category)
 		})
 
 		t.Run("transfer correctly registered", func(t *testing.T) {
 			require.Len(t, dispatcher.Transfers, 1)
 			transfer := dispatcher.Transfers[0]
-			assert.Equal(t, intesaID, transfer.FromAccountID)
-			assert.Equal(t, directaID, transfer.ToAccountID)
+			assert.Equal(t, bankBID, transfer.FromAccountID)
+			assert.Equal(t, brokerCID, transfer.ToAccountID)
 			assert.Equal(t, values.Currency("EUR"), transfer.FromCurrency)
 			assert.Equal(t, values.Currency("EUR"), transfer.ToCurrency)
 			assert.True(t, decimal.NewFromInt(1350).Equal(transfer.FromAmount))
@@ -163,8 +173,8 @@ func TestImportTransactions(t *testing.T) {
 		t.Run("reimbursement correctly registered", func(t *testing.T) {
 			require.Len(t, dispatcher.Reimbursements, 1)
 			reimbursement := dispatcher.Reimbursements[0]
-			assert.Equal(t, lunarID, reimbursement.AccountID)
-			assert.Equal(t, "Reimbursement dirt", reimbursement.From)
+			assert.Equal(t, accountAID, reimbursement.AccountID)
+			assert.Equal(t, "Refund for repairs", reimbursement.From)
 			assert.Equal(t, values.Currency("DKK"), reimbursement.Currency)
 			assert.True(t, decimal.NewFromInt(80).Equal(reimbursement.Amount))
 		})
@@ -177,7 +187,7 @@ func TestImportTransactions(t *testing.T) {
 
 		csvContent := `Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR
 6/26/2025 0:00:00,,,,,,,,,,,,
-6/26/2025 0:00:00,Lunar,,0,DKK,,,Groceries,Expense,Zero amount,,,`
+6/26/2025 0:00:00,Account A,,0,DKK,,,Groceries,Expense,Zero amount,,,`
 
 		tmpFile, err := os.CreateTemp("", "invalid_transactions*.csv")
 		require.NoError(t, err)
@@ -196,6 +206,52 @@ func TestImportTransactions(t *testing.T) {
 		assert.Empty(t, dispatcher.Incomes)
 		assert.Empty(t, dispatcher.Transfers)
 		assert.Empty(t, dispatcher.Reimbursements)
+	})
+
+	t.Run("fails on unexpected scenarios", func(t *testing.T) {
+		tests := []struct {
+			name    string
+			content string
+		}{
+			{
+				name:    "empty amount",
+				content: "Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR\n6/26/2025 0:00:00,,,,,,,,,,,,",
+			},
+			{
+				name:    "zero amount",
+				content: "Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR\n6/26/2025 0:00:00,Account A,,0,DKK,,,Groceries,Expense,Zero amount,,,",
+			},
+			{
+				name:    "transfer with same account and currency",
+				content: "Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR\n6/26/2025 0:00:00,Account A,Account A,100,EUR,100,EUR,,Transfer,Same account,,,",
+			},
+			{
+				name:    "negative debit amount",
+				content: "Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR\n6/26/2025 0:00:00,Account A,,-100,EUR,,,Misc,Expense,Negative,,,",
+			},
+			{
+				name:    "unexpected scenario (empty trxType with debit)",
+				content: "Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR\n6/26/2025 0:00:00,Account A,,100,EUR,,,,Unexpected,,,",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				dispatcher := &DispatcherMock{}
+				feature := import_transactions.New(nil, dispatcher)
+
+				tmpFile, err := os.CreateTemp("", "invalid_*.csv")
+				require.NoError(t, err)
+				defer os.Remove(tmpFile.Name())
+
+				_, err = tmpFile.WriteString(tt.content)
+				require.NoError(t, err)
+				tmpFile.Close()
+
+				err = feature.ImportTransactions(context.Background(), tmpFile.Name())
+				assert.Error(t, err)
+			})
+		}
 	})
 }
 

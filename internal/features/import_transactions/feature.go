@@ -65,9 +65,6 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 
 		t, err := newFromRecord(record)
 		if err != nil {
-			if errors.Is(err, errEmptyAmount) {
-				continue
-			}
 			return fmt.Errorf("failed to parse record %v: %w", record, err)
 		}
 
