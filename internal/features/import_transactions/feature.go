@@ -203,12 +203,14 @@ func newFromRecord(record []string) (transaction, error) {
 
 func (t transaction) Type() (values.TransactionType, error) {
 	switch {
-	case t.trxType == "Transfer" ||
-		(!t.debit.Amount.IsZero() && !t.credit.Amount.IsZero()):
-		if !t.debit.Amount.IsPositive() {
+	case t.trxType == "Transfer":
+		if t.debit.Amount.IsZero() && t.credit.Amount.IsZero() {
+			return values.TransactionType_Expense, fmt.Errorf("null amount")
+		}
+		if t.debit.Amount.IsNegative() {
 			return values.TransactionType_Expense, fmt.Errorf("negative debit: %v", t.debit.Amount)
 		}
-		if !t.credit.Amount.IsPositive() {
+		if t.credit.Amount.IsNegative() {
 			return values.TransactionType_Expense, fmt.Errorf("negative credit: %v", t.debit.Amount)
 		}
 		if t.debit.AccountID == t.credit.AccountID {
