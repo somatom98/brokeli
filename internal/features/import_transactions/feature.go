@@ -3,6 +3,7 @@ package import_transactions
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
+
+var errEmptyAmount = errors.New("empty amounts")
 
 type TransactionDispatcher interface {
 	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
@@ -60,138 +63,172 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 			return fmt.Errorf("failed to read record: %w", err)
 		}
 
-		if len(record) < 10 {
-			continue
-		}
-
-		from := record[1]
-		to := record[2]
-		debitStr := strings.ReplaceAll(record[3], ",", "")
-		curD := values.Currency(record[4])
-		creditStr := strings.ReplaceAll(record[5], ",", "")
-		curC := values.Currency(record[6])
-		category := record[7]
-		inOut := record[8]
-		description := record[9]
-
-		// Skip empty transactions
-		if debitStr == "" && creditStr == "" {
-			continue
-		}
-
-		if inOut == "Transfer" || (debitStr != "" && creditStr != "" && from != "" && to != "") {
-			fromAccountID := uuid.NewMD5(uuid.NameSpaceOID, []byte(from))
-			toAccountID := uuid.NewMD5(uuid.NameSpaceOID, []byte(to))
-
-			fromAmount, _ := decimal.NewFromString(debitStr)
-			toAmount, err := decimal.NewFromString(creditStr)
-			if err != nil {
-				toAmount = fromAmount
-			}
-
-			if toAmount.IsZero() {
-				toAmount = fromAmount
-			}
-			if curC == "" {
-				curC = curD
-			}
-			if curD == "" {
-				curD = curC
-			}
-
-			if !fromAmount.IsPositive() || !toAmount.IsPositive() {
+		t, err := newFromRecord(record)
+		if err != nil {
+			if errors.Is(err, errEmptyAmount) {
 				continue
 			}
+			return fmt.Errorf("failed to parse record %v: %w", record, err)
+		}
 
-			if fromAccountID == toAccountID {
-				continue
-			}
+		trxType, err := t.Type()
+		if err != nil {
+			return fmt.Errorf("failed to get transaction type for record %v: %w", record, err)
+		}
 
+		switch trxType {
+		case values.TransactionType_Transfer:
 			err = f.dispatcher.RegisterTransfer(
 				ctx,
 				uuid.Must(uuid.NewV7()),
-				fromAccountID,
-				curD,
-				fromAmount,
-				toAccountID,
-				curC,
-				toAmount,
-				category,
-				description,
+				t.debit.AccountID,
+				t.debit.Currency,
+				t.debit.Amount,
+				t.credit.AccountID,
+				t.credit.Currency,
+				t.credit.Amount,
+				t.category,
+				t.description,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register transfer: %w", err)
 			}
-		} else if inOut == "Income" || (inOut == "" && creditStr != "" && debitStr == "") {
-			toAccountID := uuid.NewMD5(uuid.NameSpaceOID, []byte(to))
-			amount, _ := decimal.NewFromString(creditStr)
-
-			if !amount.IsPositive() {
-				continue
-			}
-
+		case values.TransactionType_Income:
 			err = f.dispatcher.RegisterIncome(
 				ctx,
 				uuid.Must(uuid.NewV7()),
-				toAccountID,
-				curC,
-				amount,
-				category,
-				description,
+				t.credit.AccountID,
+				t.credit.Currency,
+				t.credit.Amount,
+				t.category,
+				t.description,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register income: %w", err)
 			}
-		} else if inOut == "Expense" || (inOut == "" && debitStr != "" && creditStr == "") || inOut == "" {
-			if creditStr != "" && debitStr == "" {
-				// This is a Reimbursement
-				toAccountID := uuid.NewMD5(uuid.NameSpaceOID, []byte(to))
-				amount, _ := decimal.NewFromString(creditStr)
+		case values.TransactionType_Reimbursement:
+			fromStr := "unknown"
+			if t.description != "" {
+				fromStr = t.description
+			}
 
-				if !amount.IsPositive() {
-					continue
-				}
-
-				fromStr := "unknown"
-				if description != "" {
-					fromStr = description
-				}
-
-				err = f.dispatcher.RegisterReimbursement(
-					ctx,
-					uuid.Must(uuid.NewV7()),
-					toAccountID,
-					fromStr,
-					curC,
-					amount,
-				)
-				if err != nil {
-					return fmt.Errorf("failed to register reimbursement: %w", err)
-				}
-			} else if debitStr != "" {
-				// Normal expense
-				fromAccountID := uuid.NewMD5(uuid.NameSpaceOID, []byte(from))
-				amount, _ := decimal.NewFromString(debitStr)
-
-				if !amount.IsPositive() {
-					continue
-				}
-
-				err = f.dispatcher.RegisterExpense(
-					ctx,
-					uuid.Must(uuid.NewV7()),
-					fromAccountID,
-					curD,
-					amount,
-					category,
-					description,
-				)
-				if err != nil {
-					return fmt.Errorf("failed to register expense: %w", err)
-				}
+			err = f.dispatcher.RegisterReimbursement(
+				ctx,
+				uuid.Must(uuid.NewV7()),
+				t.credit.AccountID,
+				fromStr,
+				t.credit.Currency,
+				t.credit.Amount,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to register reimbursement: %w", err)
+			}
+		case values.TransactionType_Expense:
+			err = f.dispatcher.RegisterExpense(
+				ctx,
+				uuid.Must(uuid.NewV7()),
+				t.debit.AccountID,
+				t.debit.Currency,
+				t.debit.Amount,
+				t.category,
+				t.description,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to register expense: %w", err)
 			}
 		}
 	}
 
 	return nil
+}
+
+type transaction struct {
+	debit       values.Entry
+	credit      values.Entry
+	category    string
+	trxType     string
+	description string
+}
+
+func (t transaction) String() string {
+	return fmt.Sprintf("debit: %s, credit: %s, type: %s", t.debit, t.credit, t.trxType)
+}
+
+func newFromRecord(record []string) (transaction, error) {
+	if len(record) < 10 {
+		return transaction{}, fmt.Errorf("invalid record length: %v", len(record))
+	}
+
+	debitRaw := strings.ReplaceAll(record[3], ",", "")
+	if debitRaw == "" {
+		debitRaw = "0"
+	}
+	debitAmount, err := decimal.NewFromString(debitRaw)
+	if err != nil {
+		return transaction{}, fmt.Errorf("invalid debit: %s, err: %w", record[3], err)
+	}
+
+	creditRaw := strings.ReplaceAll(record[5], ",", "")
+	if creditRaw == "" {
+		creditRaw = "0"
+	}
+	creditAmount, err := decimal.NewFromString(creditRaw)
+	if err != nil {
+		return transaction{}, fmt.Errorf("invalid credit: %s, err: %w", record[5], err)
+	}
+
+	// Skip empty transactions
+	if debitAmount.IsZero() && creditAmount.IsZero() {
+		return transaction{}, errEmptyAmount
+	}
+
+	return transaction{
+		debit: values.Entry{
+			AccountID: uuid.NewMD5(uuid.NameSpaceOID, []byte(record[1])),
+			Currency:  values.Currency(record[4]),
+			Amount:    debitAmount,
+			Side:      values.Side_Debit,
+		},
+		credit: values.Entry{
+			AccountID: uuid.NewMD5(uuid.NameSpaceOID, []byte(record[2])),
+			Currency:  values.Currency(record[6]),
+			Amount:    creditAmount,
+			Side:      values.Side_Credit,
+		},
+		category:    record[7],
+		trxType:     record[8],
+		description: record[9],
+	}, nil
+}
+
+func (t transaction) Type() (values.TransactionType, error) {
+	switch {
+	case t.trxType == "Transfer" ||
+		(!t.debit.Amount.IsZero() && !t.credit.Amount.IsZero()):
+		if !t.debit.Amount.IsPositive() {
+			return values.TransactionType_Expense, fmt.Errorf("negative debit: %v", t.debit.Amount)
+		}
+		if !t.credit.Amount.IsPositive() {
+			return values.TransactionType_Expense, fmt.Errorf("negative credit: %v", t.debit.Amount)
+		}
+		if t.debit.AccountID == t.credit.AccountID {
+			return values.TransactionType_Expense, fmt.Errorf("debit and credit account are the same: %v", t.debit.AccountID)
+		}
+		return values.TransactionType_Transfer, nil
+	case t.trxType == "Income" ||
+		(t.trxType == "" && !t.credit.Amount.IsZero() && t.debit.Amount.IsZero()):
+		if !t.credit.Amount.IsPositive() {
+			return values.TransactionType_Expense, fmt.Errorf("negative credit: %v", t.debit.Amount)
+		}
+		return values.TransactionType_Income, nil
+	case t.trxType == "Expense" && !t.credit.Amount.IsZero() && t.debit.Amount.IsZero():
+		return values.TransactionType_Reimbursement, nil
+	case t.trxType == "Expense":
+		if !t.debit.Amount.IsPositive() {
+			return values.TransactionType_Expense, fmt.Errorf("negative debit: %v", t.debit.Amount)
+		}
+		return values.TransactionType_Expense, nil
+	default:
+		return values.TransactionType_Expense, fmt.Errorf("unexpected transaction scenario: %s", t)
+	}
 }
