@@ -213,7 +213,8 @@ func (t transaction) Type() (values.TransactionType, error) {
 		if t.credit.Amount.IsNegative() {
 			return values.TransactionType_Expense, fmt.Errorf("negative credit: %v", t.debit.Amount)
 		}
-		if t.debit.AccountID == t.credit.AccountID {
+		if t.debit.AccountID == t.credit.AccountID &&
+			t.debit.Currency == t.credit.Currency {
 			return values.TransactionType_Expense, fmt.Errorf("debit and credit account are the same: %v", t.debit.AccountID)
 		}
 		return values.TransactionType_Transfer, nil

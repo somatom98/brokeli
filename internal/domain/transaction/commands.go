@@ -102,7 +102,8 @@ func (a *Transaction) RegisterTransfer(
 		return nil, ErrNegativeOrNullAmount
 	}
 
-	if fromAccountID == toAccountID {
+	if fromAccountID == toAccountID &&
+		fromCurrency == toCurrency {
 		return nil, ErrInvalidAccount
 	}
 

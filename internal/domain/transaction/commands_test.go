@@ -228,7 +228,28 @@ func TestRegisterTransfer(t *testing.T) {
 		assert.Nil(t, evt)
 	})
 
-	t.Run("should return error when accounts are the same", func(t *testing.T) {
+	t.Run("should not return error when accounts are the same but currency is different", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+		accountID := uuid.New()
+
+		// act
+		_, err := tx.RegisterTransfer(
+			accountID,
+			values.Currency("USD"),
+			decimal.NewFromInt(100),
+			accountID,
+			values.Currency("EUR"),
+			decimal.NewFromInt(90),
+			"transfer",
+			"currency exchange",
+		)
+
+		// assert
+		require.NoError(t, err)
+	})
+
+	t.Run("should return error when accounts and currencies are the same", func(t *testing.T) {
 		// arrange
 		tx := transaction.New(uuid.New())
 		accountID := uuid.New()
@@ -239,10 +260,10 @@ func TestRegisterTransfer(t *testing.T) {
 			values.Currency("USD"),
 			decimal.NewFromInt(100),
 			accountID,
-			values.Currency("EUR"),
+			values.Currency("USD"),
 			decimal.NewFromInt(90),
 			"transfer",
-			"currency exchange",
+			"",
 		)
 
 		// assert
