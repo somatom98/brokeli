@@ -3,18 +3,8 @@ package accounts
 import (
 	"context"
 
-	"github.com/google/uuid"
-	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 )
-
-func (v *Projection) ApplyAccountCreated(ctx context.Context, id uuid.UUID, e account_events.Created) error {
-	return v.repository.CreateAccount(ctx, id, e.Time)
-}
-
-func (v *Projection) ApplyAccountClosed(ctx context.Context, id uuid.UUID, e account_events.AccountClosed) error {
-	return v.repository.CloseAccount(ctx, id, e.Time)
-}
 
 func (v *Projection) ApplyExpenseCreated(ctx context.Context, e transaction_events.MoneySpent) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount.Neg(), e.Currency)
@@ -26,6 +16,14 @@ func (v *Projection) ApplyIncomeCreated(ctx context.Context, e transaction_event
 
 func (v *Projection) ApplyReimbursementReceived(ctx context.Context, e transaction_events.ReimbursementReceived) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount, e.Currency)
+}
+
+func (v *Projection) ApplyMoneyDeposited(ctx context.Context, e transaction_events.MoneyDeposited) error {
+	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount, e.Currency)
+}
+
+func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, e transaction_events.MoneyWithdrawn) error {
+	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount.Neg(), e.Currency)
 }
 
 func (v *Projection) ApplyTransferCreated(ctx context.Context, e transaction_events.MoneyTransfered) error {

@@ -146,3 +146,51 @@ func (a *Transaction) RegisterReimbursement(
 		Amount:    amount,
 	}, nil
 }
+
+func (a *Transaction) RegisterDeposit(
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) (evt *events.MoneyDeposited, err error) {
+	if a.State > State_Created {
+		return nil, nil
+	}
+
+	if !amount.IsPositive() {
+		return nil, ErrNegativeOrNullAmount
+	}
+
+	return &events.MoneyDeposited{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+	}, nil
+}
+
+func (a *Transaction) RegisterWithdrawal(
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) (evt *events.MoneyWithdrawn, err error) {
+	if a.State > State_Created {
+		return nil, nil
+	}
+
+	if !amount.IsPositive() {
+		return nil, ErrNegativeOrNullAmount
+	}
+
+	return &events.MoneyWithdrawn{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+	}, nil
+}

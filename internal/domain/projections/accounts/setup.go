@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"github.com/somatom98/brokeli/internal/domain/account"
-	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/domain/values"
@@ -25,18 +23,15 @@ type Repository interface {
 type Projection struct {
 	repository     Repository
 	transactionsCh <-chan event_store.Record
-	accountsCh     <-chan event_store.Record
 }
 
 func New(
 	transactionES event_store.Store[*transaction.Transaction],
-	accountES event_store.Store[*account.Account],
 	repository Repository,
 ) *Projection {
 	return &Projection{
 		repository:     repository,
 		transactionsCh: transactionES.Subscribe(context.Background()),
-		accountsCh:     accountES.Subscribe(context.Background()),
 	}
 }
 
@@ -44,9 +39,6 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 	errCh := make(chan error, 1)
 
 	go func() {
-		transactionsClosed := false
-		accountsClosed := false
-
 		for {
 			select {
 			case <-ctx.Done():
@@ -54,12 +46,8 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 				return
 			case record, ok := <-v.transactionsCh:
 				if !ok {
-					transactionsClosed = true
-					if accountsClosed {
-						errCh <- nil
-						return
-					}
-					continue
+					errCh <- nil
+					return
 				}
 
 				var err error
@@ -72,28 +60,10 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 					err = v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
 				case transaction_events.Type_MoneyTransfered:
 					err = v.ApplyTransferCreated(ctx, record.Content().(transaction_events.MoneyTransfered))
-				}
-
-				if err != nil {
-					errCh <- fmt.Errorf("apply failed: %w", err)
-					return
-				}
-			case record, ok := <-v.accountsCh:
-				if !ok {
-					accountsClosed = true
-					if transactionsClosed {
-						errCh <- nil
-						return
-					}
-					continue
-				}
-
-				var err error
-				switch record.Type() {
-				case account_events.Type_Created:
-					err = v.ApplyAccountCreated(ctx, record.AggregateID, record.Content().(account_events.Created))
-				case account_events.Type_AccountClosed:
-					err = v.ApplyAccountClosed(ctx, record.AggregateID, record.Content().(account_events.AccountClosed))
+				case transaction_events.Type_MoneyDeposited:
+					err = v.ApplyMoneyDeposited(ctx, record.Content().(transaction_events.MoneyDeposited))
+				case transaction_events.Type_MoneyWithdrawn:
+					err = v.ApplyMoneyWithdrawn(ctx, record.Content().(transaction_events.MoneyWithdrawn))
 				}
 
 				if err != nil {

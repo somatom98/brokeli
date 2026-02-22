@@ -9,8 +9,6 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	"github.com/somatom98/brokeli/internal/domain/account"
-	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
@@ -24,7 +22,6 @@ import (
 type App struct {
 	HttpHandler   *http.ServeMux
 	httpServer    *http.Server
-	accountES     event_store.Store[*account.Account]
 	transactionES event_store.Store[*transaction.Transaction]
 	db            *sql.DB
 }
@@ -45,19 +42,7 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to create accounts repository: %w", err)
 	}
 
-	var accountES event_store.Store[*account.Account]
 	var transactionES event_store.Store[*transaction.Transaction]
-
-	accountEventsFactory := map[string]func() interface{}{
-		account_events.Type_Created:        func() interface{} { return &account_events.Created{} },
-		account_events.Type_MoneyDeposited: func() interface{} { return &account_events.MoneyDeposited{} },
-		account_events.Type_AccountClosed:  func() interface{} { return &account_events.AccountClosed{} },
-	}
-
-	accountES, err = postgres.NewPostgresStore(db, account.New, accountEventsFactory)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup account postgres store: %w", err)
-	}
 
 	transactionEventsFactory := map[string]func() interface{}{
 		transaction_events.Type_MoneySpent:               func() interface{} { return &transaction_events.MoneySpent{} },
@@ -65,6 +50,8 @@ func Setup(ctx context.Context) (*App, error) {
 		transaction_events.Type_MoneyTransfered:          func() interface{} { return &transaction_events.MoneyTransfered{} },
 		transaction_events.Type_ReimbursementReceived:    func() interface{} { return &transaction_events.ReimbursementReceived{} },
 		transaction_events.Type_ExpectedReimbursementSet: func() interface{} { return &transaction_events.ExpectedReimbursementSet{} },
+		transaction_events.Type_MoneyDeposited:           func() interface{} { return &transaction_events.MoneyDeposited{} },
+		transaction_events.Type_MoneyWithdrawn:           func() interface{} { return &transaction_events.MoneyWithdrawn{} },
 	}
 
 	transactionES, err = postgres.NewPostgresStore(db, transaction.New, transactionEventsFactory)
@@ -72,17 +59,16 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to setup transaction postgres store: %w", err)
 	}
 
-	accountDispatcher := AccountDispatcher(accountES)
 	transactionDispatcher := TransactionDispatcher(transactionES)
 
-	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
+	accountsProjection := AccountsProjection(ctx, transactionES, accountsRepository)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection, accountDispatcher).
+		New(httpHandler, accountsProjection).
 		Setup()
 
 	import_transactions.
@@ -91,7 +77,6 @@ func Setup(ctx context.Context) (*App, error) {
 
 	return &App{
 		HttpHandler:   httpHandler,
-		accountES:     accountES,
 		transactionES: transactionES,
 		db:            db,
 	}, nil
@@ -130,9 +115,6 @@ func (a *App) Stop(ctx context.Context) error {
 		a.db.Close()
 	}
 
-	if closer, ok := a.accountES.(interface{ Close() error }); ok {
-		closer.Close()
-	}
 	if closer, ok := a.transactionES.(interface{ Close() error }); ok {
 		closer.Close()
 	}

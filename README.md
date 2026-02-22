@@ -35,22 +35,15 @@ The data flow is generally as follows:
 
 The system is divided into bounded contexts (Domains), each with its own Aggregate and set of Events.
 
-#### 1. Account Domain
-
-Manages the lifecycle of financial accounts.
-
-* **Events**:
-  * `Created`: An account was created.
-  * `MoneyDeposited`: Initial balance or direct deposit.
-  * `AccountClosed`: The account has been archived/closed.
-
-#### 2. Transaction Domain
+#### 1. Transaction Domain
 
 Manages the movement of money between accounts or external entities.
 
 * **Events**:
   * `MoneySpent`: An expense was recorded.
   * `MoneyReceived`: Income was recorded.
+  * `MoneyDeposited`: Money was deposited into an account.
+  * `MoneyWithdrawn`: Money was withdrawn from an account.
   * `MoneyTransfered`: Money was moved between two internal accounts.
   * `ReimbursementReceived`: A reimbursement was received for a specific transaction.
   * `ExpectedReimbursementSet`: Marked a transaction as expecting a reimbursement.
@@ -59,7 +52,7 @@ Manages the movement of money between accounts or external entities.
 
 #### Accounts Projection
 
-Maintains the current state of all accounts, calculating balances by aggregating relevant events from both the **Account** and **Transaction** domains.
+Maintains the current state of all accounts, calculating balances by aggregating relevant events from the **Transaction** domain.
 
 ### API Endpoints
 
@@ -70,8 +63,6 @@ Operations related to account management.
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/accounts` | List all accounts with current balances. |
-| `POST` | `/api/accounts` | Create a new account. |
-| `DELETE` | `/api/accounts/{id}` | Close an account. |
 
 #### Manage Transactions
 

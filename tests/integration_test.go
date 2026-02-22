@@ -29,31 +29,7 @@ func TestIntegration_ManageAccounts(t *testing.T) {
 
 	client := server.Client()
 
-	t.Run("Create Account", func(t *testing.T) {
-		// Arrange
-		req, err := http.NewRequest(http.MethodPost, server.URL+"/api/accounts", nil)
-		require.NoError(t, err)
-
-		// Act
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Assert
-		assert.Equal(t, http.StatusCreated, resp.StatusCode)
-
-		var result struct {
-			ID uuid.UUID `json:"id"`
-		}
-		err = json.NewDecoder(resp.Body).Decode(&result)
-		require.NoError(t, err)
-		assert.NotEmpty(t, result.ID)
-	})
-
 	t.Run("Get Accounts", func(t *testing.T) {
-		// Arrange ---
-		_, _ = client.Post(server.URL+"/api/accounts", "application/json", nil)
-
 		time.Sleep(100 * time.Millisecond)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL+"/api/accounts", nil)
@@ -70,7 +46,5 @@ func TestIntegration_ManageAccounts(t *testing.T) {
 		var accounts map[uuid.UUID]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&accounts)
 		require.NoError(t, err)
-		assert.NotEmpty(t, accounts)
 	})
 }
-

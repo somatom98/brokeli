@@ -338,3 +338,71 @@ func TestRegisterReimbursement(t *testing.T) {
 		assert.Nil(t, evt)
 	})
 }
+
+func TestRegisterDeposit(t *testing.T) {
+	t.Run("should emit money deposited event when amount is positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+		accountID := uuid.New()
+		amount := decimal.NewFromInt(100)
+
+		// act
+		evt, err := tx.RegisterDeposit(accountID, values.Currency("USD"), amount, "gift", "birthday gift")
+
+		// assert
+		require.NoError(t, err)
+		assert.Equal(t, &events.MoneyDeposited{
+			AccountID:   accountID,
+			Currency:    values.Currency("USD"),
+			Amount:      amount,
+			Category:    "gift",
+			Description: "birthday gift",
+		}, evt)
+	})
+
+	t.Run("should return error when amount is not positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+
+		// act
+		evt, err := tx.RegisterDeposit(uuid.New(), values.Currency("USD"), decimal.NewFromInt(0), "gift", "")
+
+		// assert
+		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
+		assert.Nil(t, evt)
+	})
+}
+
+func TestRegisterWithdrawal(t *testing.T) {
+	t.Run("should emit money withdrawn event when amount is positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+		accountID := uuid.New()
+		amount := decimal.NewFromInt(50)
+
+		// act
+		evt, err := tx.RegisterWithdrawal(accountID, values.Currency("EUR"), amount, "cash", "atm")
+
+		// assert
+		require.NoError(t, err)
+		assert.Equal(t, &events.MoneyWithdrawn{
+			AccountID:   accountID,
+			Currency:    values.Currency("EUR"),
+			Amount:      amount,
+			Category:    "cash",
+			Description: "atm",
+		}, evt)
+	})
+
+	t.Run("should return error when amount is not positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+
+		// act
+		evt, err := tx.RegisterWithdrawal(uuid.New(), values.Currency("EUR"), decimal.NewFromInt(-10), "cash", "")
+
+		// assert
+		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
+		assert.Nil(t, evt)
+	})
+}

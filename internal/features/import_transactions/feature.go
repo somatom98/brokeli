@@ -15,11 +15,11 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
-var errEmptyAmount = errors.New("empty amounts")
+var ErrEmptyAmount = errors.New("empty amounts")
 
 type TransactionDispatcher interface {
-	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
+	RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
+	RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
 	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string) error
 	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
 }
@@ -64,6 +64,9 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 		}
 
 		t, err := newFromRecord(record)
+		if errors.Is(err, ErrEmptyAmount) {
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("failed to parse record %v: %w", record, err)
 		}
@@ -91,7 +94,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				return fmt.Errorf("failed to register transfer: %w", err)
 			}
 		case values.TransactionType_Income:
-			err = f.dispatcher.RegisterIncome(
+			err = f.dispatcher.RegisterDeposit(
 				ctx,
 				uuid.Must(uuid.NewV7()),
 				t.credit.AccountID,
@@ -121,7 +124,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				return fmt.Errorf("failed to register reimbursement: %w", err)
 			}
 		case values.TransactionType_Expense:
-			err = f.dispatcher.RegisterExpense(
+			err = f.dispatcher.RegisterWithdrawal(
 				ctx,
 				uuid.Must(uuid.NewV7()),
 				t.debit.AccountID,
@@ -176,7 +179,7 @@ func newFromRecord(record []string) (transaction, error) {
 
 	// Skip empty transactions
 	if debitAmount.IsZero() && creditAmount.IsZero() {
-		return transaction{}, errEmptyAmount
+		return transaction{}, ErrEmptyAmount
 	}
 
 	return transaction{

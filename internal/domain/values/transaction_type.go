@@ -8,4 +8,6 @@ const (
 	TransactionType_Transfer
 	TransactionType_Reimbursement
 	TransactionType_ExpectedReimbursement
+	TransactionType_Deposit
+	TransactionType_Withdrawal
 )

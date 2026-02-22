@@ -201,3 +201,75 @@ func (d *Dispatcher) RegisterReimbursement(
 		Event:       event,
 	})
 }
+
+func (d *Dispatcher) RegisterDeposit(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.RegisterDeposit(
+		accountID,
+		currency,
+		amount,
+		category,
+		description,
+	)
+	if err != nil {
+		return err
+	}
+
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
+}
+
+func (d *Dispatcher) RegisterWithdrawal(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	currency values.Currency,
+	amount decimal.Decimal,
+	category string,
+	description string,
+) error {
+	aggr, err := d.es.GetAggregate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("aggregate fetch failed: %w", err)
+	}
+
+	event, err := aggr.RegisterWithdrawal(
+		accountID,
+		currency,
+		amount,
+		category,
+		description,
+	)
+	if err != nil {
+		return err
+	}
+
+	if event == nil {
+		return nil
+	}
+
+	return d.es.Append(ctx, event_store.Record{
+		AggregateID: aggr.ID,
+		Version:     Version,
+		Event:       event,
+	})
+}

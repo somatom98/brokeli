@@ -63,6 +63,18 @@ func (t *Transaction) Hydrate(records []event_store.Record) error {
 				return fmt.Errorf("decode MoneyTransfered event: %w", err)
 			}
 			t.ApplyTransferCreated(event)
+		case events.Type_MoneyDeposited:
+			event, err := event_store.DecodeEvent[events.MoneyDeposited](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneyDeposited event: %w", err)
+			}
+			t.ApplyMoneyDeposited(event)
+		case events.Type_MoneyWithdrawn:
+			event, err := event_store.DecodeEvent[events.MoneyWithdrawn](record.Content())
+			if err != nil {
+				return fmt.Errorf("decode MoneyWithdrawn event: %w", err)
+			}
+			t.ApplyMoneyWithdrawn(event)
 		case events.Type_ReimbursementReceived:
 			event, err := event_store.DecodeEvent[events.ReimbursementReceived](record.Content())
 			if err != nil {
