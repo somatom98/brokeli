@@ -15,10 +15,28 @@ import (
 )
 
 type DispatcherMock struct {
+	Expenses       []expenseCall
+	Incomes        []incomeCall
 	Withdrawals    []withdrawalCall
 	Deposits       []depositCall
 	Transfers      []transferCall
 	Reimbursements []reimbursementCall
+}
+
+type expenseCall struct {
+	AccountID   uuid.UUID
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
+}
+
+type incomeCall struct {
+	AccountID   uuid.UUID
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
 }
 
 type withdrawalCall struct {
@@ -53,6 +71,28 @@ type reimbursementCall struct {
 	From      string
 	Currency  values.Currency
 	Amount    decimal.Decimal
+}
+
+func (m *DispatcherMock) RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+	m.Expenses = append(m.Expenses, expenseCall{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+	})
+	return nil
+}
+
+func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+	m.Incomes = append(m.Incomes, incomeCall{
+		AccountID:   accountID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+	})
+	return nil
 }
 
 func (m *DispatcherMock) RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
@@ -112,7 +152,9 @@ func TestImportTransactions(t *testing.T) {
 6/3/2025 0:00:00,,Account A,,,123.82,DKK,Investments,Income,Interests,,,
 5/29/2025 0:00:00,Bank B,Broker C,"1,350.00",EUR,1350,EUR,Investments,Transfer,,,,
 5/19/2025 0:00:00,,Account A,,,80,DKK,Home,Expense,Refund for repairs,,,
-5/21/2025 0:00:00,,Account A,,,150,DKK,Bills,,Implicit Income bonus,,,`
+5/21/2025 0:00:00,,Account A,,,150,DKK,Bills,,Implicit Income bonus,,,
+6/26/2025 0:00:00,Account A,,148.00,DKK,,,Transfer,Transfer,Deposit for things,,,
+6/3/2025 0:00:00,,Account A,,,123.82,DKK,Transfer,Transfer,Taking money back,,,`
 
 		tmpFile, err := os.CreateTemp("", "transactions*.csv")
 		require.NoError(t, err)
@@ -133,8 +175,8 @@ func TestImportTransactions(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("expense correctly registered", func(t *testing.T) {
-			require.Len(t, dispatcher.Withdrawals, 1)
-			expense := dispatcher.Withdrawals[0]
+			require.Len(t, dispatcher.Expenses, 1)
+			expense := dispatcher.Expenses[0]
 			assert.Equal(t, accountAID, expense.AccountID)
 			assert.Equal(t, values.Currency("DKK"), expense.Currency)
 			assert.True(t, decimal.NewFromInt(148).Equal(expense.Amount))
@@ -142,17 +184,17 @@ func TestImportTransactions(t *testing.T) {
 		})
 
 		t.Run("income correctly registered", func(t *testing.T) {
-			require.Len(t, dispatcher.Deposits, 2)
+			require.Len(t, dispatcher.Incomes, 2)
 
 			// 6/3/2025 0:00:00,,Account A,,,123.82,DKK,Investments,Income,Interests,,,
-			income1 := dispatcher.Deposits[0]
+			income1 := dispatcher.Incomes[0]
 			assert.Equal(t, accountAID, income1.AccountID)
 			assert.Equal(t, values.Currency("DKK"), income1.Currency)
 			assert.True(t, decimal.NewFromFloat(123.82).Equal(income1.Amount))
 			assert.Equal(t, "Investments", income1.Category)
 
 			// 5/21/2025 0:00:00,,Account A,,,150,DKK,Bills,,Implicit Income bonus,,,
-			income2 := dispatcher.Deposits[1]
+			income2 := dispatcher.Incomes[1]
 			assert.Equal(t, accountAID, income2.AccountID)
 			assert.Equal(t, values.Currency("DKK"), income2.Currency)
 			assert.True(t, decimal.NewFromInt(150).Equal(income2.Amount))
@@ -177,6 +219,25 @@ func TestImportTransactions(t *testing.T) {
 			assert.Equal(t, "Refund for repairs", reimbursement.From)
 			assert.Equal(t, values.Currency("DKK"), reimbursement.Currency)
 			assert.True(t, decimal.NewFromInt(80).Equal(reimbursement.Amount))
+		})
+
+		t.Run("withdrawal correctly registered", func(t *testing.T) {
+			require.Len(t, dispatcher.Withdrawals, 1)
+			withdrawal := dispatcher.Withdrawals[0]
+			assert.Equal(t, accountAID, withdrawal.AccountID)
+			assert.Equal(t, values.Currency("DKK"), withdrawal.Currency)
+			assert.True(t, decimal.NewFromInt(148).Equal(withdrawal.Amount))
+			assert.Equal(t, "Transfer", withdrawal.Category)
+		})
+
+		t.Run("deposit correctly registered", func(t *testing.T) {
+			require.Len(t, dispatcher.Deposits, 1)
+
+			deposit := dispatcher.Deposits[0]
+			assert.Equal(t, accountAID, deposit.AccountID)
+			assert.Equal(t, values.Currency("DKK"), deposit.Currency)
+			assert.True(t, decimal.NewFromFloat(123.82).Equal(deposit.Amount))
+			assert.Equal(t, "Transfer", deposit.Category)
 		})
 	})
 
@@ -263,7 +324,10 @@ func TestImportTransactions_Integration(t *testing.T) {
 
 	// assert
 	require.NoError(t, err)
-	assert.NotEmpty(t, dispatcher.Withdrawals)
-	t.Logf("Imported %d withdrawals, %d deposits, %d transfers, %d reimbursements",
-		len(dispatcher.Withdrawals), len(dispatcher.Deposits), len(dispatcher.Transfers), len(dispatcher.Reimbursements))
+	assert.Len(t, dispatcher.Expenses, 2175)
+	assert.Len(t, dispatcher.Incomes, 128)
+	assert.Len(t, dispatcher.Withdrawals, 2)
+	assert.Len(t, dispatcher.Deposits, 5)
+	assert.Len(t, dispatcher.Transfers, 253)
+	assert.Len(t, dispatcher.Reimbursements, 68)
 }

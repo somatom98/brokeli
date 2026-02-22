@@ -18,10 +18,12 @@ import (
 var ErrEmptyAmount = errors.New("empty amounts")
 
 type TransactionDispatcher interface {
+	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string) error
+	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
+	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
+	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
 	RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
 	RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string) error
-	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
 }
 
 type Feature struct {
@@ -94,7 +96,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				return fmt.Errorf("failed to register transfer: %w", err)
 			}
 		case values.TransactionType_Income:
-			err = f.dispatcher.RegisterDeposit(
+			err = f.dispatcher.RegisterIncome(
 				ctx,
 				uuid.Must(uuid.NewV7()),
 				t.credit.AccountID,
@@ -124,6 +126,32 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				return fmt.Errorf("failed to register reimbursement: %w", err)
 			}
 		case values.TransactionType_Expense:
+			err = f.dispatcher.RegisterExpense(
+				ctx,
+				uuid.Must(uuid.NewV7()),
+				t.debit.AccountID,
+				t.debit.Currency,
+				t.debit.Amount,
+				t.category,
+				t.description,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to register expense: %w", err)
+			}
+		case values.TransactionType_Deposit:
+			err = f.dispatcher.RegisterDeposit(
+				ctx,
+				uuid.Must(uuid.NewV7()),
+				t.credit.AccountID,
+				t.credit.Currency,
+				t.credit.Amount,
+				t.category,
+				t.description,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to register expense: %w", err)
+			}
+		case values.TransactionType_Withdrawal:
 			err = f.dispatcher.RegisterWithdrawal(
 				ctx,
 				uuid.Must(uuid.NewV7()),
@@ -203,6 +231,14 @@ func newFromRecord(record []string) (transaction, error) {
 
 func (t transaction) Type() (values.TransactionType, error) {
 	switch {
+	case t.trxType == "Transfer" &&
+		t.debit.Amount.IsZero() &&
+		t.credit.Amount.IsPositive():
+		return values.TransactionType_Deposit, nil
+	case t.trxType == "Transfer" &&
+		t.debit.Amount.IsPositive() &&
+		t.credit.Amount.IsZero():
+		return values.TransactionType_Withdrawal, nil
 	case t.trxType == "Transfer":
 		if t.debit.Amount.IsZero() && t.credit.Amount.IsZero() {
 			return values.TransactionType_Expense, fmt.Errorf("null amount")
