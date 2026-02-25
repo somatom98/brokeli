@@ -175,10 +175,6 @@ func (s *PostgresStore[A]) publishToSubscribers(record event_store.Record) {
 	defer s.mu.RUnlock()
 
 	for _, ch := range s.subscribers {
-		select {
-		case ch <- record:
-		default:
-			// Drop if full
-		}
+		ch <- record
 	}
 }
