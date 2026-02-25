@@ -15,6 +15,7 @@ import (
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
+	"github.com/somatom98/brokeli/pkg/database"
 	"github.com/somatom98/brokeli/pkg/event_store"
 	"github.com/somatom98/brokeli/pkg/event_store/postgres"
 )
@@ -35,6 +36,14 @@ func Setup(ctx context.Context) (*App, error) {
 	}
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping db: %w", err)
+	}
+
+	// Run migrations
+	if err := database.Migrate(db, "pkg/event_store/postgres/db/migration"); err != nil {
+		return nil, fmt.Errorf("failed to run event store migrations: %w", err)
+	}
+	if err := database.Migrate(db, "internal/domain/projections/accounts/db/migration"); err != nil {
+		return nil, fmt.Errorf("failed to run accounts projection migrations: %w", err)
 	}
 
 	accountsRepository, err := accounts.NewPostgresRepository(db)
