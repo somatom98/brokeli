@@ -1,4 +1,4 @@
-package transaction
+package account
 
 import (
 	"context"
@@ -10,38 +10,36 @@ import (
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
+const (
+	Version = 0
+)
+
 type Dispatcher struct {
-	es event_store.Store[*Transaction]
+	es event_store.Store[*Account]
 }
 
 func NewDispatcher(
-	es event_store.Store[*Transaction],
+	es event_store.Store[*Account],
 ) *Dispatcher {
 	return &Dispatcher{
 		es: es,
 	}
 }
 
-func (d *Dispatcher) RegisterExpense(
+func (d *Dispatcher) Open(
 	ctx context.Context,
 	id uuid.UUID,
-	accountID uuid.UUID,
+	name string,
 	currency values.Currency,
-	amount decimal.Decimal,
-	category string,
-	description string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.RegisterExpense(
-		accountID,
+	event, err := aggr.Open(
+		name,
 		currency,
-		amount,
-		category,
-		description,
 	)
 	if err != nil {
 		return err
@@ -58,26 +56,18 @@ func (d *Dispatcher) RegisterExpense(
 	})
 }
 
-func (d *Dispatcher) RegisterIncome(
+func (d *Dispatcher) UpdateName(
 	ctx context.Context,
 	id uuid.UUID,
-	accountID uuid.UUID,
-	currency values.Currency,
-	amount decimal.Decimal,
-	category string,
-	description string,
+	name string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.RegisterIncome(
-		accountID,
-		currency,
-		amount,
-		category,
-		description,
+	event, err := aggr.UpdateName(
+		name,
 	)
 	if err != nil {
 		return err
@@ -94,32 +84,22 @@ func (d *Dispatcher) RegisterIncome(
 	})
 }
 
-func (d *Dispatcher) RegisterTransfer(
+func (d *Dispatcher) Deposit(
 	ctx context.Context,
 	id uuid.UUID,
-	fromAccountID uuid.UUID,
-	fromCurrency values.Currency,
-	fromAmount decimal.Decimal,
-	toAccountID uuid.UUID,
-	toCurrency values.Currency,
-	toAmount decimal.Decimal,
-	category string,
-	description string,
+	currency values.Currency,
+	amount decimal.Decimal,
+	user string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.RegisterTransfer(
-		fromAccountID,
-		fromCurrency,
-		fromAmount,
-		toAccountID,
-		toCurrency,
-		toAmount,
-		category,
-		description,
+	event, err := aggr.Deposit(
+		currency,
+		amount,
+		user,
 	)
 	if err != nil {
 		return err
@@ -136,56 +116,22 @@ func (d *Dispatcher) RegisterTransfer(
 	})
 }
 
-func (d *Dispatcher) SetExpectedReimbursement(
+func (d *Dispatcher) Withdraw(
 	ctx context.Context,
 	id uuid.UUID,
-	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
+	user string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
 
-	event, err := aggr.SetExpectedReimbursement(
-		accountID,
+	event, err := aggr.Withdraw(
 		currency,
 		amount,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     Version,
-		Event:       event,
-	})
-}
-
-func (d *Dispatcher) RegisterReimbursement(
-	ctx context.Context,
-	id uuid.UUID,
-	accountID uuid.UUID,
-	from string,
-	currency values.Currency,
-	amount decimal.Decimal,
-) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.RegisterReimbursement(
-		accountID,
-		from,
-		currency,
-		amount,
+		user,
 	)
 	if err != nil {
 		return err

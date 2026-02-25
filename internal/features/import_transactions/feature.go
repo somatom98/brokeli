@@ -22,22 +22,28 @@ type TransactionDispatcher interface {
 	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
 	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
 	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error
-	RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error
+}
+
+type AccountDispatcher interface {
+	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
+	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
 }
 
 type Feature struct {
-	httpHandler *http.ServeMux
-	dispatcher  TransactionDispatcher
+	httpHandler       *http.ServeMux
+	dispatcher        TransactionDispatcher
+	accountDispatcher AccountDispatcher
 }
 
 func New(
 	httpHandler *http.ServeMux,
 	api TransactionDispatcher,
+	accountApi AccountDispatcher,
 ) *Feature {
 	return &Feature{
-		httpHandler: httpHandler,
-		dispatcher:  api,
+		httpHandler:       httpHandler,
+		dispatcher:        api,
+		accountDispatcher: accountApi,
 	}
 }
 
@@ -139,26 +145,26 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				return fmt.Errorf("failed to register expense: %w", err)
 			}
 		case values.TransactionType_Deposit:
-			err = f.dispatcher.RegisterDeposit(
+			err = f.accountDispatcher.Deposit(
 				ctx,
-				uuid.Must(uuid.NewV7()),
 				t.credit.AccountID,
 				t.credit.Currency,
 				t.credit.Amount,
+				t.description,
 			)
 			if err != nil {
-				return fmt.Errorf("failed to register expense: %w", err)
+				return fmt.Errorf("failed to register deposit: %w", err)
 			}
 		case values.TransactionType_Withdrawal:
-			err = f.dispatcher.RegisterWithdrawal(
+			err = f.accountDispatcher.Withdraw(
 				ctx,
-				uuid.Must(uuid.NewV7()),
 				t.debit.AccountID,
 				t.debit.Currency,
 				t.debit.Amount,
+				t.description,
 			)
 			if err != nil {
-				return fmt.Errorf("failed to register expense: %w", err)
+				return fmt.Errorf("failed to register withdrawal: %w", err)
 			}
 		}
 	}

@@ -91,18 +91,18 @@ func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accou
 	return nil
 }
 
-func (m *DispatcherMock) RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error {
+func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error {
 	m.Withdrawals = append(m.Withdrawals, withdrawalCall{
-		AccountID: accountID,
+		AccountID: id,
 		Currency:  currency,
 		Amount:    amount,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error {
+func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error {
 	m.Deposits = append(m.Deposits, depositCall{
-		AccountID: accountID,
+		AccountID: id,
 		Currency:  currency,
 		Amount:    amount,
 	})
@@ -137,7 +137,7 @@ func TestImportTransactions(t *testing.T) {
 	t.Run("successfully import various transaction types", func(t *testing.T) {
 		// arrange
 		dispatcher := &DispatcherMock{}
-		feature := import_transactions.New(nil, dispatcher)
+		feature := import_transactions.New(nil, dispatcher, dispatcher)
 
 		csvContent := `Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR
 6/26/2025 0:00:00,Account A,,148.00,DKK,,,Groceries,Expense,Coffee and bread,,,
@@ -234,7 +234,7 @@ func TestImportTransactions(t *testing.T) {
 	t.Run("skip empty or invalid transactions", func(t *testing.T) {
 		// arrange
 		dispatcher := &DispatcherMock{}
-		feature := import_transactions.New(nil, dispatcher)
+		feature := import_transactions.New(nil, dispatcher, dispatcher)
 
 		csvContent := `Date,From,To,Debit,CurD,Credit,CurC,Type,In/Out,Description,Category,Subcategory,EUR
 6/26/2025 0:00:00,,,,,,,,,,,,
@@ -281,7 +281,7 @@ func TestImportTransactions(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				dispatcher := &DispatcherMock{}
-				feature := import_transactions.New(nil, dispatcher)
+				feature := import_transactions.New(nil, dispatcher, dispatcher)
 
 				tmpFile, err := os.CreateTemp("", "invalid_*.csv")
 				require.NoError(t, err)
@@ -301,7 +301,7 @@ func TestImportTransactions(t *testing.T) {
 func TestImportTransactions_Integration(t *testing.T) {
 	// arrange
 	dispatcher := &DispatcherMock{}
-	feature := import_transactions.New(nil, dispatcher)
+	feature := import_transactions.New(nil, dispatcher, dispatcher)
 	filePath := "transactions.csv"
 
 	// Skip if file doesn't exist (e.g. in CI environments)

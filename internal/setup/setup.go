@@ -11,6 +11,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	accounts_db "github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
+	"github.com/somatom98/brokeli/internal/domain/account"
+	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
@@ -26,6 +28,7 @@ type App struct {
 	HttpHandler   *http.ServeMux
 	httpServer    *http.Server
 	transactionES event_store.Store[*transaction.Transaction]
+	accountES     event_store.Store[*account.Account]
 	db            *sql.DB
 }
 
@@ -61,8 +64,6 @@ func Setup(ctx context.Context) (*App, error) {
 		transaction_events.TypeMoneyTransfered:          func() any { return &transaction_events.MoneyTransfered{} },
 		transaction_events.TypeReimbursementReceived:    func() any { return &transaction_events.ReimbursementReceived{} },
 		transaction_events.TypeExpectedReimbursementSet: func() any { return &transaction_events.ExpectedReimbursementSet{} },
-		transaction_events.TypeMoneyDeposited:           func() any { return &transaction_events.MoneyDeposited{} },
-		transaction_events.TypeMoneyWithdrawn:           func() any { return &transaction_events.MoneyWithdrawn{} },
 	}
 
 	transactionES, err = postgres.NewPostgresStore(db, transaction.New, transactionEventsFactory)
@@ -70,25 +71,41 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to setup transaction postgres store: %w", err)
 	}
 
-	transactionDispatcher := TransactionDispatcher(transactionES)
+	var accountES event_store.Store[*account.Account]
 
-	accountsProjection := AccountsProjection(ctx, transactionES, accountsRepository)
+	accountEventsFactory := map[string]func() any{
+		account_events.TypeOpened:         func() any { return &account_events.Opened{} },
+		account_events.TypeNameUpdated:    func() any { return &account_events.NameUpdated{} },
+		account_events.TypeMoneyDeposited: func() any { return &account_events.MoneyDeposited{} },
+		account_events.TypeMoneyWithdrawn: func() any { return &account_events.MoneyWithdrawn{} },
+	}
+
+	accountES, err = postgres.NewPostgresStore(db, account.New, accountEventsFactory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup account postgres store: %w", err)
+	}
+
+	transactionDispatcher := TransactionDispatcher(transactionES)
+	accountDispatcher := AccountDispatcher(accountES)
+
+	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection).
+		New(httpHandler, accountsProjection, accountDispatcher).
 		Setup()
 
 	import_transactions.
-		New(httpHandler, transactionDispatcher).
+		New(httpHandler, transactionDispatcher, accountDispatcher).
 		Setup()
 
 	return &App{
 		HttpHandler:   httpHandler,
 		transactionES: transactionES,
+		accountES:     accountES,
 		db:            db,
 	}, nil
 }
@@ -127,6 +144,10 @@ func (a *App) Stop(ctx context.Context) error {
 	}
 
 	if closer, ok := a.transactionES.(interface{ Close() error }); ok {
+		closer.Close()
+	}
+
+	if closer, ok := a.accountES.(interface{ Close() error }); ok {
 		closer.Close()
 	}
 

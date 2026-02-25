@@ -71,27 +71,3 @@ func (t *Transaction) ApplyReimbursementReceived(e events.ReimbursementReceived)
 	t.Entries = append(t.Entries, entry)
 	t.Description = e.From
 }
-
-func (t *Transaction) ApplyMoneyDeposited(e events.MoneyDeposited) {
-	t.State = State_Created
-	t.Type = values.TransactionType_Deposit
-	entry := values.Entry{
-		AccountID: e.AccountID,
-		Currency:  e.Currency,
-		Amount:    e.Amount,
-		Side:      values.Side_Credit,
-	}
-	t.Entries = append(t.Entries, entry)
-}
-
-func (t *Transaction) ApplyMoneyWithdrawn(e events.MoneyWithdrawn) {
-	t.State = State_Created
-	t.Type = values.TransactionType_Withdrawal
-	entry := values.Entry{
-		AccountID: e.AccountID,
-		Currency:  e.Currency,
-		Amount:    e.Amount,
-		Side:      values.Side_Debit,
-	}
-	t.Entries = append(t.Entries, entry)
-}
