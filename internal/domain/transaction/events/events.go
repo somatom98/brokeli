@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	Type_MoneySpent               string = "MoneySpent"
-	Type_MoneyReceived            string = "MoneyReceived"
-	Type_MoneyTransfered          string = "MoneyTransfered"
-	Type_ReimbursementReceived    string = "ReimbursementReceived"
-	Type_ExpectedReimbursementSet string = "ExpectedReimbursementSet"
-	Type_MoneyDeposited           string = "MoneyDeposited"
-	Type_MoneyWithdrawn           string = "MoneyWithdrawn"
+	TypeMoneySpent               string = "MoneySpent"
+	TypeMoneyReceived            string = "MoneyReceived"
+	TypeMoneyTransfered          string = "MoneyTransfered"
+	TypeReimbursementReceived    string = "ReimbursementReceived"
+	TypeExpectedReimbursementSet string = "ExpectedReimbursementSet"
+	TypeMoneyDeposited           string = "MoneyDeposited"
+	TypeMoneyWithdrawn           string = "MoneyWithdrawn"
 )
 
 type MoneySpent struct {
@@ -25,7 +25,7 @@ type MoneySpent struct {
 }
 
 func (e MoneySpent) Type() string {
-	return Type_MoneySpent
+	return TypeMoneySpent
 }
 
 func (e MoneySpent) Content() any {
@@ -41,7 +41,7 @@ type MoneyReceived struct {
 }
 
 func (e MoneyReceived) Type() string {
-	return Type_MoneyReceived
+	return TypeMoneyReceived
 }
 
 func (e MoneyReceived) Content() any {
@@ -60,7 +60,7 @@ type MoneyTransfered struct {
 }
 
 func (e MoneyTransfered) Type() string {
-	return Type_MoneyTransfered
+	return TypeMoneyTransfered
 }
 
 func (e MoneyTransfered) Content() any {
@@ -81,7 +81,7 @@ type ExpectedReimbursementSet struct {
 }
 
 func (e ExpectedReimbursementSet) Type() string {
-	return Type_ExpectedReimbursementSet
+	return TypeExpectedReimbursementSet
 }
 
 func (e ExpectedReimbursementSet) Content() any {
@@ -89,7 +89,7 @@ func (e ExpectedReimbursementSet) Content() any {
 }
 
 func (e ReimbursementReceived) Type() string {
-	return Type_ReimbursementReceived
+	return TypeReimbursementReceived
 }
 
 func (e ReimbursementReceived) Content() any {
@@ -105,7 +105,7 @@ type MoneyDeposited struct {
 }
 
 func (e MoneyDeposited) Type() string {
-	return Type_MoneyDeposited
+	return TypeMoneyDeposited
 }
 
 func (e MoneyDeposited) Content() any {
@@ -121,7 +121,7 @@ type MoneyWithdrawn struct {
 }
 
 func (e MoneyWithdrawn) Type() string {
-	return Type_MoneyWithdrawn
+	return TypeMoneyWithdrawn
 }
 
 func (e MoneyWithdrawn) Content() any {
