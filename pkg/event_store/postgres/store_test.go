@@ -50,8 +50,9 @@ func TestPostgresStore_Concurrency_UniqueVersion(t *testing.T) {
 	defer db.Close()
 
 	// Ensure clean state for this test
-	// Ideally we run migration here
-	_, err = db.Exec(Schema)
+	schema, err := os.ReadFile("db/migration/000001_create_events_table.up.sql")
+	require.NoError(t, err)
+	_, err = db.Exec(string(schema))
 	require.NoError(t, err)
 
 	id := uuid.New()

@@ -11,10 +11,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/somatom98/brokeli/pkg/event_store"
+	"github.com/somatom98/brokeli/pkg/event_store/postgres/db"
 )
 
 type PostgresStore[A event_store.Aggregate] struct {
 	db            *sql.DB
+	queries       *db.Queries
 	new           func(uuid.UUID) A
 	eventFactory  map[string]func() any
 	subscribers   []chan event_store.Record
@@ -38,16 +40,13 @@ func (e event) Content() any {
 var _ event_store.Store[event_store.Aggregate] = &PostgresStore[event_store.Aggregate]{}
 
 func NewPostgresStore[A event_store.Aggregate](
-	db *sql.DB,
+	dbConn *sql.DB,
 	new func(uuid.UUID) A,
 	eventFactory map[string]func() any,
 ) (*PostgresStore[A], error) {
-	if _, err := db.Exec(Schema); err != nil {
-		return nil, fmt.Errorf("failed to ensure schema: %w", err)
-	}
-
 	store := &PostgresStore[A]{
-		db:           db,
+		db:           dbConn,
+		queries:      db.New(dbConn),
 		new:          new,
 		eventFactory: eventFactory,
 		subscribers:  make([]chan event_store.Record, 0),
@@ -73,11 +72,14 @@ func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record
 		return fmt.Errorf("failed to marshal event data: %w", err)
 	}
 
-	eventID := uuid.New()
-	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO events (id, aggregate_id, aggregate_type, version, event_type, event_data)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, eventID, record.AggregateID, aggregateType, record.Version, record.Type(), eventData)
+	err = s.queries.AppendEvent(ctx, db.AppendEventParams{
+		ID:            uuid.New(),
+		AggregateID:   record.AggregateID,
+		AggregateType: aggregateType,
+		Version:       int64(record.Version),
+		EventType:     record.Type(),
+		EventData:     eventData,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to insert event: %w", err)
 	}
@@ -90,34 +92,20 @@ func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record
 func (s *PostgresStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, error) {
 	var zero A
 
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT version, event_type, event_data
-		FROM events
-		WHERE aggregate_id = $1
-		ORDER BY version ASC
-	`, id)
+	events, err := s.queries.GetEvents(ctx, id)
 	if err != nil {
 		return zero, fmt.Errorf("failed to query events: %w", err)
 	}
-	defer rows.Close()
 
 	var records []event_store.Record
-	for rows.Next() {
-		var version uint64
-		var eventType string
-		var eventData []byte
-
-		if err := rows.Scan(&version, &eventType, &eventData); err != nil {
-			return zero, fmt.Errorf("failed to scan event: %w", err)
-		}
-
-		factory, ok := s.eventFactory[eventType]
+	for _, row := range events {
+		factory, ok := s.eventFactory[row.EventType]
 		if !ok {
-			return zero, fmt.Errorf("unknown event type: %s", eventType)
+			return zero, fmt.Errorf("unknown event type: %s", row.EventType)
 		}
 
 		eventPtr := factory()
-		if err := json.Unmarshal(eventData, eventPtr); err != nil {
+		if err := json.Unmarshal(row.EventData, eventPtr); err != nil {
 			return zero, fmt.Errorf("failed to unmarshal event data: %w", err)
 		}
 
@@ -126,16 +114,12 @@ func (s *PostgresStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, e
 
 		records = append(records, event_store.Record{
 			AggregateID: id,
-			Version:     version,
+			Version:     uint64(row.Version),
 			Event: event{
-				EventType:    eventType,
+				EventType:    row.EventType,
 				EventContent: content,
 			},
 		})
-	}
-
-	if err = rows.Err(); err != nil {
-		return zero, fmt.Errorf("rows error: %w", err)
 	}
 
 	aggregate := s.new(id)

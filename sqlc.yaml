@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - schema: "pkg/event_store/postgres/db/migration"
+    queries: "pkg/event_store/postgres/db/query"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "db"
+        out: "pkg/event_store/postgres/db"
+        emit_interface: true
+        emit_json_tags: true
+
+  - schema: "internal/domain/projections/accounts/db/migration"
+    queries: "internal/domain/projections/accounts/db/query"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "db"
+        out: "internal/domain/projections/accounts/db"
+        emit_interface: true
+        emit_json_tags: true
