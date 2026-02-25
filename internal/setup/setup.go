@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
+	accounts_db "github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
@@ -18,6 +19,7 @@ import (
 	"github.com/somatom98/brokeli/pkg/database"
 	"github.com/somatom98/brokeli/pkg/event_store"
 	"github.com/somatom98/brokeli/pkg/event_store/postgres"
+	event_store_db "github.com/somatom98/brokeli/pkg/event_store/postgres/db"
 )
 
 type App struct {
@@ -39,10 +41,10 @@ func Setup(ctx context.Context) (*App, error) {
 	}
 
 	// Run migrations
-	if err := database.Migrate(db, "pkg/event_store/postgres/db/migration"); err != nil {
+	if err := database.Migrate(db, event_store_db.MigrationsFS(), "event_store_migrations"); err != nil {
 		return nil, fmt.Errorf("failed to run event store migrations: %w", err)
 	}
-	if err := database.Migrate(db, "internal/domain/projections/accounts/db/migration"); err != nil {
+	if err := database.Migrate(db, accounts_db.MigrationsFS(), "accounts_projection_migrations"); err != nil {
 		return nil, fmt.Errorf("failed to run accounts projection migrations: %w", err)
 	}
 
@@ -53,7 +55,7 @@ func Setup(ctx context.Context) (*App, error) {
 
 	var transactionES event_store.Store[*transaction.Transaction]
 
-	transactionEventsFactory := map[string]func() interface{}{
+	transactionEventsFactory := map[string]func() any{
 		transaction_events.TypeMoneySpent:               func() any { return &transaction_events.MoneySpent{} },
 		transaction_events.TypeMoneyReceived:            func() any { return &transaction_events.MoneyReceived{} },
 		transaction_events.TypeMoneyTransfered:          func() any { return &transaction_events.MoneyTransfered{} },
