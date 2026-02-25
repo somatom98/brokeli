@@ -52,17 +52,17 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 
 				var err error
 				switch record.Type() {
-				case transaction_events.Type_MoneySpent:
+				case transaction_events.TypeMoneySpent:
 					err = v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.MoneySpent))
-				case transaction_events.Type_MoneyReceived:
+				case transaction_events.TypeMoneyReceived:
 					err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
-				case transaction_events.Type_ReimbursementReceived:
+				case transaction_events.TypeReimbursementReceived:
 					err = v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
-				case transaction_events.Type_MoneyTransfered:
+				case transaction_events.TypeMoneyTransfered:
 					err = v.ApplyTransferCreated(ctx, record.Content().(transaction_events.MoneyTransfered))
-				case transaction_events.Type_MoneyDeposited:
+				case transaction_events.TypeMoneyDeposited:
 					err = v.ApplyMoneyDeposited(ctx, record.Content().(transaction_events.MoneyDeposited))
-				case transaction_events.Type_MoneyWithdrawn:
+				case transaction_events.TypeMoneyWithdrawn:
 					err = v.ApplyMoneyWithdrawn(ctx, record.Content().(transaction_events.MoneyWithdrawn))
 				}
 

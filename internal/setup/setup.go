@@ -45,13 +45,13 @@ func Setup(ctx context.Context) (*App, error) {
 	var transactionES event_store.Store[*transaction.Transaction]
 
 	transactionEventsFactory := map[string]func() interface{}{
-		transaction_events.Type_MoneySpent:               func() interface{} { return &transaction_events.MoneySpent{} },
-		transaction_events.Type_MoneyReceived:            func() interface{} { return &transaction_events.MoneyReceived{} },
-		transaction_events.Type_MoneyTransfered:          func() interface{} { return &transaction_events.MoneyTransfered{} },
-		transaction_events.Type_ReimbursementReceived:    func() interface{} { return &transaction_events.ReimbursementReceived{} },
-		transaction_events.Type_ExpectedReimbursementSet: func() interface{} { return &transaction_events.ExpectedReimbursementSet{} },
-		transaction_events.Type_MoneyDeposited:           func() interface{} { return &transaction_events.MoneyDeposited{} },
-		transaction_events.Type_MoneyWithdrawn:           func() interface{} { return &transaction_events.MoneyWithdrawn{} },
+		transaction_events.TypeMoneySpent:               func() any { return &transaction_events.MoneySpent{} },
+		transaction_events.TypeMoneyReceived:            func() any { return &transaction_events.MoneyReceived{} },
+		transaction_events.TypeMoneyTransfered:          func() any { return &transaction_events.MoneyTransfered{} },
+		transaction_events.TypeReimbursementReceived:    func() any { return &transaction_events.ReimbursementReceived{} },
+		transaction_events.TypeExpectedReimbursementSet: func() any { return &transaction_events.ExpectedReimbursementSet{} },
+		transaction_events.TypeMoneyDeposited:           func() any { return &transaction_events.MoneyDeposited{} },
+		transaction_events.TypeMoneyWithdrawn:           func() any { return &transaction_events.MoneyWithdrawn{} },
 	}
 
 	transactionES, err = postgres.NewPostgresStore(db, transaction.New, transactionEventsFactory)
