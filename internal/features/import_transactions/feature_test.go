@@ -40,19 +40,15 @@ type incomeCall struct {
 }
 
 type withdrawalCall struct {
-	AccountID   uuid.UUID
-	Currency    values.Currency
-	Amount      decimal.Decimal
-	Category    string
-	Description string
+	AccountID uuid.UUID
+	Currency  values.Currency
+	Amount    decimal.Decimal
 }
 
 type depositCall struct {
-	AccountID   uuid.UUID
-	Currency    values.Currency
-	Amount      decimal.Decimal
-	Category    string
-	Description string
+	AccountID uuid.UUID
+	Currency  values.Currency
+	Amount    decimal.Decimal
 }
 
 type transferCall struct {
@@ -95,24 +91,20 @@ func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accou
 	return nil
 }
 
-func (m *DispatcherMock) RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+func (m *DispatcherMock) RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error {
 	m.Withdrawals = append(m.Withdrawals, withdrawalCall{
-		AccountID:   accountID,
-		Currency:    currency,
-		Amount:      amount,
-		Category:    category,
-		Description: description,
+		AccountID: accountID,
+		Currency:  currency,
+		Amount:    amount,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+func (m *DispatcherMock) RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error {
 	m.Deposits = append(m.Deposits, depositCall{
-		AccountID:   accountID,
-		Currency:    currency,
-		Amount:      amount,
-		Category:    category,
-		Description: description,
+		AccountID: accountID,
+		Currency:  currency,
+		Amount:    amount,
 	})
 	return nil
 }
@@ -227,7 +219,6 @@ func TestImportTransactions(t *testing.T) {
 			assert.Equal(t, accountAID, withdrawal.AccountID)
 			assert.Equal(t, values.Currency("DKK"), withdrawal.Currency)
 			assert.True(t, decimal.NewFromInt(148).Equal(withdrawal.Amount))
-			assert.Equal(t, "Transfer", withdrawal.Category)
 		})
 
 		t.Run("deposit correctly registered", func(t *testing.T) {
@@ -237,7 +228,6 @@ func TestImportTransactions(t *testing.T) {
 			assert.Equal(t, accountAID, deposit.AccountID)
 			assert.Equal(t, values.Currency("DKK"), deposit.Currency)
 			assert.True(t, decimal.NewFromFloat(123.82).Equal(deposit.Amount))
-			assert.Equal(t, "Transfer", deposit.Category)
 		})
 	})
 

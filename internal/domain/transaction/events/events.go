@@ -97,11 +97,9 @@ func (e ReimbursementReceived) Content() any {
 }
 
 type MoneyDeposited struct {
-	AccountID   uuid.UUID
-	Currency    values.Currency
-	Amount      decimal.Decimal
-	Category    string
-	Description string
+	AccountID uuid.UUID
+	Currency  values.Currency
+	Amount    decimal.Decimal
 }
 
 func (e MoneyDeposited) Type() string {
@@ -113,11 +111,9 @@ func (e MoneyDeposited) Content() any {
 }
 
 type MoneyWithdrawn struct {
-	AccountID   uuid.UUID
-	Currency    values.Currency
-	Amount      decimal.Decimal
-	Category    string
-	Description string
+	AccountID uuid.UUID
+	Currency  values.Currency
+	Amount    decimal.Decimal
 }
 
 func (e MoneyWithdrawn) Type() string {

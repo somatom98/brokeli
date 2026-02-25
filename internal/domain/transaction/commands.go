@@ -151,8 +151,6 @@ func (a *Transaction) RegisterDeposit(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-	category string,
-	description string,
 ) (evt *events.MoneyDeposited, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -163,11 +161,9 @@ func (a *Transaction) RegisterDeposit(
 	}
 
 	return &events.MoneyDeposited{
-		AccountID:   accountID,
-		Currency:    currency,
-		Amount:      amount,
-		Category:    category,
-		Description: description,
+		AccountID: accountID,
+		Currency:  currency,
+		Amount:    amount,
 	}, nil
 }
 
@@ -175,8 +171,6 @@ func (a *Transaction) RegisterWithdrawal(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-	category string,
-	description string,
 ) (evt *events.MoneyWithdrawn, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -187,10 +181,8 @@ func (a *Transaction) RegisterWithdrawal(
 	}
 
 	return &events.MoneyWithdrawn{
-		AccountID:   accountID,
-		Currency:    currency,
-		Amount:      amount,
-		Category:    category,
-		Description: description,
+		AccountID: accountID,
+		Currency:  currency,
+		Amount:    amount,
 	}, nil
 }

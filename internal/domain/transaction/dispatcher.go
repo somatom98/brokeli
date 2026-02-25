@@ -208,8 +208,6 @@ func (d *Dispatcher) RegisterDeposit(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-	category string,
-	description string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
@@ -220,8 +218,6 @@ func (d *Dispatcher) RegisterDeposit(
 		accountID,
 		currency,
 		amount,
-		category,
-		description,
 	)
 	if err != nil {
 		return err
@@ -244,8 +240,6 @@ func (d *Dispatcher) RegisterWithdrawal(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-	category string,
-	description string,
 ) error {
 	aggr, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
@@ -256,8 +250,6 @@ func (d *Dispatcher) RegisterWithdrawal(
 		accountID,
 		currency,
 		amount,
-		category,
-		description,
 	)
 	if err != nil {
 		return err

@@ -82,8 +82,6 @@ func (t *Transaction) ApplyMoneyDeposited(e events.MoneyDeposited) {
 		Side:      values.Side_Credit,
 	}
 	t.Entries = append(t.Entries, entry)
-	t.Category = e.Category
-	t.Description = e.Description
 }
 
 func (t *Transaction) ApplyMoneyWithdrawn(e events.MoneyWithdrawn) {
@@ -96,6 +94,4 @@ func (t *Transaction) ApplyMoneyWithdrawn(e events.MoneyWithdrawn) {
 		Side:      values.Side_Debit,
 	}
 	t.Entries = append(t.Entries, entry)
-	t.Category = e.Category
-	t.Description = e.Description
 }

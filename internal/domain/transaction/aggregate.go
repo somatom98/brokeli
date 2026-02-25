@@ -39,43 +39,43 @@ func New(id uuid.UUID) *Transaction {
 func (t *Transaction) Hydrate(records []event_store.Record) error {
 	for _, record := range records {
 		switch record.Type() {
-		case events.Type_ExpectedReimbursementSet:
+		case events.TypeExpectedReimbursementSet:
 			event, err := event_store.DecodeEvent[events.ExpectedReimbursementSet](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode ExpectedReimbursementSet event: %w", err)
 			}
 			t.ApplyExpectedReimbursementSet(event)
-		case events.Type_MoneySpent:
+		case events.TypeMoneySpent:
 			event, err := event_store.DecodeEvent[events.MoneySpent](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode MoneySpent event: %w", err)
 			}
 			t.ApplyExpenseCreated(event)
-		case events.Type_MoneyReceived:
+		case events.TypeMoneyReceived:
 			event, err := event_store.DecodeEvent[events.MoneyReceived](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode MoneyReceived event: %w", err)
 			}
 			t.ApplyIncomeCreated(event)
-		case events.Type_MoneyTransfered:
+		case events.TypeMoneyTransfered:
 			event, err := event_store.DecodeEvent[events.MoneyTransfered](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode MoneyTransfered event: %w", err)
 			}
 			t.ApplyTransferCreated(event)
-		case events.Type_MoneyDeposited:
+		case events.TypeMoneyDeposited:
 			event, err := event_store.DecodeEvent[events.MoneyDeposited](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode MoneyDeposited event: %w", err)
 			}
 			t.ApplyMoneyDeposited(event)
-		case events.Type_MoneyWithdrawn:
+		case events.TypeMoneyWithdrawn:
 			event, err := event_store.DecodeEvent[events.MoneyWithdrawn](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode MoneyWithdrawn event: %w", err)
 			}
 			t.ApplyMoneyWithdrawn(event)
-		case events.Type_ReimbursementReceived:
+		case events.TypeReimbursementReceived:
 			event, err := event_store.DecodeEvent[events.ReimbursementReceived](record.Content())
 			if err != nil {
 				return fmt.Errorf("decode ReimbursementReceived event: %w", err)

@@ -22,8 +22,8 @@ type TransactionDispatcher interface {
 	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
 	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
 	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
+	RegisterDeposit(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error
+	RegisterWithdrawal(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal) error
 }
 
 type Feature struct {
@@ -145,8 +145,6 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.credit.AccountID,
 				t.credit.Currency,
 				t.credit.Amount,
-				t.category,
-				t.description,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register expense: %w", err)
@@ -158,8 +156,6 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.debit.AccountID,
 				t.debit.Currency,
 				t.debit.Amount,
-				t.category,
-				t.description,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register expense: %w", err)

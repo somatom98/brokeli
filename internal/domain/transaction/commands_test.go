@@ -347,16 +347,14 @@ func TestRegisterDeposit(t *testing.T) {
 		amount := decimal.NewFromInt(100)
 
 		// act
-		evt, err := tx.RegisterDeposit(accountID, values.Currency("USD"), amount, "gift", "birthday gift")
+		evt, err := tx.RegisterDeposit(accountID, values.Currency("USD"), amount)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyDeposited{
-			AccountID:   accountID,
-			Currency:    values.Currency("USD"),
-			Amount:      amount,
-			Category:    "gift",
-			Description: "birthday gift",
+			AccountID: accountID,
+			Currency:  values.Currency("USD"),
+			Amount:    amount,
 		}, evt)
 	})
 
@@ -365,7 +363,7 @@ func TestRegisterDeposit(t *testing.T) {
 		tx := transaction.New(uuid.New())
 
 		// act
-		evt, err := tx.RegisterDeposit(uuid.New(), values.Currency("USD"), decimal.NewFromInt(0), "gift", "")
+		evt, err := tx.RegisterDeposit(uuid.New(), values.Currency("USD"), decimal.NewFromInt(0))
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
@@ -381,16 +379,14 @@ func TestRegisterWithdrawal(t *testing.T) {
 		amount := decimal.NewFromInt(50)
 
 		// act
-		evt, err := tx.RegisterWithdrawal(accountID, values.Currency("EUR"), amount, "cash", "atm")
+		evt, err := tx.RegisterWithdrawal(accountID, values.Currency("EUR"), amount)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyWithdrawn{
-			AccountID:   accountID,
-			Currency:    values.Currency("EUR"),
-			Amount:      amount,
-			Category:    "cash",
-			Description: "atm",
+			AccountID: accountID,
+			Currency:  values.Currency("EUR"),
+			Amount:    amount,
 		}, evt)
 	})
 
@@ -399,7 +395,7 @@ func TestRegisterWithdrawal(t *testing.T) {
 		tx := transaction.New(uuid.New())
 
 		// act
-		evt, err := tx.RegisterWithdrawal(uuid.New(), values.Currency("EUR"), decimal.NewFromInt(-10), "cash", "")
+		evt, err := tx.RegisterWithdrawal(uuid.New(), values.Currency("EUR"), decimal.NewFromInt(-10))
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
