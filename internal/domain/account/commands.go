@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	ErrAccountAlreadyOpened = errors.New("account_already_opened")
 	ErrAccountNotOpened     = errors.New("account_not_opened")
 	ErrNegativeOrNullAmount = errors.New("negative_or_null_amount")
 )
@@ -19,7 +18,7 @@ func (a *Account) Open(
 	currency values.Currency,
 ) (evt *events.Opened, err error) {
 	if a.State != State_Unopened {
-		return nil, ErrAccountAlreadyOpened
+		return nil, nil
 	}
 
 	return &events.Opened{

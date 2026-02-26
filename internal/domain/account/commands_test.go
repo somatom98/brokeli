@@ -42,7 +42,7 @@ func TestOpen(t *testing.T) {
 		evt, err := acc.Open("Personal", values.Currency("EUR"))
 
 		// assert
-		require.ErrorIs(t, err, account.ErrAccountAlreadyOpened)
+		require.NoError(t, err)
 		assert.Nil(t, evt)
 	})
 }

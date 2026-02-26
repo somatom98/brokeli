@@ -52,8 +52,6 @@ func (v *Projection) Update(ctx context.Context) <-chan error {
 			err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
 		case transaction_events.TypeReimbursementReceived:
 			err = v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
-		case transaction_events.TypeMoneyTransfered:
-			err = v.ApplyTransferCreated(ctx, record.Content().(transaction_events.MoneyTransfered))
 		case account_events.TypeOpened:
 			err = v.ApplyAccountOpened(ctx, record.Content().(account_events.Opened))
 		case account_events.TypeMoneyDeposited:

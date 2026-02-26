@@ -9,10 +9,10 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
-	accounts_db "github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
 	"github.com/somatom98/brokeli/internal/domain/account"
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
+	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
+	accounts_db "github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
@@ -95,8 +95,8 @@ func Setup(ctx context.Context) (*App, error) {
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection, accountDispatcher).
-		Setup()
+		New(httpHandler, accountsProjection, accountDispatcher, transactionES).
+		Setup(ctx)
 
 	import_transactions.
 		New(httpHandler, transactionDispatcher, accountDispatcher).

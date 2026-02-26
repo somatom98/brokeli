@@ -27,6 +27,7 @@ type TransactionDispatcher interface {
 type AccountDispatcher interface {
 	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
 	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
+	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency) error
 }
 
 type Feature struct {
@@ -82,6 +83,11 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 		trxType, err := t.Type()
 		if err != nil {
 			return fmt.Errorf("failed to get transaction type for record %v: %w", record, err)
+		}
+
+		err = f.accountDispatcher.Open(ctx, t.debit.AccountID, record[1], t.debit.Currency)
+		if err != nil {
+			return fmt.Errorf("failed to open account: %w", err)
 		}
 
 		switch trxType {

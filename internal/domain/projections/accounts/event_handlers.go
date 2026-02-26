@@ -31,17 +31,3 @@ func (v *Projection) ApplyMoneyDeposited(ctx context.Context, e account_events.M
 func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, e account_events.MoneyWithdrawn) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount.Neg(), e.Currency)
 }
-
-func (v *Projection) ApplyTransferCreated(ctx context.Context, e transaction_events.MoneyTransfered) error {
-	err := v.repository.UpdateAccountBalance(ctx, e.FromAccountID, e.FromAmount.Neg(), e.FromCurrency)
-	if err != nil {
-		return err
-	}
-
-	err = v.repository.UpdateAccountBalance(ctx, e.ToAccountID, e.ToAmount, e.ToCurrency)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

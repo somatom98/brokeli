@@ -133,6 +133,10 @@ func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID
 	return nil
 }
 
+func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency) error {
+	return nil
+}
+
 func TestImportTransactions(t *testing.T) {
 	t.Run("successfully import various transaction types", func(t *testing.T) {
 		// arrange
