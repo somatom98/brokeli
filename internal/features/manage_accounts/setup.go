@@ -23,7 +23,6 @@ type Feature struct {
 	httpHandler       *http.ServeMux
 	accountsView      *accounts.Projection
 	accountDispatcher AccountDispatcher
-	transactionsCh    <-chan event_store.Record
 }
 
 func New(
@@ -32,15 +31,17 @@ func New(
 	accountDispatcher AccountDispatcher,
 	transactionES event_store.Store[*transaction.Transaction],
 ) *Feature {
-	return &Feature{
+	f := &Feature{
 		httpHandler:       httpHandler,
 		accountsView:      accountsView,
 		accountDispatcher: accountDispatcher,
-		transactionsCh:    transactionES.Subscribe(context.Background()),
 	}
+
+	transactionES.Subscribe(context.Background(), f.HandleRecord)
+
+	return f
 }
 
 func (f *Feature) Setup(ctx context.Context) {
 	f.httpHandler.HandleFunc("GET /api/accounts", f.handleGetAccounts)
-	_ = f.Listen(ctx)
 }

@@ -30,6 +30,7 @@ type App struct {
 	transactionES event_store.Store[*transaction.Transaction]
 	accountES     event_store.Store[*account.Account]
 	db            *sql.DB
+	cancelRelays  context.CancelFunc
 }
 
 func Setup(ctx context.Context) (*App, error) {
@@ -107,6 +108,7 @@ func Setup(ctx context.Context) (*App, error) {
 		transactionES: transactionES,
 		accountES:     accountES,
 		db:            db,
+		cancelRelays:  func() {},
 	}, nil
 }
 
@@ -119,6 +121,26 @@ func (a *App) Start() <-chan error {
 	}
 
 	errCh := make(chan error)
+
+	relayCtx, cancel := context.WithCancel(context.Background())
+	a.cancelRelays = cancel
+
+	// Start relay workers
+	if es, ok := a.transactionES.(*postgres.PostgresStore[*transaction.Transaction]); ok {
+		go func() {
+			if err := es.RunRelay(relayCtx); err != nil && err != context.Canceled {
+				log.Printf("Transaction Relay error: %v", err)
+			}
+		}()
+	}
+
+	if es, ok := a.accountES.(*postgres.PostgresStore[*account.Account]); ok {
+		go func() {
+			if err := es.RunRelay(relayCtx); err != nil && err != context.Canceled {
+				log.Printf("Account Relay error: %v", err)
+			}
+		}()
+	}
 
 	go func() {
 		defer close(errCh)
@@ -134,6 +156,10 @@ func (a *App) Start() <-chan error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
+	if a.cancelRelays != nil {
+		a.cancelRelays()
+	}
+
 	err := a.httpServer.Shutdown(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to shutdown http server: %w", err)

@@ -10,10 +10,6 @@ import (
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
-const (
-	Version = 0
-)
-
 type Dispatcher struct {
 	es event_store.Store[*Account]
 }
@@ -32,7 +28,7 @@ func (d *Dispatcher) Open(
 	name string,
 	currency values.Currency,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -51,7 +47,7 @@ func (d *Dispatcher) Open(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -61,7 +57,7 @@ func (d *Dispatcher) UpdateName(
 	id uuid.UUID,
 	name string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -79,7 +75,7 @@ func (d *Dispatcher) UpdateName(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -91,7 +87,7 @@ func (d *Dispatcher) Deposit(
 	amount decimal.Decimal,
 	user string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -111,7 +107,7 @@ func (d *Dispatcher) Deposit(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -123,7 +119,7 @@ func (d *Dispatcher) Withdraw(
 	amount decimal.Decimal,
 	user string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -143,7 +139,7 @@ func (d *Dispatcher) Withdraw(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }

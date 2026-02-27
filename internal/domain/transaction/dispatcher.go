@@ -31,7 +31,7 @@ func (d *Dispatcher) RegisterExpense(
 	category string,
 	description string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -53,7 +53,7 @@ func (d *Dispatcher) RegisterExpense(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -67,7 +67,7 @@ func (d *Dispatcher) RegisterIncome(
 	category string,
 	description string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -89,7 +89,7 @@ func (d *Dispatcher) RegisterIncome(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -106,7 +106,7 @@ func (d *Dispatcher) RegisterTransfer(
 	category string,
 	description string,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -131,7 +131,7 @@ func (d *Dispatcher) RegisterTransfer(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -143,7 +143,7 @@ func (d *Dispatcher) SetExpectedReimbursement(
 	currency values.Currency,
 	amount decimal.Decimal,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -163,7 +163,7 @@ func (d *Dispatcher) SetExpectedReimbursement(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }
@@ -176,7 +176,7 @@ func (d *Dispatcher) RegisterReimbursement(
 	currency values.Currency,
 	amount decimal.Decimal,
 ) error {
-	aggr, err := d.es.GetAggregate(ctx, id)
+	aggr, version, err := d.es.GetAggregate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("aggregate fetch failed: %w", err)
 	}
@@ -197,7 +197,7 @@ func (d *Dispatcher) RegisterReimbursement(
 
 	return d.es.Append(ctx, event_store.Record{
 		AggregateID: aggr.ID,
-		Version:     Version,
+		Version:     version + 1,
 		Event:       event,
 	})
 }

@@ -20,3 +20,13 @@ type Event struct {
 	EventData     json.RawMessage `json:"event_data"`
 	CreatedAt     sql.NullTime    `json:"created_at"`
 }
+
+type OutboxEvent struct {
+	ID            uuid.UUID       `json:"id"`
+	AggregateID   uuid.UUID       `json:"aggregate_id"`
+	AggregateType string          `json:"aggregate_type"`
+	Version       int64           `json:"version"`
+	EventType     string          `json:"event_type"`
+	EventData     json.RawMessage `json:"event_data"`
+	CreatedAt     sql.NullTime    `json:"created_at"`
+}

@@ -38,6 +38,42 @@ func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) error 
 	return err
 }
 
+const appendToOutbox = `-- name: AppendToOutbox :exec
+INSERT INTO outbox_events (id, aggregate_id, aggregate_type, version, event_type, event_data)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type AppendToOutboxParams struct {
+	ID            uuid.UUID       `json:"id"`
+	AggregateID   uuid.UUID       `json:"aggregate_id"`
+	AggregateType string          `json:"aggregate_type"`
+	Version       int64           `json:"version"`
+	EventType     string          `json:"event_type"`
+	EventData     json.RawMessage `json:"event_data"`
+}
+
+func (q *Queries) AppendToOutbox(ctx context.Context, arg AppendToOutboxParams) error {
+	_, err := q.db.ExecContext(ctx, appendToOutbox,
+		arg.ID,
+		arg.AggregateID,
+		arg.AggregateType,
+		arg.Version,
+		arg.EventType,
+		arg.EventData,
+	)
+	return err
+}
+
+const deleteOutboxEvent = `-- name: DeleteOutboxEvent :exec
+DELETE FROM outbox_events
+WHERE id = $1
+`
+
+func (q *Queries) DeleteOutboxEvent(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteOutboxEvent, id)
+	return err
+}
+
 const getEvents = `-- name: GetEvents :many
 SELECT version, event_type, event_data
 FROM events
@@ -61,6 +97,43 @@ func (q *Queries) GetEvents(ctx context.Context, aggregateID uuid.UUID) ([]GetEv
 	for rows.Next() {
 		var i GetEventsRow
 		if err := rows.Scan(&i.Version, &i.EventType, &i.EventData); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOutboxEvents = `-- name: GetOutboxEvents :many
+SELECT id, aggregate_id, aggregate_type, version, event_type, event_data, created_at FROM outbox_events
+ORDER BY created_at ASC
+LIMIT $1
+`
+
+func (q *Queries) GetOutboxEvents(ctx context.Context, limit int32) ([]OutboxEvent, error) {
+	rows, err := q.db.QueryContext(ctx, getOutboxEvents, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OutboxEvent
+	for rows.Next() {
+		var i OutboxEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.AggregateID,
+			&i.AggregateType,
+			&i.Version,
+			&i.EventType,
+			&i.EventData,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

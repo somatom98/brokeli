@@ -21,8 +21,10 @@ type Aggregate interface {
 	Hydrate(records []Record) error
 }
 
+type SubscribeHandler func(ctx context.Context, record Record) error
+
 type Store[A Aggregate] interface {
-	Subscribe(ctx context.Context) <-chan Record
-	GetAggregate(ctx context.Context, id uuid.UUID) (A, error)
+	Subscribe(ctx context.Context, handler SubscribeHandler)
+	GetAggregate(ctx context.Context, id uuid.UUID) (A, uint64, error)
 	Append(ctx context.Context, record Record) error
 }

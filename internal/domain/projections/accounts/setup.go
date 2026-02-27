@@ -2,7 +2,6 @@ package accounts
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,9 +22,7 @@ type Repository interface {
 }
 
 type Projection struct {
-	repository     Repository
-	transactionsCh <-chan event_store.Record
-	accountsCh     <-chan event_store.Record
+	repository Repository
 }
 
 func New(
@@ -33,66 +30,32 @@ func New(
 	accountES event_store.Store[*account.Account],
 	repository Repository,
 ) *Projection {
-	return &Projection{
-		repository:     repository,
-		transactionsCh: transactionES.Subscribe(context.Background()),
-		accountsCh:     accountES.Subscribe(context.Background()),
+	p := &Projection{
+		repository: repository,
 	}
+
+	transactionES.Subscribe(context.Background(), p.HandleRecord)
+	accountES.Subscribe(context.Background(), p.HandleRecord)
+
+	return p
 }
 
-func (v *Projection) Update(ctx context.Context) <-chan error {
-	errCh := make(chan error, 1)
-
-	processRecord := func(record event_store.Record) error {
-		var err error
-		switch record.Type() {
-		case transaction_events.TypeMoneySpent:
-			err = v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.MoneySpent))
-		case transaction_events.TypeMoneyReceived:
-			err = v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
-		case transaction_events.TypeReimbursementReceived:
-			err = v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
-		case account_events.TypeOpened:
-			err = v.ApplyAccountOpened(ctx, record.Content().(account_events.Opened))
-		case account_events.TypeMoneyDeposited:
-			err = v.ApplyMoneyDeposited(ctx, record.Content().(account_events.MoneyDeposited))
-		case account_events.TypeMoneyWithdrawn:
-			err = v.ApplyMoneyWithdrawn(ctx, record.Content().(account_events.MoneyWithdrawn))
-		}
-		return err
+func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record) error {
+	switch record.Type() {
+	case transaction_events.TypeMoneySpent:
+		return v.ApplyExpenseCreated(ctx, record.Content().(transaction_events.MoneySpent))
+	case transaction_events.TypeMoneyReceived:
+		return v.ApplyIncomeCreated(ctx, record.Content().(transaction_events.MoneyReceived))
+	case transaction_events.TypeReimbursementReceived:
+		return v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
+	case account_events.TypeOpened:
+		return v.ApplyAccountOpened(ctx, record.Content().(account_events.Opened))
+	case account_events.TypeMoneyDeposited:
+		return v.ApplyMoneyDeposited(ctx, record.Content().(account_events.MoneyDeposited))
+	case account_events.TypeMoneyWithdrawn:
+		return v.ApplyMoneyWithdrawn(ctx, record.Content().(account_events.MoneyWithdrawn))
 	}
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				errCh <- ctx.Err()
-				return
-			case record, ok := <-v.transactionsCh:
-				if !ok {
-					errCh <- nil
-					return
-				}
-
-				if err := processRecord(record); err != nil {
-					errCh <- fmt.Errorf("apply transaction failed: %w", err)
-					return
-				}
-			case record, ok := <-v.accountsCh:
-				if !ok {
-					errCh <- nil
-					return
-				}
-
-				if err := processRecord(record); err != nil {
-					errCh <- fmt.Errorf("apply account failed: %w", err)
-					return
-				}
-			}
-		}
-	}()
-
-	return errCh
+	return nil
 }
 
 func (v *Projection) GetAll(ctx context.Context) (map[uuid.UUID]Account, error) {

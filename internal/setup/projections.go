@@ -15,7 +15,5 @@ func AccountsProjection(
 	accountES event_store.Store[*account.Account],
 	repository accounts.Repository,
 ) *accounts.Projection {
-	accountsProjection := accounts.New(transactionES, accountES, repository)
-	_ = accountsProjection.Update(ctx)
-	return accountsProjection
+	return accounts.New(transactionES, accountES, repository)
 }

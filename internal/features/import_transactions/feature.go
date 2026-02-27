@@ -90,6 +90,11 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 			return fmt.Errorf("failed to open account: %w", err)
 		}
 
+		err = f.accountDispatcher.Open(ctx, t.credit.AccountID, record[2], t.credit.Currency)
+		if err != nil {
+			return fmt.Errorf("failed to open account: %w", err)
+		}
+
 		switch trxType {
 		case values.TransactionType_Transfer:
 			err = f.dispatcher.RegisterTransfer(

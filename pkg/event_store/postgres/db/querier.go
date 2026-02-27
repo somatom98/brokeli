@@ -12,7 +12,10 @@ import (
 
 type Querier interface {
 	AppendEvent(ctx context.Context, arg AppendEventParams) error
+	AppendToOutbox(ctx context.Context, arg AppendToOutboxParams) error
+	DeleteOutboxEvent(ctx context.Context, id uuid.UUID) error
 	GetEvents(ctx context.Context, aggregateID uuid.UUID) ([]GetEventsRow, error)
+	GetOutboxEvents(ctx context.Context, limit int32) ([]OutboxEvent, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -5,38 +5,17 @@ import (
 	"fmt"
 
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
+	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
-func (f *Feature) Listen(ctx context.Context) <-chan error {
-	errCh := make(chan error, 1)
+func (f *Feature) HandleRecord(ctx context.Context, record event_store.Record) error {
+	switch record.Type() {
+	case transaction_events.TypeMoneyTransfered:
+		event := record.Content().(transaction_events.MoneyTransfered)
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				errCh <- ctx.Err()
-				return
-			case record, ok := <-f.transactionsCh:
-				if !ok {
-					errCh <- nil
-					return
-				}
-
-				switch record.Type() {
-				case transaction_events.TypeMoneyTransfered:
-					event := record.Content().(transaction_events.MoneyTransfered)
-
-					err := f.handleMoneyTransfered(ctx, event)
-					if err != nil {
-						errCh <- err
-						return
-					}
-				}
-			}
-		}
-	}()
-
-	return errCh
+		return f.handleMoneyTransfered(ctx, event)
+	}
+	return nil
 }
 
 func (f *Feature) handleMoneyTransfered(ctx context.Context, event transaction_events.MoneyTransfered) error {
