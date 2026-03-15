@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/domain/values"
+	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
 var (
@@ -19,7 +20,7 @@ func (a *Transaction) SetExpectedReimbursement(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
-) (evt *events.ExpectedReimbursementSet, err error) {
+) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
 	}
@@ -41,7 +42,7 @@ func (a *Transaction) RegisterExpense(
 	amount decimal.Decimal,
 	category string,
 	description string,
-) (evt *events.MoneySpent, err error) {
+) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
 	}
@@ -65,7 +66,7 @@ func (a *Transaction) RegisterIncome(
 	amount decimal.Decimal,
 	category string,
 	description string,
-) (evt *events.MoneyReceived, err error) {
+) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
 	}
@@ -92,7 +93,7 @@ func (a *Transaction) RegisterTransfer(
 	toAmount decimal.Decimal,
 	category string,
 	description string,
-) (evt *events.MoneyTransfered, err error) {
+) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
 	}
@@ -130,7 +131,7 @@ func (a *Transaction) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
-) (evt *events.ReimbursementReceived, err error) {
+) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
 	}

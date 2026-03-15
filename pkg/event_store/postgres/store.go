@@ -3,8 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -23,19 +25,6 @@ type PostgresStore[A event_store.Aggregate] struct {
 	mu            sync.RWMutex
 	handlers      []event_store.SubscribeHandler
 	aggregateType string
-}
-
-type event struct {
-	EventType    string
-	EventContent any
-}
-
-func (e event) Type() string {
-	return e.EventType
-}
-
-func (e event) Content() any {
-	return e.EventContent
 }
 
 var _ event_store.Store[event_store.Aggregate] = &PostgresStore[event_store.Aggregate]{}
@@ -77,14 +66,7 @@ func (s *PostgresStore[A]) Subscribe(ctx context.Context, handler event_store.Su
 	s.handlers = append(s.handlers, handler)
 }
 
-func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record) error {
-	aggregateType := s.aggregateType
-
-	eventData, err := json.Marshal(record.Content())
-	if err != nil {
-		return fmt.Errorf("failed to marshal event data: %w", err)
-	}
-
+func (s *PostgresStore[A]) Execute(ctx context.Context, id uuid.UUID, fn func(aggr A, version uint64) (event_store.Event, error)) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -92,6 +74,104 @@ func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record
 	defer tx.Rollback()
 
 	qtx := s.queries.WithTx(tx)
+
+	// Acquire a transactional advisory lock on the aggregate ID.
+	// We use the first 8 bytes of the UUID as the lock key.
+	lockKey := int64(binary.BigEndian.Uint64(id[:8]))
+	_, err = tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1)", lockKey)
+	if err != nil {
+		return fmt.Errorf("failed to acquire advisory lock: %w", err)
+	}
+
+	aggr, version, err := s.getAggregate(ctx, qtx, id)
+	if err != nil {
+		return err
+	}
+
+	e, err := fn(aggr, version)
+	if err != nil {
+		return err
+	}
+
+	if e == nil {
+		return tx.Commit()
+	}
+
+	log.Printf("event: %v", e)
+
+	record := event_store.Record{
+		AggregateID: id,
+		Version:     version + 1,
+		Event: event{
+			EventType:    e.Type(),
+			EventContent: e.Content(),
+		},
+	}
+
+	if err := s.append(ctx, qtx, record); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+type event struct {
+	EventType    string
+	EventContent any
+}
+
+func (e event) Type() string {
+	return e.EventType
+}
+
+func (e event) Content() any {
+	return e.EventContent
+}
+
+type simpleEvent struct {
+	eventType string
+	content   any
+}
+
+func (e simpleEvent) Type() string {
+	return e.eventType
+}
+
+func (e simpleEvent) Content() any {
+	return e.content
+}
+
+func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	qtx := s.queries.WithTx(tx)
+
+	if err := s.append(ctx, qtx, record); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (s *PostgresStore[A]) append(ctx context.Context, q db.Querier, record event_store.Record) error {
+	aggregateType := s.aggregateType
+
+	eventData, err := json.Marshal(record.Content())
+	if err != nil {
+		return fmt.Errorf("failed to marshal event data: %w", err)
+	}
 
 	params := db.AppendEventParams{
 		ID:            uuid.New(),
@@ -102,27 +182,27 @@ func (s *PostgresStore[A]) Append(ctx context.Context, record event_store.Record
 		EventData:     eventData,
 	}
 
-	err = qtx.AppendEvent(ctx, params)
+	err = q.AppendEvent(ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to insert event: %w", err)
 	}
 
-	err = qtx.AppendToOutbox(ctx, db.AppendToOutboxParams(params))
+	err = q.AppendToOutbox(ctx, db.AppendToOutboxParams(params))
 	if err != nil {
 		return fmt.Errorf("failed to insert outbox event: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
 func (s *PostgresStore[A]) GetAggregate(ctx context.Context, id uuid.UUID) (A, uint64, error) {
+	return s.getAggregate(ctx, s.queries, id)
+}
+
+func (s *PostgresStore[A]) getAggregate(ctx context.Context, q db.Querier, id uuid.UUID) (A, uint64, error) {
 	var zero A
 
-	events, err := s.queries.GetEvents(ctx, id)
+	events, err := q.GetEvents(ctx, id)
 	if err != nil {
 		return zero, 0, fmt.Errorf("failed to query events: %w", err)
 	}

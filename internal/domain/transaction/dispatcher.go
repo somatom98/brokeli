@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -31,30 +30,8 @@ func (d *Dispatcher) RegisterExpense(
 	category string,
 	description string,
 ) error {
-	aggr, version, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.RegisterExpense(
-		accountID,
-		currency,
-		amount,
-		category,
-		description,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     version + 1,
-		Event:       event,
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.RegisterExpense(accountID, currency, amount, category, description)
 	})
 }
 
@@ -67,30 +44,8 @@ func (d *Dispatcher) RegisterIncome(
 	category string,
 	description string,
 ) error {
-	aggr, version, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.RegisterIncome(
-		accountID,
-		currency,
-		amount,
-		category,
-		description,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     version + 1,
-		Event:       event,
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.RegisterIncome(accountID, currency, amount, category, description)
 	})
 }
 
@@ -106,33 +61,8 @@ func (d *Dispatcher) RegisterTransfer(
 	category string,
 	description string,
 ) error {
-	aggr, version, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.RegisterTransfer(
-		fromAccountID,
-		fromCurrency,
-		fromAmount,
-		toAccountID,
-		toCurrency,
-		toAmount,
-		category,
-		description,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     version + 1,
-		Event:       event,
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.RegisterTransfer(fromAccountID, fromCurrency, fromAmount, toAccountID, toCurrency, toAmount, category, description)
 	})
 }
 
@@ -143,28 +73,8 @@ func (d *Dispatcher) SetExpectedReimbursement(
 	currency values.Currency,
 	amount decimal.Decimal,
 ) error {
-	aggr, version, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.SetExpectedReimbursement(
-		accountID,
-		currency,
-		amount,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     version + 1,
-		Event:       event,
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.SetExpectedReimbursement(accountID, currency, amount)
 	})
 }
 
@@ -176,28 +86,7 @@ func (d *Dispatcher) RegisterReimbursement(
 	currency values.Currency,
 	amount decimal.Decimal,
 ) error {
-	aggr, version, err := d.es.GetAggregate(ctx, id)
-	if err != nil {
-		return fmt.Errorf("aggregate fetch failed: %w", err)
-	}
-
-	event, err := aggr.RegisterReimbursement(
-		accountID,
-		from,
-		currency,
-		amount,
-	)
-	if err != nil {
-		return err
-	}
-
-	if event == nil {
-		return nil
-	}
-
-	return d.es.Append(ctx, event_store.Record{
-		AggregateID: aggr.ID,
-		Version:     version + 1,
-		Event:       event,
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.RegisterReimbursement(accountID, from, currency, amount)
 	})
 }

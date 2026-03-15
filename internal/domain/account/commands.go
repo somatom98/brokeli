@@ -6,6 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/values"
+	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 func (a *Account) Open(
 	name string,
 	currency values.Currency,
-) (evt *events.Opened, err error) {
+) (evt event_store.Event, err error) {
 	if a.State != State_Unopened {
 		return nil, nil
 	}
@@ -30,7 +31,7 @@ func (a *Account) Open(
 
 func (a *Account) UpdateName(
 	name string,
-) (evt *events.NameUpdated, err error) {
+) (evt event_store.Event, err error) {
 	if a.State != State_Opened {
 		return nil, ErrAccountNotOpened
 	}
@@ -44,7 +45,7 @@ func (a *Account) Deposit(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
-) (evt *events.MoneyDeposited, err error) {
+) (evt event_store.Event, err error) {
 	if a.State < State_Opened {
 		return nil, ErrAccountNotOpened
 	}
@@ -65,7 +66,7 @@ func (a *Account) Withdraw(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
-) (evt *events.MoneyWithdrawn, err error) {
+) (evt event_store.Event, err error) {
 	if a.State < State_Opened {
 		return nil, ErrAccountNotOpened
 	}

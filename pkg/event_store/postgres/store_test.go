@@ -86,3 +86,32 @@ func TestPostgresStore_Concurrency_UniqueVersion(t *testing.T) {
 	err = store.Append(ctx, rec2)
 	assert.Error(t, err, "Expected error when appending event with duplicate version")
 }
+
+func TestPostgresStore_Execute_NilInterface(t *testing.T) {
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		t.Skip("Skipping integration test: DB_DSN not set")
+	}
+
+	db, err := sql.Open("postgres", dsn)
+	require.NoError(t, err)
+	defer db.Close()
+
+	id := uuid.New()
+	store, err := NewPostgresStore[*MockAggregate](
+		db,
+		func(uid uuid.UUID) *MockAggregate { return &MockAggregate{ID: uid} },
+		nil,
+	)
+	require.NoError(t, err)
+	defer store.Close()
+
+	ctx := context.Background()
+
+	// This should NOT panic
+	err = store.Execute(ctx, id, func(aggr *MockAggregate, version uint64) (event_store.Event, error) {
+		var e *MockEvent
+		return e, nil
+	})
+	assert.NoError(t, err)
+}
