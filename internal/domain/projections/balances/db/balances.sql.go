@@ -12,6 +12,79 @@ import (
 	"github.com/google/uuid"
 )
 
+const getAllBalances = `-- name: GetAllBalances :many
+SELECT DATE_TRUNC('month', value_date)::TIMESTAMP AS month, currency, SUM(amount)::TEXT AS amount
+FROM balances_projection
+GROUP BY month, currency
+ORDER BY month DESC
+`
+
+type GetAllBalancesRow struct {
+	Month    time.Time `json:"month"`
+	Currency string    `json:"currency"`
+	Amount   string    `json:"amount"`
+}
+
+func (q *Queries) GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllBalances)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllBalancesRow
+	for rows.Next() {
+		var i GetAllBalancesRow
+		if err := rows.Scan(&i.Month, &i.Currency, &i.Amount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getBalancesByAccount = `-- name: GetBalancesByAccount :many
+SELECT DATE_TRUNC('month', value_date)::TIMESTAMP AS month, currency, SUM(amount)::TEXT AS amount
+FROM balances_projection
+WHERE account_id = $1
+GROUP BY month, currency
+ORDER BY month DESC
+`
+
+type GetBalancesByAccountRow struct {
+	Month    time.Time `json:"month"`
+	Currency string    `json:"currency"`
+	Amount   string    `json:"amount"`
+}
+
+func (q *Queries) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBalancesByAccount, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetBalancesByAccountRow
+	for rows.Next() {
+		var i GetBalancesByAccountRow
+		if err := rows.Scan(&i.Month, &i.Currency, &i.Amount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertBalanceUpdate = `-- name: InsertBalanceUpdate :exec
 INSERT INTO balances_projection (id, account_id, currency, amount, value_date)
 VALUES ($1, $2, $3, $4, $5)

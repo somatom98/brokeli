@@ -67,7 +67,7 @@ func TestManageAccounts_TransferEventHandler(t *testing.T) {
 	// arrange
 	transactionES := event_store.NewInMemory[*transaction.Transaction](transaction.New)
 	dispatcher := &DispatcherMock{}
-	feature := manage_accounts.New(&http.ServeMux{}, nil, dispatcher, transactionES)
+	feature := manage_accounts.New(&http.ServeMux{}, nil, nil, dispatcher, transactionES)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

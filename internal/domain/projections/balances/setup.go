@@ -15,8 +15,16 @@ import (
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
 
+type BalancePeriod struct {
+	Month    time.Time       `json:"month"`
+	Currency values.Currency `json:"currency"`
+	Amount   decimal.Decimal `json:"amount"`
+}
+
 type Repository interface {
 	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, valueDate time.Time) error
+	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error)
+	GetAllBalances(ctx context.Context) ([]BalancePeriod, error)
 }
 
 type Projection struct {
@@ -65,4 +73,12 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 		return v.ApplyMoneyWithdrawn(ctx, id, record.Content().(account_events.MoneyWithdrawn))
 	}
 	return nil
+}
+
+func (v *Projection) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error) {
+	return v.repository.GetBalancesByAccount(ctx, accountID)
+}
+
+func (v *Projection) GetAllBalances(ctx context.Context) ([]BalancePeriod, error) {
+	return v.repository.GetAllBalances(ctx)
 }

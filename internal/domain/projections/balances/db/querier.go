@@ -6,9 +6,13 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
+	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error
 }
 

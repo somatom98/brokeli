@@ -100,14 +100,14 @@ func Setup(ctx context.Context) (*App, error) {
 	accountDispatcher := AccountDispatcher(accountES)
 
 	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
-	_ = BalancesProjection(ctx, transactionES, accountES, balancesRepository)
+	balancesProjection := BalancesProjection(ctx, transactionES, accountES, balancesRepository)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection, accountDispatcher, transactionES).
+		New(httpHandler, accountsProjection, balancesProjection, accountDispatcher, transactionES).
 		Setup(ctx)
 
 	import_transactions.
