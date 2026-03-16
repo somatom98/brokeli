@@ -2,6 +2,7 @@ package account
 
 import (
 	"errors"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/account/events"
@@ -17,27 +18,31 @@ var (
 func (a *Account) Open(
 	name string,
 	currency values.Currency,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State != State_Unopened {
 		return nil, nil
 	}
 
 	return &events.Opened{
-		AccountID: a.ID,
-		Name:      name,
-		Currency:  currency,
+		AccountID:  a.ID,
+		Name:       name,
+		Currency:   currency,
+		HappenedAt: happenedAt,
 	}, nil
 }
 
 func (a *Account) UpdateName(
 	name string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State != State_Opened {
 		return nil, ErrAccountNotOpened
 	}
 
 	return &events.NameUpdated{
-		Name: name,
+		Name:       name,
+		HappenedAt: happenedAt,
 	}, nil
 }
 
@@ -45,6 +50,7 @@ func (a *Account) Deposit(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State < State_Opened {
 		return nil, ErrAccountNotOpened
@@ -55,10 +61,11 @@ func (a *Account) Deposit(
 	}
 
 	return &events.MoneyDeposited{
-		AccountID: a.ID,
-		Currency:  currency,
-		Amount:    amount,
-		User:      user,
+		AccountID:  a.ID,
+		Currency:   currency,
+		Amount:     amount,
+		User:       user,
+		HappenedAt: happenedAt,
 	}, nil
 }
 
@@ -66,6 +73,7 @@ func (a *Account) Withdraw(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State < State_Opened {
 		return nil, ErrAccountNotOpened
@@ -76,9 +84,10 @@ func (a *Account) Withdraw(
 	}
 
 	return &events.MoneyWithdrawn{
-		AccountID: a.ID,
-		Currency:  currency,
-		Amount:    amount,
-		User:      user,
+		AccountID:  a.ID,
+		Currency:   currency,
+		Amount:     amount,
+		User:       user,
+		HappenedAt: happenedAt,
 	}, nil
 }

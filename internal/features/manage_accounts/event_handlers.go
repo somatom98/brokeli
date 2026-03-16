@@ -25,6 +25,7 @@ func (f *Feature) handleMoneyTransfered(ctx context.Context, event transaction_e
 		event.FromCurrency,
 		event.FromAmount,
 		"system",
+		event.HappenedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to process transfer withdrawal: %w", err)
@@ -36,6 +37,7 @@ func (f *Feature) handleMoneyTransfered(ctx context.Context, event transaction_e
 		event.ToCurrency,
 		event.ToAmount,
 		"system",
+		event.HappenedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to process transfer deposit: %w", err)

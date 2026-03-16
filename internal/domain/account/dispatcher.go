@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -26,9 +27,10 @@ func (d *Dispatcher) Open(
 	id uuid.UUID,
 	name string,
 	currency values.Currency,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.Open(name, currency)
+		return aggr.Open(name, currency, happenedAt)
 	})
 }
 
@@ -36,9 +38,10 @@ func (d *Dispatcher) UpdateName(
 	ctx context.Context,
 	id uuid.UUID,
 	name string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.UpdateName(name)
+		return aggr.UpdateName(name, happenedAt)
 	})
 }
 
@@ -48,9 +51,10 @@ func (d *Dispatcher) Deposit(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.Deposit(currency, amount, user)
+		return aggr.Deposit(currency, amount, user, happenedAt)
 	})
 }
 
@@ -60,8 +64,9 @@ func (d *Dispatcher) Withdraw(
 	currency values.Currency,
 	amount decimal.Decimal,
 	user string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.Withdraw(currency, amount, user)
+		return aggr.Withdraw(currency, amount, user, happenedAt)
 	})
 }

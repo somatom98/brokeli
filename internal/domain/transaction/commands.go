@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -20,6 +21,7 @@ func (a *Transaction) SetExpectedReimbursement(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -30,9 +32,10 @@ func (a *Transaction) SetExpectedReimbursement(
 	}
 
 	return &events.ExpectedReimbursementSet{
-		AccountID: accountID,
-		Currency:  currency,
-		Amount:    amount,
+		AccountID:  accountID,
+		Currency:   currency,
+		Amount:     amount,
+		HappenedAt: happenedAt,
 	}, nil
 }
 
@@ -42,6 +45,7 @@ func (a *Transaction) RegisterExpense(
 	amount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -57,6 +61,7 @@ func (a *Transaction) RegisterExpense(
 		Amount:      amount,
 		Category:    category,
 		Description: description,
+		HappenedAt:  happenedAt,
 	}, nil
 }
 
@@ -66,6 +71,7 @@ func (a *Transaction) RegisterIncome(
 	amount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -81,6 +87,7 @@ func (a *Transaction) RegisterIncome(
 		Amount:      amount,
 		Category:    category,
 		Description: description,
+		HappenedAt:  happenedAt,
 	}, nil
 }
 
@@ -93,6 +100,7 @@ func (a *Transaction) RegisterTransfer(
 	toAmount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -123,6 +131,7 @@ func (a *Transaction) RegisterTransfer(
 		ToAmount:      toAmount,
 		Category:      category,
 		Description:   description,
+		HappenedAt:    happenedAt,
 	}, nil
 }
 
@@ -131,6 +140,7 @@ func (a *Transaction) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
+	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
 		return nil, nil
@@ -141,9 +151,10 @@ func (a *Transaction) RegisterReimbursement(
 	}
 
 	return &events.ReimbursementReceived{
-		AccountID: accountID,
-		From:      from,
-		Currency:  currency,
-		Amount:    amount,
+		AccountID:  accountID,
+		From:       from,
+		Currency:   currency,
+		Amount:     amount,
+		HappenedAt: happenedAt,
 	}, nil
 }

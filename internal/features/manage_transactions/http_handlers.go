@@ -3,6 +3,7 @@ package manage_transactions
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -16,6 +17,7 @@ func (f *Feature) handleRegisterExpense(w http.ResponseWriter, r *http.Request) 
 		Amount      decimal.Decimal `json:"amount"`
 		Category    string          `json:"category"`
 		Description string          `json:"description"`
+		HappenedAt  time.Time       `json:"happened_at"`
 	}
 	var req RegisterExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -23,6 +25,10 @@ func (f *Feature) handleRegisterExpense(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	defer r.Body.Close()
+
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
 
 	if err := f.dispatcher.RegisterExpense(
 		r.Context(),
@@ -32,6 +38,7 @@ func (f *Feature) handleRegisterExpense(w http.ResponseWriter, r *http.Request) 
 		req.Amount,
 		req.Category,
 		req.Description,
+		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -48,6 +55,7 @@ func (f *Feature) handleRegisterIncome(w http.ResponseWriter, r *http.Request) {
 		Amount      decimal.Decimal `json:"amount"`
 		Category    string          `json:"category"`
 		Description string          `json:"description"`
+		HappenedAt  time.Time       `json:"happened_at"`
 	}
 	var req RegisterIncomeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -55,6 +63,10 @@ func (f *Feature) handleRegisterIncome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
 
 	if err := f.dispatcher.RegisterIncome(
 		r.Context(),
@@ -64,6 +76,7 @@ func (f *Feature) handleRegisterIncome(w http.ResponseWriter, r *http.Request) {
 		req.Amount,
 		req.Category,
 		req.Description,
+		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -83,6 +96,7 @@ func (f *Feature) handleRegisterTransfer(w http.ResponseWriter, r *http.Request)
 		ToAmount      decimal.Decimal `json:"to_amount"`
 		Category      string          `json:"category"`
 		Description   string          `json:"description"`
+		HappenedAt    time.Time       `json:"happened_at"`
 	}
 	var req RegisterTransferRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -90,6 +104,10 @@ func (f *Feature) handleRegisterTransfer(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer r.Body.Close()
+
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
 
 	if err := f.dispatcher.RegisterTransfer(
 		r.Context(),
@@ -102,6 +120,7 @@ func (f *Feature) handleRegisterTransfer(w http.ResponseWriter, r *http.Request)
 		req.ToAmount,
 		req.Category,
 		req.Description,
+		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -125,10 +144,11 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 	}
 
 	type RegisterReimbursementRequest struct {
-		AccountID uuid.UUID       `json:"account_id"`
-		From      string          `json:"from"`
-		Currency  values.Currency `json:"currency"`
-		Amount    decimal.Decimal `json:"amount"`
+		AccountID  uuid.UUID       `json:"account_id"`
+		From       string          `json:"from"`
+		Currency   values.Currency `json:"currency"`
+		Amount     decimal.Decimal `json:"amount"`
+		HappenedAt time.Time       `json:"happened_at"`
 	}
 
 	var req RegisterReimbursementRequest
@@ -138,6 +158,10 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 	}
 	defer r.Body.Close()
 
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
+
 	if err := f.dispatcher.RegisterReimbursement(
 		r.Context(),
 		id,
@@ -145,6 +169,7 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 		req.From,
 		req.Currency,
 		req.Amount,
+		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -168,9 +193,10 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 	}
 
 	type SetExpectedReimbursementRequest struct {
-		AccountID uuid.UUID       `json:"account_id"`
-		Currency  values.Currency `json:"currency"`
-		Amount    decimal.Decimal `json:"amount"`
+		AccountID  uuid.UUID       `json:"account_id"`
+		Currency   values.Currency `json:"currency"`
+		Amount     decimal.Decimal `json:"amount"`
+		HappenedAt time.Time       `json:"happened_at"`
 	}
 
 	var req SetExpectedReimbursementRequest
@@ -180,12 +206,17 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 	}
 	defer r.Body.Close()
 
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
+
 	if err := f.dispatcher.SetExpectedReimbursement(
 		r.Context(),
 		id,
 		req.AccountID,
 		req.Currency,
 		req.Amount,
+		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

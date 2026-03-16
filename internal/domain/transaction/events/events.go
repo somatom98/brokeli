@@ -1,6 +1,8 @@
 package events
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/values"
@@ -20,6 +22,7 @@ type MoneySpent struct {
 	Amount      decimal.Decimal
 	Category    string
 	Description string
+	HappenedAt  time.Time
 }
 
 func (e MoneySpent) Type() string {
@@ -36,6 +39,7 @@ type MoneyReceived struct {
 	Amount      decimal.Decimal
 	Category    string
 	Description string
+	HappenedAt  time.Time
 }
 
 func (e MoneyReceived) Type() string {
@@ -55,6 +59,7 @@ type MoneyTransfered struct {
 	ToAmount      decimal.Decimal
 	Category      string
 	Description   string
+	HappenedAt    time.Time
 }
 
 func (e MoneyTransfered) Type() string {
@@ -66,16 +71,18 @@ func (e MoneyTransfered) Content() any {
 }
 
 type ReimbursementReceived struct {
-	AccountID uuid.UUID
-	From      string
-	Currency  values.Currency
-	Amount    decimal.Decimal
+	AccountID  uuid.UUID
+	From       string
+	Currency   values.Currency
+	Amount     decimal.Decimal
+	HappenedAt time.Time
 }
 
 type ExpectedReimbursementSet struct {
-	AccountID uuid.UUID
-	Currency  values.Currency
-	Amount    decimal.Decimal
+	AccountID  uuid.UUID
+	Currency   values.Currency
+	Amount     decimal.Decimal
+	HappenedAt time.Time
 }
 
 func (e ExpectedReimbursementSet) Type() string {

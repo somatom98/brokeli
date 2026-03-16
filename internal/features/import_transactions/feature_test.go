@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -29,6 +30,7 @@ type expenseCall struct {
 	Amount      decimal.Decimal
 	Category    string
 	Description string
+	HappenedAt  time.Time
 }
 
 type incomeCall struct {
@@ -37,6 +39,7 @@ type incomeCall struct {
 	Amount      decimal.Decimal
 	Category    string
 	Description string
+	HappenedAt  time.Time
 }
 
 type withdrawalCall struct {
@@ -60,38 +63,42 @@ type transferCall struct {
 	ToAmount      decimal.Decimal
 	Category      string
 	Description   string
+	HappenedAt    time.Time
 }
 
 type reimbursementCall struct {
-	AccountID uuid.UUID
-	From      string
-	Currency  values.Currency
-	Amount    decimal.Decimal
+	AccountID  uuid.UUID
+	From       string
+	Currency   values.Currency
+	Amount     decimal.Decimal
+	HappenedAt time.Time
 }
 
-func (m *DispatcherMock) RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+func (m *DispatcherMock) RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error {
 	m.Expenses = append(m.Expenses, expenseCall{
 		AccountID:   accountID,
 		Currency:    currency,
 		Amount:      amount,
 		Category:    category,
 		Description: description,
+		HappenedAt:  happenedAt,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error {
+func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error {
 	m.Incomes = append(m.Incomes, incomeCall{
 		AccountID:   accountID,
 		Currency:    currency,
 		Amount:      amount,
 		Category:    category,
 		Description: description,
+		HappenedAt:  happenedAt,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error {
+func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
 	m.Withdrawals = append(m.Withdrawals, withdrawalCall{
 		AccountID: id,
 		Currency:  currency,
@@ -100,7 +107,7 @@ func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency va
 	return nil
 }
 
-func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error {
+func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
 	m.Deposits = append(m.Deposits, depositCall{
 		AccountID: id,
 		Currency:  currency,
@@ -109,7 +116,7 @@ func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency val
 	return nil
 }
 
-func (m *DispatcherMock) RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string) error {
+func (m *DispatcherMock) RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string, happenedAt time.Time) error {
 	m.Transfers = append(m.Transfers, transferCall{
 		FromAccountID: fromAccountID,
 		FromCurrency:  fromCurrency,
@@ -119,21 +126,23 @@ func (m *DispatcherMock) RegisterTransfer(ctx context.Context, id uuid.UUID, fro
 		ToAmount:      toAmount,
 		Category:      category,
 		Description:   description,
+		HappenedAt:    happenedAt,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error {
+func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, happenedAt time.Time) error {
 	m.Reimbursements = append(m.Reimbursements, reimbursementCall{
-		AccountID: accountID,
-		From:      from,
-		Currency:  currency,
-		Amount:    amount,
+		AccountID:  accountID,
+		From:       from,
+		Currency:   currency,
+		Amount:     amount,
+		HappenedAt: happenedAt,
 	})
 	return nil
 }
 
-func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency) error {
+func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error {
 	return nil
 }
 
@@ -177,6 +186,9 @@ func TestImportTransactions(t *testing.T) {
 			assert.Equal(t, values.Currency("DKK"), expense.Currency)
 			assert.True(t, decimal.NewFromInt(148).Equal(expense.Amount))
 			assert.Equal(t, "Groceries", expense.Category)
+
+			expectedDate, _ := time.Parse("1/2/2006 15:04:05", "6/26/2025 0:00:00")
+			assert.True(t, expectedDate.Equal(expense.HappenedAt))
 		})
 
 		t.Run("income correctly registered", func(t *testing.T) {

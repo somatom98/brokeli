@@ -107,6 +107,6 @@ func TestIntegration_ImportTransactions(t *testing.T) {
 		// Check one of the accounts balance
 		lunarID := uuid.NewMD5(uuid.NameSpaceOID, []byte("Lunar"))
 		assert.NotEmpty(t, accountsResponse[lunarID].Balance["DKK"])
-		assert.True(t, accountsResponse[lunarID].Balance["DKK"].Equal(decimal.NewFromFloat(101132.95)))
+		assert.Equal(t, "101132.95", accountsResponse[lunarID].Balance["DKK"].String())
 	})
 }

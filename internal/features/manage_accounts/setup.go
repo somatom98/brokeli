@@ -3,6 +3,7 @@ package manage_accounts
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -13,10 +14,10 @@ import (
 )
 
 type AccountDispatcher interface {
-	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency) error
-	UpdateName(ctx context.Context, id uuid.UUID, name string) error
-	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
-	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
+	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error
+	UpdateName(ctx context.Context, id uuid.UUID, name string, happenedAt time.Time) error
+	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
+	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
 }
 
 type Feature struct {

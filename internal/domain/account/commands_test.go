@@ -2,6 +2,7 @@ package account_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestOpen(t *testing.T) {
+	now := time.Now()
 	t.Run("should emit opened event when account is unopened", func(t *testing.T) {
 		// arrange
 		id := uuid.New()
@@ -22,14 +24,15 @@ func TestOpen(t *testing.T) {
 		currency := values.Currency("EUR")
 
 		// act
-		evt, err := acc.Open(name, currency)
+		evt, err := acc.Open(name, currency, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.Opened{
-			AccountID: id,
-			Name:      name,
-			Currency:  currency,
+			AccountID:  id,
+			Name:       name,
+			Currency:   currency,
+			HappenedAt: now,
 		}, evt)
 	})
 
@@ -39,7 +42,7 @@ func TestOpen(t *testing.T) {
 		acc.State = account.State_Opened
 
 		// act
-		evt, err := acc.Open("Personal", values.Currency("EUR"))
+		evt, err := acc.Open("Personal", values.Currency("EUR"), now)
 
 		// assert
 		require.NoError(t, err)
@@ -48,6 +51,7 @@ func TestOpen(t *testing.T) {
 }
 
 func TestUpdateName(t *testing.T) {
+	now := time.Now()
 	t.Run("should emit name updated event when account is opened", func(t *testing.T) {
 		// arrange
 		acc := account.New(uuid.New())
@@ -55,12 +59,13 @@ func TestUpdateName(t *testing.T) {
 		newName := "Main"
 
 		// act
-		evt, err := acc.UpdateName(newName)
+		evt, err := acc.UpdateName(newName, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.NameUpdated{
-			Name: newName,
+			Name:       newName,
+			HappenedAt: now,
 		}, evt)
 	})
 
@@ -69,7 +74,7 @@ func TestUpdateName(t *testing.T) {
 		acc := account.New(uuid.New())
 
 		// act
-		evt, err := acc.UpdateName("Main")
+		evt, err := acc.UpdateName("Main", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrAccountNotOpened)
@@ -78,6 +83,7 @@ func TestUpdateName(t *testing.T) {
 }
 
 func TestDeposit(t *testing.T) {
+	now := time.Now()
 	t.Run("should emit money deposited event when payload is valid", func(t *testing.T) {
 		// arrange
 		id := uuid.New()
@@ -87,15 +93,16 @@ func TestDeposit(t *testing.T) {
 		user := "user-123"
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), amount, user)
+		evt, err := acc.Deposit(values.Currency("EUR"), amount, user, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyDeposited{
-			AccountID: id,
-			Currency:  values.Currency("EUR"),
-			Amount:    amount,
-			User:      user,
+			AccountID:  id,
+			Currency:   values.Currency("EUR"),
+			Amount:     amount,
+			User:       user,
+			HappenedAt: now,
 		}, evt)
 	})
 
@@ -104,7 +111,7 @@ func TestDeposit(t *testing.T) {
 		acc := account.New(uuid.New())
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), decimal.NewFromInt(100), "user")
+		evt, err := acc.Deposit(values.Currency("EUR"), decimal.NewFromInt(100), "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrAccountNotOpened)
@@ -117,7 +124,7 @@ func TestDeposit(t *testing.T) {
 		acc.State = account.State_Opened
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), decimal.Zero, "user")
+		evt, err := acc.Deposit(values.Currency("EUR"), decimal.Zero, "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrNegativeOrNullAmount)
@@ -126,6 +133,7 @@ func TestDeposit(t *testing.T) {
 }
 
 func TestWithdraw(t *testing.T) {
+	now := time.Now()
 	t.Run("should emit money withdrawn event when payload is valid", func(t *testing.T) {
 		// arrange
 		id := uuid.New()
@@ -135,15 +143,16 @@ func TestWithdraw(t *testing.T) {
 		user := "user-123"
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), amount, user)
+		evt, err := acc.Withdraw(values.Currency("EUR"), amount, user, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyWithdrawn{
-			AccountID: id,
-			Currency:  values.Currency("EUR"),
-			Amount:    amount,
-			User:      user,
+			AccountID:  id,
+			Currency:   values.Currency("EUR"),
+			Amount:     amount,
+			User:       user,
+			HappenedAt: now,
 		}, evt)
 	})
 
@@ -152,7 +161,7 @@ func TestWithdraw(t *testing.T) {
 		acc := account.New(uuid.New())
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(50), "user")
+		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(50), "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrAccountNotOpened)
@@ -165,7 +174,7 @@ func TestWithdraw(t *testing.T) {
 		acc.State = account.State_Opened
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(-1), "user")
+		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(-1), "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrNegativeOrNullAmount)

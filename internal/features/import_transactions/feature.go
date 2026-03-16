@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -18,16 +19,16 @@ import (
 var ErrEmptyAmount = errors.New("empty amounts")
 
 type TransactionDispatcher interface {
-	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string) error
-	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
-	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal) error
-	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string) error
+	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string, happenedAt time.Time) error
+	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error
+	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, happenedAt time.Time) error
+	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error
 }
 
 type AccountDispatcher interface {
-	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
-	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string) error
-	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency) error
+	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
+	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
+	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error
 }
 
 type Feature struct {
@@ -85,12 +86,12 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 			return fmt.Errorf("failed to get transaction type for record %v: %w", record, err)
 		}
 
-		err = f.accountDispatcher.Open(ctx, t.debit.AccountID, record[1], t.debit.Currency)
+		err = f.accountDispatcher.Open(ctx, t.debit.AccountID, record[1], t.debit.Currency, t.happenedAt)
 		if err != nil {
 			return fmt.Errorf("failed to open account: %w", err)
 		}
 
-		err = f.accountDispatcher.Open(ctx, t.credit.AccountID, record[2], t.credit.Currency)
+		err = f.accountDispatcher.Open(ctx, t.credit.AccountID, record[2], t.credit.Currency, t.happenedAt)
 		if err != nil {
 			return fmt.Errorf("failed to open account: %w", err)
 		}
@@ -108,6 +109,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.credit.Amount,
 				t.category,
 				t.description,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register transfer: %w", err)
@@ -121,6 +123,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.credit.Amount,
 				t.category,
 				t.description,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register income: %w", err)
@@ -138,6 +141,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				fromStr,
 				t.credit.Currency,
 				t.credit.Amount,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register reimbursement: %w", err)
@@ -151,6 +155,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.debit.Amount,
 				t.category,
 				t.description,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register expense: %w", err)
@@ -162,6 +167,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.credit.Currency,
 				t.credit.Amount,
 				t.description,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register deposit: %w", err)
@@ -173,6 +179,7 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.debit.Currency,
 				t.debit.Amount,
 				t.description,
+				t.happenedAt,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to register withdrawal: %w", err)
@@ -189,6 +196,7 @@ type transaction struct {
 	category    string
 	trxType     string
 	description string
+	happenedAt  time.Time
 }
 
 func (t transaction) String() string {
@@ -198,6 +206,11 @@ func (t transaction) String() string {
 func newFromRecord(record []string) (transaction, error) {
 	if len(record) < 10 {
 		return transaction{}, fmt.Errorf("invalid record length: %v", len(record))
+	}
+
+	happenedAt, err := time.Parse("1/2/2006 15:04:05", record[0])
+	if err != nil {
+		return transaction{}, fmt.Errorf("invalid date: %s, err: %w", record[0], err)
 	}
 
 	debitRaw := strings.ReplaceAll(record[3], ",", "")
@@ -239,6 +252,7 @@ func newFromRecord(record []string) (transaction, error) {
 		category:    record[7],
 		trxType:     record[8],
 		description: record[9],
+		happenedAt:  happenedAt,
 	}, nil
 }
 

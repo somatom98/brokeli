@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -29,9 +30,10 @@ func (d *Dispatcher) RegisterExpense(
 	amount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.RegisterExpense(accountID, currency, amount, category, description)
+		return aggr.RegisterExpense(accountID, currency, amount, category, description, happenedAt)
 	})
 }
 
@@ -43,9 +45,10 @@ func (d *Dispatcher) RegisterIncome(
 	amount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.RegisterIncome(accountID, currency, amount, category, description)
+		return aggr.RegisterIncome(accountID, currency, amount, category, description, happenedAt)
 	})
 }
 
@@ -60,9 +63,10 @@ func (d *Dispatcher) RegisterTransfer(
 	toAmount decimal.Decimal,
 	category string,
 	description string,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.RegisterTransfer(fromAccountID, fromCurrency, fromAmount, toAccountID, toCurrency, toAmount, category, description)
+		return aggr.RegisterTransfer(fromAccountID, fromCurrency, fromAmount, toAccountID, toCurrency, toAmount, category, description, happenedAt)
 	})
 }
 
@@ -72,9 +76,10 @@ func (d *Dispatcher) SetExpectedReimbursement(
 	accountID uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.SetExpectedReimbursement(accountID, currency, amount)
+		return aggr.SetExpectedReimbursement(accountID, currency, amount, happenedAt)
 	})
 }
 
@@ -85,8 +90,9 @@ func (d *Dispatcher) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
+	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.RegisterReimbursement(accountID, from, currency, amount)
+		return aggr.RegisterReimbursement(accountID, from, currency, amount, happenedAt)
 	})
 }
