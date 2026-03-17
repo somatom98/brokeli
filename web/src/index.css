@@ -5,7 +5,6 @@
   line-height: 1.5;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
-  background-color: #f0f2f5;
   color: #1a1d1f;
 }
 
@@ -13,14 +12,13 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  overflow-y: auto;
+  background-color: #f8fafc;
 }
 
 #root {
   width: 100%;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,7 +34,6 @@ body {
 .mesh-bg {
   position: fixed;
   inset: -50%;
-  z-index: -10;
   filter: blur(60px);
   opacity: 0.8;
   animation: mesh 15s ease-in-out infinite alternate;

@@ -31,11 +31,14 @@ export const api = {
     // API returns a map { "uuid": { name: "...", balance: {...} } }
     // We convert it to an array for the UI
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      const accounts = Object.entries(data).map(([id, details]: [string, any]) => ({
-        id: id,
-        name: details.name || `Account ${id.slice(-4)}`,
-        balance: details.balance || {}
-      }));
+      const accounts = Object.entries(data).map(([id, details]) => {
+        const d = details as { name?: string, balance?: Record<string, string> };
+        return {
+          id: id,
+          name: d.name || `Account ${id.slice(-4)}`,
+          balance: d.balance || {}
+        };
+      });
       console.log('Mapped accounts:', accounts);
       return accounts;
     }
@@ -54,7 +57,7 @@ export const api = {
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  registerExpense: async (data: any) => {
+  registerExpense: async (data: { account_id: string, currency: string, amount: string, category?: string, description?: string, happened_at?: string }) => {
     const res = await fetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +66,7 @@ export const api = {
     if (!res.ok) throw new Error('Failed to register expense');
     return res.status;
   },
-  registerIncome: async (data: any) => {
+  registerIncome: async (data: { account_id: string, currency: string, amount: string, category?: string, description?: string, happened_at?: string }) => {
     const res = await fetch('/api/incomes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +75,7 @@ export const api = {
     if (!res.ok) throw new Error('Failed to register income');
     return res.status;
   },
-  registerTransfer: async (data: any) => {
+  registerTransfer: async (data: { from_account_id: string, from_currency: string, from_amount: string, to_account_id: string, to_currency: string, to_amount: string, category?: string, description?: string, happened_at?: string }) => {
     const res = await fetch('/api/transfers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
