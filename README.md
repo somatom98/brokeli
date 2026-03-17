@@ -78,6 +78,8 @@ Maintains the current state of all accounts, calculating balances by aggregating
 | :--- | :--- | :--- |
 | `GET` | `/api/accounts` | List all accounts with current balances. |
 | `POST` | `/api/accounts` | Create a new account. |
+| `POST` | `/api/accounts/{id}/deposits` | Record a deposit into an account. |
+| `POST` | `/api/accounts/{id}/withdrawals` | Record a withdrawal from an account. |
 
 #### Manage Transactions
 

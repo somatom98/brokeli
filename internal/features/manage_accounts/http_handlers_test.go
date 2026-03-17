@@ -1,6 +1,7 @@
 package manage_accounts_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -10,9 +11,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/somatom98/brokeli/internal/domain/account"
 	"github.com/somatom98/brokeli/internal/domain/projections/balances"
+	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/domain/values"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
+	"github.com/somatom98/brokeli/pkg/event_store"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +36,7 @@ func (m *BalancesRepositoryMock) GetAllBalances(ctx context.Context) ([]balances
 	return m.Balances, nil
 }
 
-func TestManageAccounts_GetBalancesHandlers(t *testing.T) {
+func TestManageAccounts_Handlers(t *testing.T) {
 	// arrange
 	mux := http.NewServeMux()
 	repo := &BalancesRepositoryMock{
@@ -44,8 +48,11 @@ func TestManageAccounts_GetBalancesHandlers(t *testing.T) {
 			},
 		},
 	}
-	balancesProjection := balances.New(nil, nil, repo)
-	feature := manage_accounts.New(mux, nil, balancesProjection, nil, nil)
+	dispatcher := &DispatcherMock{}
+	transactionES := event_store.NewInMemory[*transaction.Transaction](transaction.New)
+	accountES := event_store.NewInMemory[*account.Account](account.New)
+	balancesProjection := balances.New(transactionES, accountES, repo)
+	feature := manage_accounts.New(mux, nil, balancesProjection, dispatcher, transactionES)
 	feature.Setup(context.Background())
 
 	t.Run("GET /api/balances", func(t *testing.T) {
@@ -88,5 +95,35 @@ func TestManageAccounts_GetBalancesHandlers(t *testing.T) {
 		mux.ServeHTTP(rec, req)
 
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("POST /api/accounts/{id}/deposits", func(t *testing.T) {
+		id := uuid.New()
+		body := `{"currency":"EUR", "amount":"100.50", "user":"test-user"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/accounts/"+id.String()+"/deposits", bytes.NewBufferString(body))
+		rec := httptest.NewRecorder()
+
+		mux.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.Len(t, dispatcher.Deposits, 1)
+		assert.Equal(t, id, dispatcher.Deposits[0].ID)
+		assert.Equal(t, "100.5", dispatcher.Deposits[0].Amount.String())
+		assert.Equal(t, "test-user", dispatcher.Deposits[0].User)
+	})
+
+	t.Run("POST /api/accounts/{id}/withdrawals", func(t *testing.T) {
+		id := uuid.New()
+		body := `{"currency":"EUR", "amount":"50.25", "user":"test-user"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/accounts/"+id.String()+"/withdrawals", bytes.NewBufferString(body))
+		rec := httptest.NewRecorder()
+
+		mux.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.Len(t, dispatcher.Withdrawals, 1)
+		assert.Equal(t, id, dispatcher.Withdrawals[0].ID)
+		assert.Equal(t, "50.25", dispatcher.Withdrawals[0].Amount.String())
+		assert.Equal(t, "test-user", dispatcher.Withdrawals[0].User)
 	})
 }

@@ -51,4 +51,6 @@ func (f *Feature) Setup(ctx context.Context) {
 	f.httpHandler.HandleFunc("GET /api/accounts", f.handleGetAccounts)
 	f.httpHandler.HandleFunc("GET /api/accounts/{id}/balances", f.handleGetAccountBalances)
 	f.httpHandler.HandleFunc("GET /api/balances", f.handleGetAllBalances)
+	f.httpHandler.HandleFunc("POST /api/accounts/{id}/deposits", f.handleDeposit)
+	f.httpHandler.HandleFunc("POST /api/accounts/{id}/withdrawals", f.handleWithdrawal)
 }
