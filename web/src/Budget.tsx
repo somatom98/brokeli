@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout } from 'lucide-react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle } from 'lucide-react';
 import { api } from './api';
 import type { Account } from './api';
 
@@ -36,6 +36,8 @@ const Budget: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const fetchBudgets = async () => {
     setIsLoading(true);
@@ -44,6 +46,9 @@ const Budget: React.FC = () => {
       setBudgets(data || []);
     } catch (err) {
       console.error('Error fetching budgets:', err);
+      setError(true);
+      setErrorMessage('Failed to fetch budgets');
+      setTimeout(() => setError(false), 3500);
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +61,9 @@ const Budget: React.FC = () => {
         setAccounts(accs || []);
       } catch (err) {
         console.error('Error fetching accounts:', err);
+        setError(true);
+        setErrorMessage('Failed to fetch accounts');
+        setTimeout(() => setError(false), 3500);
       }
     };
     fetchAccounts();
@@ -109,7 +117,9 @@ const Budget: React.FC = () => {
       }, 2000);
     } catch (err) {
       console.error('Error saving budget:', err);
-      alert('Failed to save budget');
+      setError(true);
+      setErrorMessage('Failed to save budget');
+      setTimeout(() => setError(false), 3500);
     } finally {
       setIsSaving(false);
     }
@@ -123,7 +133,9 @@ const Budget: React.FC = () => {
       fetchBudgets();
     } catch (err) {
       console.error('Error deleting budget:', err);
-      alert('Failed to delete budget');
+      setError(true);
+      setErrorMessage('Failed to delete budget');
+      setTimeout(() => setError(false), 3500);
     }
   };
 
@@ -277,6 +289,15 @@ const Budget: React.FC = () => {
             </div>
             <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
             <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Budget Updated</p>
+        </div>
+
+        {/* Error Overlay */}
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+            <div className={`w-24 h-24 bg-rose-500 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+              <XCircle size={48} strokeWidth={4} />
+            </div>
+            <h3 className="text-4xl font-black text-gray-900 tracking-tight">Error</h3>
+            <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-xs text-center px-10">{errorMessage}</p>
         </div>
 
         <div className="mb-12 relative">

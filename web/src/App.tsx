@@ -3,7 +3,7 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   ArrowRightLeft, 
-  Check, 
+  Check,
   ChevronDown,
   Loader2,
   Receipt,
@@ -15,18 +15,20 @@ import {
   ArrowUpFromLine,
   Menu,
   X,
+  XCircle,
   Home,
   PieChart
-} from 'lucide-react';
-import { api } from './api';
-import type { Account } from './api';
-import Budget from './Budget';
+  } from 'lucide-react';
+  import { api } from './api';
+  import type { Account } from './api';
+  import Budget from './Budget';
 
-const App: React.FC = () => {
+  const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
-
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   // App Navigation State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'home' | 'budget'>('home');
@@ -52,6 +54,9 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching accounts:', err);
+      setError(true);
+      setErrorMessage('Failed to fetch accounts');
+      setTimeout(() => setError(false), 3500);
     } finally {
       setLoading(false);
     }
@@ -171,7 +176,9 @@ const App: React.FC = () => {
       setAccountName('');
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
-      alert('Error: ' + err);
+      setError(true);
+      setErrorMessage(String(err));
+      setTimeout(() => setError(false), 3500);
     } finally {
       setIsSubmitting(false);
     }
@@ -258,6 +265,15 @@ const App: React.FC = () => {
                </div>
                <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
                <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Ledger Updated</p>
+            </div>
+
+            {/* Error Overlay */}
+            <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+               <div className={`w-24 h-24 bg-rose-500 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+                 <XCircle size={48} strokeWidth={4} />
+               </div>
+               <h3 className="text-4xl font-black text-gray-900 tracking-tight text-center px-6">Error</h3>
+               <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-[10px] text-center px-10 leading-relaxed">{errorMessage}</p>
             </div>
 
             <header className="text-center mb-8 space-y-3">
