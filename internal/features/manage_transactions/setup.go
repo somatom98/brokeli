@@ -39,6 +39,7 @@ func New(
 
 func (f *Feature) Setup() {
 	f.httpHandler.HandleFunc("GET /api/transactions", f.handleGetTransactions)
+	f.httpHandler.HandleFunc("GET /api/accounts/{account_id}/transactions", f.handleGetAccountTransactions)
 	f.httpHandler.HandleFunc("POST /api/expenses", f.handleRegisterExpense)
 	f.httpHandler.HandleFunc("POST /api/incomes", f.handleRegisterIncome)
 	f.httpHandler.HandleFunc("POST /api/transfers", f.handleRegisterTransfer)

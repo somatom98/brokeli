@@ -3,6 +3,7 @@ package transactions
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -44,6 +45,12 @@ func (r *PostgresRepository) ListTransactionsByAccount(ctx context.Context, acco
 	transactions := make([]TransactionRecord, len(rows))
 	for i, row := range rows {
 		amount, _ := decimal.NewFromString(row.Amount)
+		
+		var rate decimal.Decimal
+		if row.SystemTotalRate != nil {
+			rate, _ = decimal.NewFromString(fmt.Sprintf("%v", row.SystemTotalRate))
+		}
+
 		transactions[i] = TransactionRecord{
 			ID:              row.ID,
 			AccountID:       row.AccountID,
@@ -53,6 +60,7 @@ func (r *PostgresRepository) ListTransactionsByAccount(ctx context.Context, acco
 			Category:        row.Category,
 			Description:     row.Description,
 			HappenedAt:      row.HappenedAt,
+			SystemTotalRate: rate,
 		}
 	}
 
@@ -68,6 +76,12 @@ func (r *PostgresRepository) ListTransactions(ctx context.Context) ([]Transactio
 	transactions := make([]TransactionRecord, len(rows))
 	for i, row := range rows {
 		amount, _ := decimal.NewFromString(row.Amount)
+		
+		var rate decimal.Decimal
+		if row.SystemTotalRate != nil {
+			rate, _ = decimal.NewFromString(fmt.Sprintf("%v", row.SystemTotalRate))
+		}
+
 		transactions[i] = TransactionRecord{
 			ID:              row.ID,
 			AccountID:       row.AccountID,
@@ -77,6 +91,7 @@ func (r *PostgresRepository) ListTransactions(ctx context.Context) ([]Transactio
 			Category:        row.Category,
 			Description:     row.Description,
 			HappenedAt:      row.HappenedAt,
+			SystemTotalRate: rate,
 		}
 	}
 

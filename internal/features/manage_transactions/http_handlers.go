@@ -239,3 +239,29 @@ func (f *Feature) handleGetTransactions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 }
+
+func (f *Feature) handleGetAccountTransactions(w http.ResponseWriter, r *http.Request) {
+	accountID := r.PathValue("account_id")
+	if accountID == "" {
+		http.Error(w, "bad request: missing account id", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(accountID)
+	if err != nil {
+		http.Error(w, "bad request: invalid account id", http.StatusBadRequest)
+		return
+	}
+
+	transactions, err := f.transactionsView.ListTransactionsByAccount(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(transactions); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+}

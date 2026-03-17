@@ -24,6 +24,7 @@ type TransactionRecord struct {
 	Category        string          `json:"category"`
 	Description     string          `json:"description"`
 	HappenedAt      time.Time       `json:"happened_at"`
+	SystemTotalRate decimal.Decimal `json:"system_total_rate"`
 }
 
 type Repository interface {

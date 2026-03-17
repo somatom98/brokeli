@@ -21,8 +21,8 @@ type Querier interface {
 	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error
-	ListTransactions(ctx context.Context) ([]Transaction, error)
-	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]Transaction, error)
+	ListTransactions(ctx context.Context) ([]ListTransactionsRow, error)
+	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]ListTransactionsByAccountRow, error)
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpsertPlaceholderAccount(ctx context.Context, arg UpsertPlaceholderAccountParams) error
 }
