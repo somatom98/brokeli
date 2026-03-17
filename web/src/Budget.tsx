@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle, Save, Check, Loader2 } from 'lucide-react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout } from 'lucide-react';
 import { api } from './api';
 import type { Account } from './api';
 
@@ -16,14 +16,38 @@ interface BudgetItem {
   percentage: number;
 }
 
+interface BudgetData {
+  id: string;
+  name: string;
+  data: {
+    items: BudgetItem[];
+    selectedAccounts: string[];
+  };
+}
+
 const Budget: React.FC = () => {
+  const [view, setView] = useState<'list' | 'edit'>('list');
+  const [budgets, setBudgets] = useState<BudgetData[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [budgetName, setBudgetName] = useState('Monthly Budget');
-  const [budgetId] = useState<string>(crypto.randomUUID());
+  const [budgetId, setBudgetId] = useState<string>(crypto.randomUUID());
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const fetchBudgets = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getBudgets();
+      setBudgets(data || []);
+    } catch (err) {
+      console.error('Error fetching budgets:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -35,6 +59,7 @@ const Budget: React.FC = () => {
       }
     };
     fetchAccounts();
+    fetchBudgets();
   }, []);
 
   const handleAddAccount = (accountId: string) => {
@@ -77,13 +102,45 @@ const Budget: React.FC = () => {
         }
       });
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
+      setTimeout(() => {
+        setSuccess(false);
+        fetchBudgets();
+        setView('list');
+      }, 2000);
     } catch (err) {
       console.error('Error saving budget:', err);
       alert('Failed to save budget');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleDeleteBudget = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this budget?')) return;
+    try {
+      await api.deleteBudget(id);
+      fetchBudgets();
+    } catch (err) {
+      console.error('Error deleting budget:', err);
+      alert('Failed to delete budget');
+    }
+  };
+
+  const handleEditBudget = (budget: BudgetData) => {
+    setBudgetId(budget.id);
+    setBudgetName(budget.name);
+    setItems(budget.data.items || []);
+    setSelectedAccounts(budget.data.selectedAccounts || []);
+    setView('edit');
+  };
+
+  const handleCreateNew = () => {
+    setBudgetId(crypto.randomUUID());
+    setBudgetName('New Budget');
+    setItems([]);
+    setSelectedAccounts([]);
+    setView('edit');
   };
 
   const handleAddCategoryToItem = (index: number, category: string) => {
@@ -119,6 +176,96 @@ const Budget: React.FC = () => {
   const totalPercentage = items.reduce((sum, item) => sum + (item.percentage || 0), 0);
   const otherPercentage = Math.max(0, 100 - totalPercentage);
 
+  if (view === 'list') {
+    return (
+      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
+        <div className="w-full max-w-4xl space-y-8">
+          <div className="flex items-center justify-between px-4">
+            <div>
+              <h1 className="text-4xl font-black text-gray-900 tracking-tight">Budgets</h1>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Manage your spending plans</p>
+            </div>
+            <button 
+              onClick={handleCreateNew}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+            >
+              <PlusCircle size={20} />
+              Create New
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-xl rounded-[48px] border border-white/50">
+              <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading budgets...</p>
+            </div>
+          ) : budgets.length === 0 ? (
+            <div className="bg-white/50 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                <Layout size={32} className="text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No budgets found</h3>
+              <p className="text-gray-400 max-w-xs mb-8">You haven't created any budget plans yet. Start by creating your first one!</p>
+              <button 
+                onClick={handleCreateNew}
+                className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center gap-2"
+              >
+                <PlusCircle size={18} />
+                Create your first budget
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {budgets.map((budget) => (
+                <div 
+                  key={budget.id}
+                  onClick={() => handleEditBudget(budget)}
+                  className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 border border-white/50 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">{budget.name}</h3>
+                      <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">
+                        {budget.data.items?.length || 0} items • {budget.data.selectedAccounts?.length || 0} accounts
+                      </p>
+                    </div>
+                    <button 
+                      onClick={(e) => handleDeleteBudget(budget.id, e)}
+                      className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {budget.data.items?.slice(0, 3).map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 font-medium">{item.name}</span>
+                        <span className="text-gray-400 font-bold">{item.percentage}%</span>
+                      </div>
+                    ))}
+                    {budget.data.items?.length > 3 && (
+                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest pt-2">
+                        + {budget.data.items.length - 3} more items
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 h-1.5 bg-indigo-500/10 w-full">
+                    <div 
+                      className="h-full bg-indigo-500 transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (budget.data.items?.reduce((s, i) => s + (i.percentage || 0), 0) || 0))}%` }} 
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
       <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 w-full max-w-4xl flex flex-col items-stretch my-8 relative overflow-hidden group">
@@ -132,15 +279,25 @@ const Budget: React.FC = () => {
             <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Budget Updated</p>
         </div>
 
-        <div className="mb-12 text-center">
-          <input
-            type="text"
-            value={budgetName}
-            onChange={(e) => setBudgetName(e.target.value)}
-            className="text-4xl font-black text-gray-900 tracking-tighter text-center bg-transparent focus:outline-none border-b-2 border-transparent focus:border-indigo-400 pb-2 w-full max-w-lg"
-            placeholder="Budget Name"
-          />
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-4">Personal Spending Plan</p>
+        <div className="mb-12 relative">
+          <button 
+            onClick={() => setView('list')}
+            className="absolute -top-4 -left-4 p-4 text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            <ChevronLeft size={16} strokeWidth={3} />
+            Back to List
+          </button>
+          
+          <div className="text-center pt-8">
+            <input
+              type="text"
+              value={budgetName}
+              onChange={(e) => setBudgetName(e.target.value)}
+              className="text-4xl font-black text-gray-900 tracking-tighter text-center bg-transparent focus:outline-none border-b-2 border-transparent focus:border-indigo-400 pb-2 w-full max-w-lg"
+              placeholder="Budget Name"
+            />
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-4">Personal Spending Plan</p>
+          </div>
         </div>
         
         {/* Accounts Section */}
