@@ -12,6 +12,7 @@ import (
 	projections_db "github.com/somatom98/brokeli/internal/db"
 	"github.com/somatom98/brokeli/internal/domain/account"
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
+	"github.com/somatom98/brokeli/internal/domain/budget"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
 	"github.com/somatom98/brokeli/internal/domain/projections/transactions"
@@ -19,6 +20,7 @@ import (
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
+	"github.com/somatom98/brokeli/internal/features/manage_budgets"
 	"github.com/somatom98/brokeli/internal/features/manage_transactions"
 	"github.com/somatom98/brokeli/pkg/database"
 	"github.com/somatom98/brokeli/pkg/event_store"
@@ -69,6 +71,8 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to create transactions repository: %w", err)
 	}
 
+	budgetsRepository := budget.NewPostgresRepository(db)
+
 	var transactionES event_store.Store[*transaction.Transaction]
 
 	transactionEventsFactory := map[string]func() any{
@@ -116,6 +120,10 @@ func Setup(ctx context.Context) (*App, error) {
 	import_transactions.
 		New(httpHandler, transactionDispatcher, accountDispatcher).
 		Setup()
+
+	manage_budgets.
+		New(httpHandler, budgetsRepository).
+		Setup(ctx)
 
 	return &App{
 		HttpHandler:   httpHandler,

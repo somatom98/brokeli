@@ -14,12 +14,16 @@ import (
 type Querier interface {
 	CloseAccount(ctx context.Context, arg CloseAccountParams) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) error
+	CreateBudget(ctx context.Context, arg CreateBudgetParams) error
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) error
+	DeleteBudget(ctx context.Context, id uuid.UUID) error
 	GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) (json.RawMessage, error)
 	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error)
 	GetAllAccounts(ctx context.Context) ([]GetAllAccountsRow, error)
 	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
+	GetBudgetByID(ctx context.Context, id uuid.UUID) (Budget, error)
+	GetBudgets(ctx context.Context) ([]Budget, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error
 	ListTransactions(ctx context.Context) ([]ListTransactionsRow, error)
 	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]ListTransactionsByAccountRow, error)

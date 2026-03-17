@@ -111,4 +111,26 @@ export const api = {
     if (!res.ok) throw new Error('Failed to withdraw');
     return res.status;
   },
+  getBudgets: async (): Promise<any[]> => {
+    const res = await fetch('/api/budgets');
+    if (!res.ok) throw new Error('Failed to fetch budgets');
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
+  saveBudget: async (data: { id?: string, name: string, data: any }) => {
+    const res = await fetch('/api/budgets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to save budget');
+    return res.status;
+  },
+  deleteBudget: async (id: string) => {
+    const res = await fetch(`/api/budgets/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete budget');
+    return res.status;
+  },
 };

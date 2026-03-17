@@ -31,6 +31,14 @@ type BalanceUpdate struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Budget struct {
+	ID        uuid.UUID       `json:"id"`
+	Name      string          `json:"name"`
+	Data      json.RawMessage `json:"data"`
+	CreatedAt sql.NullTime    `json:"created_at"`
+	UpdatedAt sql.NullTime    `json:"updated_at"`
+}
+
 type Transaction struct {
 	ID              uuid.UUID `json:"id"`
 	AccountID       uuid.UUID `json:"account_id"`

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle } from 'lucide-react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2 } from 'lucide-react';
 import { api } from './api';
 import type { Account } from './api';
 
@@ -11,7 +11,6 @@ const AVAILABLE_CATEGORIES = [
 ];
 
 interface BudgetItem {
-  id: string;
   name: string;
   categories: string[];
   percentage: number;
@@ -22,6 +21,9 @@ const Budget: React.FC = () => {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [budgetName, setBudgetName] = useState('Monthly Budget');
+  const [budgetId] = useState<string>(crypto.randomUUID());
+  const [isSaving, setIsSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -47,34 +49,55 @@ const Budget: React.FC = () => {
 
   const handleAddItem = () => {
     const newItem: BudgetItem = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: 'New Item',
+      name: `New Item ${items.length + 1}`,
       categories: [],
       percentage: 0,
     };
     setItems([...items, newItem]);
   };
 
-  const handleRemoveItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleRemoveItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleUpdateItem = (id: string, updates: Partial<BudgetItem>) => {
-    setItems(items.map(item => item.id === id ? { ...item, ...updates } : item));
+  const handleUpdateItem = (index: number, updates: Partial<BudgetItem>) => {
+    setItems(items.map((item, i) => i === index ? { ...item, ...updates } : item));
   };
 
-  const handleAddCategoryToItem = (itemId: string, category: string) => {
-    setItems(items.map(item => {
-      if (item.id === itemId && !item.categories.includes(category)) {
+  const handleSaveBudget = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      await api.saveBudget({
+        id: budgetId,
+        name: budgetName,
+        data: {
+          items,
+          selectedAccounts,
+        }
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch (err) {
+      console.error('Error saving budget:', err);
+      alert('Failed to save budget');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddCategoryToItem = (index: number, category: string) => {
+    setItems(items.map((item, i) => {
+      if (i === index && !item.categories.includes(category)) {
         return { ...item, categories: [...item.categories, category] };
       }
       return item;
     }));
   };
 
-  const handleRemoveCategoryFromItem = (itemId: string, category: string) => {
-    setItems(items.map(item => {
-      if (item.id === itemId) {
+  const handleRemoveCategoryFromItem = (index: number, category: string) => {
+    setItems(items.map((item, i) => {
+      if (i === index) {
         return { ...item, categories: item.categories.filter(c => c !== category) };
       }
       return item;
@@ -98,7 +121,17 @@ const Budget: React.FC = () => {
 
   return (
     <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
-      <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 w-full max-w-4xl flex flex-col items-stretch my-8">
+      <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 w-full max-w-4xl flex flex-col items-stretch my-8 relative overflow-hidden group">
+        
+        {/* Success Overlay */}
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-white/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+            <div className={`w-24 h-24 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+              <Check size={48} strokeWidth={4} />
+            </div>
+            <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
+            <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Budget Updated</p>
+        </div>
+
         <div className="mb-12 text-center">
           <input
             type="text"
@@ -151,10 +184,10 @@ const Budget: React.FC = () => {
             </span>
           </div>
 
-          {items.map(item => (
-            <div key={item.id} className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4 relative group">
+          {items.map((item, index) => (
+            <div key={index} className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4 relative group">
               <button 
-                onClick={() => handleRemoveItem(item.id)}
+                onClick={() => handleRemoveItem(index)}
                 className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"
                 title="Remove Item"
               >
@@ -166,7 +199,7 @@ const Budget: React.FC = () => {
                   <input
                     type="text"
                     value={item.name}
-                    onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                    onChange={(e) => handleUpdateItem(index, { name: e.target.value })}
                     className="w-full bg-transparent text-xl font-bold text-gray-800 focus:outline-none focus:border-b-2 border-gray-200 focus:border-indigo-400 transition-colors pb-1"
                     placeholder="Item Name (e.g., Transport)"
                   />
@@ -177,7 +210,7 @@ const Budget: React.FC = () => {
                     min="0"
                     max="100"
                     value={item.percentage || ''}
-                    onChange={(e) => handleUpdateItem(item.id, { percentage: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => handleUpdateItem(index, { percentage: parseFloat(e.target.value) || 0 })}
                     className="w-20 bg-gray-50 border border-gray-200 text-gray-700 font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     placeholder="0"
                   />
@@ -191,7 +224,7 @@ const Budget: React.FC = () => {
                   {item.categories.map(cat => (
                     <div key={cat} className="flex items-center gap-1.5 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-xl text-sm font-medium">
                       <span>{cat}</span>
-                      <button onClick={() => handleRemoveCategoryFromItem(item.id, cat)} className="hover:text-gray-900 transition-colors">
+                      <button onClick={() => handleRemoveCategoryFromItem(index, cat)} className="hover:text-gray-900 transition-colors">
                         <X size={14} strokeWidth={2.5} />
                       </button>
                     </div>
@@ -201,7 +234,7 @@ const Budget: React.FC = () => {
                     className="bg-gray-50 border border-gray-200 text-gray-600 font-medium rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 transition-all"
                     onChange={(e) => {
                       if (e.target.value) {
-                        handleAddCategoryToItem(item.id, e.target.value);
+                        handleAddCategoryToItem(index, e.target.value);
                       }
                     }}
                     value=""
@@ -248,10 +281,25 @@ const Budget: React.FC = () => {
 
         <button 
           onClick={handleAddItem}
-          className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] mb-4"
         >
           <PlusCircle size={20} />
           Add Budget Item
+        </button>
+
+        <button 
+          onClick={handleSaveBudget}
+          disabled={isSaving}
+          className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:bg-gray-200"
+        >
+          {isSaving ? (
+            <Loader2 className="animate-spin" size={20} strokeWidth={4} />
+          ) : (
+            <>
+              <Save size={20} />
+              Save Budget
+            </>
+          )}
         </button>
       </div>
     </div>
