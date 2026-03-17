@@ -7,6 +7,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -16,4 +17,15 @@ type AccountsProjection struct {
 	Balance   json.RawMessage `json:"balance"`
 	CreatedAt sql.NullTime    `json:"created_at"`
 	ClosedAt  sql.NullTime    `json:"closed_at"`
+}
+
+type BalanceUpdate struct {
+	ID        uuid.UUID `json:"id"`
+	AccountID uuid.UUID `json:"account_id"`
+	Currency  string    `json:"currency"`
+	Amount    string    `json:"amount"`
+	UserID    string    `json:"user_id"`
+	Origin    string    `json:"origin"`
+	ValueDate time.Time `json:"value_date"`
+	CreatedAt time.Time `json:"created_at"`
 }

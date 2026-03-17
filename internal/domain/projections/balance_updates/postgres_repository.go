@@ -1,4 +1,4 @@
-package balances
+package balance_updates
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"github.com/somatom98/brokeli/internal/domain/projections/balances/db"
+	"github.com/somatom98/brokeli/internal/db"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 

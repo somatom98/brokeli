@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/account"
-	"github.com/somatom98/brokeli/internal/domain/projections/balances"
+	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/domain/values"
 	"github.com/somatom98/brokeli/internal/features/manage_accounts"
@@ -20,32 +20,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type BalancesRepositoryMock struct {
-	Balances      []balances.BalancePeriod
-	Distributions []balances.AccountDistribution
+type BalanceUpdatesRepositoryMock struct {
+	Balances      []balance_updates.BalancePeriod
+	Distributions []balance_updates.AccountDistribution
 }
 
-func (m *BalancesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
+func (m *BalanceUpdatesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
 	return nil
 }
 
-func (m *BalancesRepositoryMock) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]balances.BalancePeriod, error) {
+func (m *BalanceUpdatesRepositoryMock) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]balance_updates.BalancePeriod, error) {
 	return m.Balances, nil
 }
 
-func (m *BalancesRepositoryMock) GetAllBalances(ctx context.Context) ([]balances.BalancePeriod, error) {
+func (m *BalanceUpdatesRepositoryMock) GetAllBalances(ctx context.Context) ([]balance_updates.BalancePeriod, error) {
 	return m.Balances, nil
 }
 
-func (m *BalancesRepositoryMock) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]balances.AccountDistribution, error) {
+func (m *BalanceUpdatesRepositoryMock) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]balance_updates.AccountDistribution, error) {
 	return m.Distributions, nil
 }
 
 func TestManageAccounts_Handlers(t *testing.T) {
 	// arrange
 	mux := http.NewServeMux()
-	repo := &BalancesRepositoryMock{
-		Balances: []balances.BalancePeriod{
+	repo := &BalanceUpdatesRepositoryMock{
+		Balances: []balance_updates.BalancePeriod{
 			{
 				Month:    time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 				Currency: values.Currency("EUR"),
@@ -56,8 +56,8 @@ func TestManageAccounts_Handlers(t *testing.T) {
 	dispatcher := &DispatcherMock{}
 	transactionES := event_store.NewInMemory[*transaction.Transaction](transaction.New)
 	accountES := event_store.NewInMemory[*account.Account](account.New)
-	balancesProjection := balances.New(transactionES, accountES, repo)
-	feature := manage_accounts.New(mux, nil, balancesProjection, dispatcher, transactionES)
+	balanceUpdatesProjection := balance_updates.New(transactionES, accountES, repo)
+	feature := manage_accounts.New(mux, nil, balanceUpdatesProjection, dispatcher, transactionES)
 	feature.Setup(context.Background())
 
 	t.Run("GET /api/balances", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestManageAccounts_Handlers(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-		var result []balances.BalancePeriod
+		var result []balance_updates.BalancePeriod
 		err := json.NewDecoder(rec.Body).Decode(&result)
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
@@ -86,7 +86,7 @@ func TestManageAccounts_Handlers(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-		var result []balances.BalancePeriod
+		var result []balance_updates.BalancePeriod
 		err := json.NewDecoder(rec.Body).Decode(&result)
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)

@@ -1,4 +1,4 @@
-package balances
+package balance_updates
 
 import (
 	"context"

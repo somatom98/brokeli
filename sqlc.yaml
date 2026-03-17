@@ -10,22 +10,12 @@ sql:
         emit_interface: true
         emit_json_tags: true
 
-  - schema: "internal/domain/projections/accounts/db/migration"
-    queries: "internal/domain/projections/accounts/db/query"
+  - schema: "internal/db/migration"
+    queries: "internal/db/query"
     engine: "postgresql"
     gen:
       go:
         package: "db"
-        out: "internal/domain/projections/accounts/db"
-        emit_interface: true
-        emit_json_tags: true
-
-  - schema: "internal/domain/projections/balances/db/migration"
-    queries: "internal/domain/projections/balances/db/query"
-    engine: "postgresql"
-    gen:
-      go:
-        package: "db"
-        out: "internal/domain/projections/balances/db"
+        out: "internal/db"
         emit_interface: true
         emit_json_tags: true

@@ -36,7 +36,7 @@ func (f *Feature) handleGetAccountBalances(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	balances, err := f.balancesView.GetBalancesByAccount(r.Context(), id)
+	balances, err := f.balanceUpdatesView.GetBalancesByAccount(r.Context(), id)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -54,7 +54,7 @@ func (f *Feature) handleGetAccountBalances(w http.ResponseWriter, r *http.Reques
 }
 
 func (f *Feature) handleGetAllBalances(w http.ResponseWriter, r *http.Request) {
-	balances, err := f.balancesView.GetAllBalances(r.Context())
+	balances, err := f.balanceUpdatesView.GetAllBalances(r.Context())
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

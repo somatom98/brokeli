@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
-	"github.com/somatom98/brokeli/internal/domain/projections/balances"
+	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/internal/domain/values"
 	"github.com/somatom98/brokeli/pkg/event_store"
@@ -24,21 +24,21 @@ type AccountDispatcher interface {
 type Feature struct {
 	httpHandler       *http.ServeMux
 	accountsView      *accounts.Projection
-	balancesView      *balances.Projection
+	balanceUpdatesView *balance_updates.Projection
 	accountDispatcher AccountDispatcher
 }
 
 func New(
 	httpHandler *http.ServeMux,
 	accountsView *accounts.Projection,
-	balancesView *balances.Projection,
+	balanceUpdatesView *balance_updates.Projection,
 	accountDispatcher AccountDispatcher,
 	transactionES event_store.Store[*transaction.Transaction],
 ) *Feature {
 	f := &Feature{
 		httpHandler:       httpHandler,
 		accountsView:      accountsView,
-		balancesView:      balancesView,
+		balanceUpdatesView: balanceUpdatesView,
 		accountDispatcher: accountDispatcher,
 	}
 

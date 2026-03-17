@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
+	"github.com/somatom98/brokeli/internal/db"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 

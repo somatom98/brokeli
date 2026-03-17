@@ -1,4 +1,4 @@
-CREATE TABLE balances_projection (
+CREATE TABLE balance_updates (
     id UUID PRIMARY KEY,
     account_id UUID NOT NULL,
     currency TEXT NOT NULL,

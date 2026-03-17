@@ -9,12 +9,11 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	projections_db "github.com/somatom98/brokeli/internal/db"
 	"github.com/somatom98/brokeli/internal/domain/account"
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
-	accounts_db "github.com/somatom98/brokeli/internal/domain/projections/accounts/db"
-	"github.com/somatom98/brokeli/internal/domain/projections/balances"
-	balances_db "github.com/somatom98/brokeli/internal/domain/projections/balances/db"
+	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
@@ -50,11 +49,8 @@ func Setup(ctx context.Context) (*App, error) {
 	if err := database.Migrate(db, event_store_db.MigrationsFS(), "event_store_migrations"); err != nil {
 		return nil, fmt.Errorf("failed to run event store migrations: %w", err)
 	}
-	if err := database.Migrate(db, accounts_db.MigrationsFS(), "accounts_projection_migrations"); err != nil {
-		return nil, fmt.Errorf("failed to run accounts projection migrations: %w", err)
-	}
-	if err := database.Migrate(db, balances_db.MigrationsFS(), "balances_projection_migrations"); err != nil {
-		return nil, fmt.Errorf("failed to run balances projection migrations: %w", err)
+	if err := database.Migrate(db, projections_db.MigrationsFS(), "projections_migrations"); err != nil {
+		return nil, fmt.Errorf("failed to run projections migrations: %w", err)
 	}
 
 	accountsRepository, err := accounts.NewPostgresRepository(db)
@@ -62,9 +58,9 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to create accounts repository: %w", err)
 	}
 
-	balancesRepository, err := balances.NewPostgresRepository(db)
+	balanceUpdatesRepository, err := balance_updates.NewPostgresRepository(db)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create balances repository: %w", err)
+		return nil, fmt.Errorf("failed to create balance updates repository: %w", err)
 	}
 
 	var transactionES event_store.Store[*transaction.Transaction]
@@ -100,14 +96,14 @@ func Setup(ctx context.Context) (*App, error) {
 	accountDispatcher := AccountDispatcher(accountES)
 
 	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
-	balancesProjection := BalancesProjection(ctx, transactionES, accountES, balancesRepository)
+	balanceUpdatesProjection := BalanceUpdatesProjection(ctx, transactionES, accountES, balanceUpdatesRepository)
 
 	manage_transactions.
 		New(httpHandler, transactionDispatcher).
 		Setup()
 
 	manage_accounts.
-		New(httpHandler, accountsProjection, balancesProjection, accountDispatcher, transactionES).
+		New(httpHandler, accountsProjection, balanceUpdatesProjection, accountDispatcher, transactionES).
 		Setup(ctx)
 
 	import_transactions.

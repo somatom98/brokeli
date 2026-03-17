@@ -6,15 +6,22 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CloseAccount(ctx context.Context, arg CloseAccountParams) error
+	CreateAccount(ctx context.Context, arg CreateAccountParams) error
+	GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) (json.RawMessage, error)
 	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error)
+	GetAllAccounts(ctx context.Context) ([]AccountsProjection, error)
 	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error
+	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
+	UpsertPlaceholderAccount(ctx context.Context, arg UpsertPlaceholderAccountParams) error
 }
 
 var _ Querier = (*Queries)(nil)

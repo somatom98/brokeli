@@ -46,7 +46,9 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) er
 }
 
 const getAccountBalanceForUpdate = `-- name: GetAccountBalanceForUpdate :one
-SELECT balance FROM accounts_projection WHERE id = $1 FOR UPDATE
+SELECT balance 
+FROM accounts_projection 
+WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) (json.RawMessage, error) {
@@ -57,7 +59,8 @@ func (q *Queries) GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) 
 }
 
 const getAllAccounts = `-- name: GetAllAccounts :many
-SELECT id, balance, created_at, closed_at FROM accounts_projection
+SELECT id, balance, created_at, closed_at 
+FROM accounts_projection
 `
 
 func (q *Queries) GetAllAccounts(ctx context.Context) ([]AccountsProjection, error) {
@@ -89,7 +92,9 @@ func (q *Queries) GetAllAccounts(ctx context.Context) ([]AccountsProjection, err
 }
 
 const updateAccountBalance = `-- name: UpdateAccountBalance :exec
-UPDATE accounts_projection SET balance = $2 WHERE id = $1
+UPDATE accounts_projection 
+SET balance = $2 
+WHERE id = $1
 `
 
 type UpdateAccountBalanceParams struct {
@@ -103,7 +108,8 @@ func (q *Queries) UpdateAccountBalance(ctx context.Context, arg UpdateAccountBal
 }
 
 const upsertPlaceholderAccount = `-- name: UpsertPlaceholderAccount :exec
-INSERT INTO accounts_projection (id, balance) VALUES ($1, $2)
+INSERT INTO accounts_projection (id, balance) 
+VALUES ($1, $2)
 ON CONFLICT (id) DO NOTHING
 `
 
