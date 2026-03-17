@@ -77,6 +77,8 @@ Maintains the current state of all accounts, calculating balances by aggregating
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/accounts` | List all accounts with current balances. |
+| `GET` | `/api/accounts/{id}/balances` | Get balances for a specific account. |
+| `GET` | `/api/balances` | Get all account balances. |
 | `POST` | `/api/accounts` | Create a new account. |
 | `POST` | `/api/accounts/{id}/deposits` | Record a deposit into an account. |
 | `POST` | `/api/accounts/{id}/withdrawals` | Record a withdrawal from an account. |

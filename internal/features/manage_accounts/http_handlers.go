@@ -154,3 +154,42 @@ func (f *Feature) handleWithdrawal(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (f *Feature) handleOpenAccount(w http.ResponseWriter, r *http.Request) {
+	type OpenAccountRequest struct {
+		ID         uuid.UUID       `json:"id"`
+		Name       string          `json:"name"`
+		Currency   values.Currency `json:"currency"`
+		HappenedAt time.Time       `json:"happened_at"`
+	}
+
+	var req OpenAccountRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if req.ID == uuid.Nil {
+		req.ID = uuid.New()
+	}
+
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
+
+	if err := f.accountDispatcher.Open(
+		r.Context(),
+		req.ID,
+		req.Name,
+		req.Currency,
+		req.HappenedAt,
+	); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"id": req.ID.String()})
+}

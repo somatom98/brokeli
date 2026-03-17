@@ -97,6 +97,26 @@ func TestManageAccounts_Handlers(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	})
 
+	t.Run("POST /api/accounts", func(t *testing.T) {
+		body := `{"name":"test-account", "currency":"EUR"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/accounts", bytes.NewBufferString(body))
+		rec := httptest.NewRecorder()
+
+		mux.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
+
+		var result map[string]string
+		err := json.NewDecoder(rec.Body).Decode(&result)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, result["id"])
+
+		assert.Len(t, dispatcher.Opens, 1)
+		assert.Equal(t, "test-account", dispatcher.Opens[0].Name)
+		assert.Equal(t, values.Currency("EUR"), dispatcher.Opens[0].Currency)
+	})
+
 	t.Run("POST /api/accounts/{id}/deposits", func(t *testing.T) {
 		id := uuid.New()
 		body := `{"currency":"EUR", "amount":"100.50", "user":"test-user"}`

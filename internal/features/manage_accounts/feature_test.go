@@ -17,8 +17,15 @@ import (
 )
 
 type DispatcherMock struct {
+	Opens       []openCall
 	Withdrawals []withdrawalCall
 	Deposits    []depositCall
+}
+
+type openCall struct {
+	ID       uuid.UUID
+	Name     string
+	Currency values.Currency
 }
 
 type withdrawalCall struct {
@@ -36,6 +43,11 @@ type depositCall struct {
 }
 
 func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error {
+	m.Opens = append(m.Opens, openCall{
+		ID:       id,
+		Name:     name,
+		Currency: currency,
+	})
 	return nil
 }
 func (m *DispatcherMock) UpdateName(ctx context.Context, id uuid.UUID, name string, happenedAt time.Time) error { return nil }
