@@ -31,6 +31,7 @@ func (e Opened) Content() any {
 }
 
 type NameUpdated struct {
+	AccountID  uuid.UUID
 	Name       string
 	HappenedAt time.Time
 }

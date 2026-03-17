@@ -24,9 +24,10 @@ func NewPostgresRepository(dbConn *sql.DB) (*PostgresRepository, error) {
 	}, nil
 }
 
-func (r *PostgresRepository) CreateAccount(ctx context.Context, id uuid.UUID, createdAt time.Time) error {
+func (r *PostgresRepository) CreateAccount(ctx context.Context, id uuid.UUID, name string, createdAt time.Time) error {
 	return r.queries.CreateAccount(ctx, db.CreateAccountParams{
 		ID:        id,
+		Name:      name,
 		CreatedAt: sql.NullTime{Time: createdAt, Valid: true},
 	})
 }
@@ -35,6 +36,13 @@ func (r *PostgresRepository) CloseAccount(ctx context.Context, id uuid.UUID, clo
 	return r.queries.CloseAccount(ctx, db.CloseAccountParams{
 		ID:       id,
 		ClosedAt: sql.NullTime{Time: closedAt, Valid: true},
+	})
+}
+
+func (r *PostgresRepository) UpdateAccountName(ctx context.Context, id uuid.UUID, name string) error {
+	return r.queries.UpdateAccountName(ctx, db.UpdateAccountNameParams{
+		ID:   id,
+		Name: name,
 	})
 }
 
@@ -56,6 +64,7 @@ func (r *PostgresRepository) UpdateAccountBalance(ctx context.Context, id uuid.U
 		balanceJSON = []byte("{}")
 		err = qtx.UpsertPlaceholderAccount(ctx, db.UpsertPlaceholderAccountParams{
 			ID:      id,
+			Name:    "", // Placeholder
 			Balance: balanceJSON,
 		})
 		if err != nil {
@@ -110,6 +119,7 @@ func (r *PostgresRepository) GetAll(ctx context.Context) (map[uuid.UUID]Account,
 		}
 
 		acc := Account{
+			Name:    row.Name,
 			Balance: balance,
 		}
 		if row.CreatedAt.Valid {

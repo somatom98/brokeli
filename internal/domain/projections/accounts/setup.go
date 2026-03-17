@@ -15,9 +15,10 @@ import (
 )
 
 type Repository interface {
-	CreateAccount(ctx context.Context, id uuid.UUID, createdAt time.Time) error
+	CreateAccount(ctx context.Context, id uuid.UUID, name string, createdAt time.Time) error
 	CloseAccount(ctx context.Context, id uuid.UUID, closedAt time.Time) error
 	UpdateAccountBalance(ctx context.Context, id uuid.UUID, amount decimal.Decimal, currency values.Currency) error
+	UpdateAccountName(ctx context.Context, id uuid.UUID, name string) error
 	GetAll(ctx context.Context) (map[uuid.UUID]Account, error)
 }
 
@@ -50,6 +51,8 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 		return v.ApplyReimbursementReceived(ctx, record.Content().(transaction_events.ReimbursementReceived))
 	case account_events.TypeOpened:
 		return v.ApplyAccountOpened(ctx, record.Content().(account_events.Opened))
+	case account_events.TypeNameUpdated:
+		return v.ApplyAccountNameUpdated(ctx, record.Content().(account_events.NameUpdated))
 	case account_events.TypeMoneyDeposited:
 		return v.ApplyMoneyDeposited(ctx, record.Content().(account_events.MoneyDeposited))
 	case account_events.TypeMoneyWithdrawn:

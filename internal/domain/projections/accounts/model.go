@@ -8,6 +8,7 @@ import (
 )
 
 type Account struct {
+	Name                   string                              `json:"name"`
 	Balance                map[values.Currency]decimal.Decimal `json:"balance"`
 	ExpectedReimbursements map[values.Currency]decimal.Decimal `json:"expected_reimbursements"`
 	CreatedAt              *time.Time                          `json:"created_at,omitempty"`

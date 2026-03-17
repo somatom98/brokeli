@@ -30,18 +30,19 @@ func (q *Queries) CloseAccount(ctx context.Context, arg CloseAccountParams) erro
 }
 
 const createAccount = `-- name: CreateAccount :exec
-INSERT INTO accounts_projection (id, created_at, balance)
-VALUES ($1, $2, '{}')
-ON CONFLICT (id) DO UPDATE SET created_at = EXCLUDED.created_at
+INSERT INTO accounts_projection (id, name, created_at, balance)
+VALUES ($1, $2, $3, '{}')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, created_at = EXCLUDED.created_at
 `
 
 type CreateAccountParams struct {
 	ID        uuid.UUID    `json:"id"`
+	Name      string       `json:"name"`
 	CreatedAt sql.NullTime `json:"created_at"`
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) error {
-	_, err := q.db.ExecContext(ctx, createAccount, arg.ID, arg.CreatedAt)
+	_, err := q.db.ExecContext(ctx, createAccount, arg.ID, arg.Name, arg.CreatedAt)
 	return err
 }
 
@@ -59,21 +60,30 @@ func (q *Queries) GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) 
 }
 
 const getAllAccounts = `-- name: GetAllAccounts :many
-SELECT id, balance, created_at, closed_at 
+SELECT id, name, balance, created_at, closed_at 
 FROM accounts_projection
 `
 
-func (q *Queries) GetAllAccounts(ctx context.Context) ([]AccountsProjection, error) {
+type GetAllAccountsRow struct {
+	ID        uuid.UUID       `json:"id"`
+	Name      string          `json:"name"`
+	Balance   json.RawMessage `json:"balance"`
+	CreatedAt sql.NullTime    `json:"created_at"`
+	ClosedAt  sql.NullTime    `json:"closed_at"`
+}
+
+func (q *Queries) GetAllAccounts(ctx context.Context) ([]GetAllAccountsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllAccounts)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountsProjection
+	var items []GetAllAccountsRow
 	for rows.Next() {
-		var i AccountsProjection
+		var i GetAllAccountsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Name,
 			&i.Balance,
 			&i.CreatedAt,
 			&i.ClosedAt,
@@ -107,18 +117,35 @@ func (q *Queries) UpdateAccountBalance(ctx context.Context, arg UpdateAccountBal
 	return err
 }
 
+const updateAccountName = `-- name: UpdateAccountName :exec
+UPDATE accounts_projection
+SET name = $2
+WHERE id = $1
+`
+
+type UpdateAccountNameParams struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) UpdateAccountName(ctx context.Context, arg UpdateAccountNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateAccountName, arg.ID, arg.Name)
+	return err
+}
+
 const upsertPlaceholderAccount = `-- name: UpsertPlaceholderAccount :exec
-INSERT INTO accounts_projection (id, balance) 
-VALUES ($1, $2)
+INSERT INTO accounts_projection (id, name, balance) 
+VALUES ($1, $2, $3)
 ON CONFLICT (id) DO NOTHING
 `
 
 type UpsertPlaceholderAccountParams struct {
 	ID      uuid.UUID       `json:"id"`
+	Name    string          `json:"name"`
 	Balance json.RawMessage `json:"balance"`
 }
 
 func (q *Queries) UpsertPlaceholderAccount(ctx context.Context, arg UpsertPlaceholderAccountParams) error {
-	_, err := q.db.ExecContext(ctx, upsertPlaceholderAccount, arg.ID, arg.Balance)
+	_, err := q.db.ExecContext(ctx, upsertPlaceholderAccount, arg.ID, arg.Name, arg.Balance)
 	return err
 }

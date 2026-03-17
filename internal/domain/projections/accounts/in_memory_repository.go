@@ -19,8 +19,9 @@ func NewInMemoryRepository() *InMemoryRepository {
 	}
 }
 
-func (r *InMemoryRepository) CreateAccount(ctx context.Context, id uuid.UUID, createdAt time.Time) error {
+func (r *InMemoryRepository) CreateAccount(ctx context.Context, id uuid.UUID, name string, createdAt time.Time) error {
 	acc := r.getOrCreate(id)
+	acc.Name = name
 	if acc.CreatedAt == nil {
 		acc.CreatedAt = &createdAt
 	}
@@ -31,6 +32,13 @@ func (r *InMemoryRepository) CreateAccount(ctx context.Context, id uuid.UUID, cr
 func (r *InMemoryRepository) CloseAccount(ctx context.Context, id uuid.UUID, closedAt time.Time) error {
 	acc := r.getOrCreate(id)
 	acc.ClosedAt = &closedAt
+	r.accounts[id] = acc
+	return nil
+}
+
+func (r *InMemoryRepository) UpdateAccountName(ctx context.Context, id uuid.UUID, name string) error {
+	acc := r.getOrCreate(id)
+	acc.Name = name
 	r.accounts[id] = acc
 	return nil
 }

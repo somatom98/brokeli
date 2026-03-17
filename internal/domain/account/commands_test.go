@@ -54,7 +54,8 @@ func TestUpdateName(t *testing.T) {
 	now := time.Now()
 	t.Run("should emit name updated event when account is opened", func(t *testing.T) {
 		// arrange
-		acc := account.New(uuid.New())
+		id := uuid.New()
+		acc := account.New(id)
 		acc.State = account.State_Opened
 		newName := "Main"
 
@@ -64,6 +65,7 @@ func TestUpdateName(t *testing.T) {
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.NameUpdated{
+			AccountID:  id,
 			Name:       newName,
 			HappenedAt: now,
 		}, evt)

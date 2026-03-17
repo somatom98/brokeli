@@ -2,14 +2,17 @@ package accounts
 
 import (
 	"context"
-	"time"
 
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 )
 
 func (v *Projection) ApplyAccountOpened(ctx context.Context, e account_events.Opened) error {
-	return v.repository.CreateAccount(ctx, e.AccountID, time.Now())
+	return v.repository.CreateAccount(ctx, e.AccountID, e.Name, e.HappenedAt)
+}
+
+func (v *Projection) ApplyAccountNameUpdated(ctx context.Context, e account_events.NameUpdated) error {
+	return v.repository.UpdateAccountName(ctx, e.AccountID, e.Name)
 }
 
 func (v *Projection) ApplyExpenseCreated(ctx context.Context, e transaction_events.MoneySpent) error {

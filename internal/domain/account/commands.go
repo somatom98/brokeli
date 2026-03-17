@@ -41,6 +41,7 @@ func (a *Account) UpdateName(
 	}
 
 	return &events.NameUpdated{
+		AccountID:  a.ID,
 		Name:       name,
 		HappenedAt: happenedAt,
 	}, nil

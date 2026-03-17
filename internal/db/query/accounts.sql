@@ -1,7 +1,7 @@
 -- name: CreateAccount :exec
-INSERT INTO accounts_projection (id, created_at, balance)
-VALUES ($1, $2, '{}')
-ON CONFLICT (id) DO UPDATE SET created_at = EXCLUDED.created_at;
+INSERT INTO accounts_projection (id, name, created_at, balance)
+VALUES ($1, $2, $3, '{}')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, created_at = EXCLUDED.created_at;
 
 -- name: CloseAccount :exec
 UPDATE accounts_projection
@@ -19,10 +19,15 @@ SET balance = $2
 WHERE id = $1;
 
 -- name: GetAllAccounts :many
-SELECT id, balance, created_at, closed_at 
+SELECT id, name, balance, created_at, closed_at 
 FROM accounts_projection;
 
 -- name: UpsertPlaceholderAccount :exec
-INSERT INTO accounts_projection (id, balance) 
-VALUES ($1, $2)
+INSERT INTO accounts_projection (id, name, balance) 
+VALUES ($1, $2, $3)
 ON CONFLICT (id) DO NOTHING;
+
+-- name: UpdateAccountName :exec
+UPDATE accounts_projection
+SET name = $2
+WHERE id = $1;

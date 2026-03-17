@@ -17,6 +17,7 @@ type AccountsProjection struct {
 	Balance   json.RawMessage `json:"balance"`
 	CreatedAt sql.NullTime    `json:"created_at"`
 	ClosedAt  sql.NullTime    `json:"closed_at"`
+	Name      string          `json:"name"`
 }
 
 type BalanceUpdate struct {

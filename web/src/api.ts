@@ -26,15 +26,18 @@ export const api = {
     const res = await fetch('/api/accounts');
     if (!res.ok) throw new Error('Failed to fetch accounts');
     const data = await res.json();
+    console.log('Raw accounts data:', data);
     
-    // API returns a map { "uuid": { balance: {...} } }
+    // API returns a map { "uuid": { name: "...", balance: {...} } }
     // We convert it to an array for the UI
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      return Object.entries(data).map(([id, details]: [string, any]) => ({
+      const accounts = Object.entries(data).map(([id, details]: [string, any]) => ({
         id: id,
-        name: `Account ${id.slice(-4)}`, // Fallback name since projection doesn't have names yet
+        name: details.name || `Account ${id.slice(-4)}`,
         balance: details.balance || {}
       }));
+      console.log('Mapped accounts:', accounts);
+      return accounts;
     }
     
     return Array.isArray(data) ? data : [];
