@@ -19,6 +19,17 @@ func (f *Feature) handleGetBudgets(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(budgets)
 }
 
+func (f *Feature) handleGetCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := f.transactionsView.ListCategories(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(categories)
+}
+
 func (f *Feature) handleSaveBudget(w http.ResponseWriter, r *http.Request) {
 	var b budget.Budget
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {

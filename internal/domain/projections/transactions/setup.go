@@ -31,6 +31,7 @@ type Repository interface {
 	CreateTransaction(ctx context.Context, tx TransactionRecord) error
 	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]TransactionRecord, error)
 	ListTransactions(ctx context.Context) ([]TransactionRecord, error)
+	ListCategories(ctx context.Context) ([]string, error)
 }
 
 type Projection struct {
@@ -88,4 +89,8 @@ func (v *Projection) ListTransactions(ctx context.Context) ([]TransactionRecord,
 
 func (v *Projection) ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]TransactionRecord, error) {
 	return v.repository.ListTransactionsByAccount(ctx, accountID)
+}
+
+func (v *Projection) ListCategories(ctx context.Context) ([]string, error) {
+	return v.repository.ListCategories(ctx)
 }

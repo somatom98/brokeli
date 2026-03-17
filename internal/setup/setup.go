@@ -122,7 +122,7 @@ func Setup(ctx context.Context) (*App, error) {
 		Setup()
 
 	manage_budgets.
-		New(httpHandler, budgetsRepository).
+		New(httpHandler, budgetsRepository, transactionsProjection).
 		Setup(ctx)
 
 	return &App{

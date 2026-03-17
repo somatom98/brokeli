@@ -35,3 +35,6 @@ SELECT
 FROM transactions t
 LEFT JOIN distributions d ON t.id = d.id
 ORDER BY t.happened_at DESC;
+
+-- name: ListCategories :many
+SELECT DISTINCT category FROM transactions ORDER BY category;

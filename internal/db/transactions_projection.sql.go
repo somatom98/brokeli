@@ -45,6 +45,33 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 	return err
 }
 
+const listCategories = `-- name: ListCategories :many
+SELECT DISTINCT category FROM transactions ORDER BY category
+`
+
+func (q *Queries) ListCategories(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listCategories)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var category string
+		if err := rows.Scan(&category); err != nil {
+			return nil, err
+		}
+		items = append(items, category)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransactions = `-- name: ListTransactions :many
 WITH distributions AS (
     SELECT
