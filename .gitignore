@@ -1,3 +1,5 @@
 .cache/
 .gemini/
 .vscode/
+
+transactions.csv
