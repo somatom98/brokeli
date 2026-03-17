@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle } from 'lucide-react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil } from 'lucide-react';
 import { api } from './api';
 import type { Account } from './api';
 
@@ -231,7 +231,9 @@ const Budget: React.FC = () => {
               {budgets.map((budget) => (
                 <div 
                   key={budget.id}
-                  onClick={() => handleEditBudget(budget)}
+                  onClick={() => {
+                    // Redirect to view card (not implemented yet)
+                  }}
                   className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 border border-white/50 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start mb-6">
@@ -241,12 +243,25 @@ const Budget: React.FC = () => {
                         {budget.data.items?.length || 0} items • {budget.data.selectedAccounts?.length || 0} accounts
                       </p>
                     </div>
-                    <button 
-                      onClick={(e) => handleDeleteBudget(budget.id, e)}
-                      className="text-gray-300 hover:text-red-500 transition-colors p-2"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditBudget(budget);
+                        }}
+                        className="text-gray-300 hover:text-indigo-500 transition-colors p-2"
+                        title="Edit Budget"
+                      >
+                        <Pencil size={20} />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDeleteBudget(budget.id, e)}
+                        className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                        title="Delete Budget"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
