@@ -81,4 +81,31 @@ export const api = {
     if (!res.ok) throw new Error('Failed to register transfer');
     return res.status;
   },
+  openAccount: async (data: { name: string, currency: string }) => {
+    const res = await fetch('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to open account');
+    return res.status;
+  },
+  deposit: async (accountId: string, data: { currency: string, amount: string }) => {
+    const res = await fetch(`/api/accounts/${accountId}/deposits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to deposit');
+    return res.status;
+  },
+  withdraw: async (accountId: string, data: { currency: string, amount: string }) => {
+    const res = await fetch(`/api/accounts/${accountId}/withdrawals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to withdraw');
+    return res.status;
+  },
 };

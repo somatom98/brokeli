@@ -9,7 +9,10 @@ import {
   Receipt,
   Tag,
   AlignLeft,
-  Banknote
+  Banknote,
+  PlusSquare,
+  ArrowDownToLine,
+  ArrowUpFromLine
 } from 'lucide-react';
 import { api } from './api';
 import type { Account } from './api';
@@ -20,30 +23,32 @@ const App: React.FC = () => {
   const [success, setSuccess] = useState(false);
 
   // Form State
-  const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
+  const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw'>('expense');
   const [accountId, setAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('EUR');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [accountName, setAccountName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const accs = await api.getAccounts();
-        setAccounts(accs || []);
-        if (accs && accs.length > 0) {
-          setAccountId(accs[0].id);
-          if (accs.length > 1) setToAccountId(accs[1].id);
-        }
-      } catch (err) {
-        console.error('Error fetching accounts:', err);
-      } finally {
-        setLoading(false);
+  const fetchAccounts = async () => {
+    try {
+      const accs = await api.getAccounts();
+      setAccounts(accs || []);
+      if (accs && accs.length > 0) {
+        setAccountId(accs[0].id);
+        if (accs.length > 1) setToAccountId(accs[1].id);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching accounts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAccounts();
   }, []);
 
@@ -68,6 +73,27 @@ const App: React.FC = () => {
       btn: 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-200',
       mesh: 'from-indigo-400 via-violet-300 to-purple-300',
       tab: 'text-indigo-600 bg-white/90 shadow-indigo-200/50'
+    },
+    openAccount: {
+      primary: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+      btn: 'bg-blue-500 hover:bg-blue-600 shadow-blue-200',
+      mesh: 'from-blue-400 via-cyan-300 to-teal-200',
+      tab: 'text-blue-600 bg-white/90 shadow-blue-200/50'
+    },
+    deposit: {
+      primary: 'text-emerald-500',
+      bg: 'bg-emerald-500/10',
+      btn: 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200',
+      mesh: 'from-emerald-400 via-teal-300 to-sky-300',
+      tab: 'text-emerald-600 bg-white/90 shadow-emerald-200/50'
+    },
+    withdraw: {
+      primary: 'text-rose-500',
+      bg: 'bg-rose-500/10',
+      btn: 'bg-rose-500 hover:bg-rose-600 shadow-rose-200',
+      mesh: 'from-rose-400 via-orange-300 to-amber-200',
+      tab: 'text-rose-600 bg-white/90 shadow-rose-200/50'
     }
   };
 
@@ -75,7 +101,9 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || !amount) return;
+    if (isSubmitting) return;
+    if (type !== 'openAccount' && !amount) return;
+    if (type === 'openAccount' && !accountName) return;
     
     setIsSubmitting(true);
     try {
@@ -101,7 +129,7 @@ const App: React.FC = () => {
           description,
           happened_at: happenedAt
         });
-      } else {
+      } else if (type === 'expense') {
         await api.registerExpense({
           account_id: accountId,
           currency,
@@ -110,11 +138,28 @@ const App: React.FC = () => {
           description,
           happened_at: happenedAt
         });
+      } else if (type === 'openAccount') {
+        await api.openAccount({
+          name: accountName,
+          currency
+        });
+        await fetchAccounts();
+      } else if (type === 'deposit') {
+        await api.deposit(accountId, {
+          currency,
+          amount
+        });
+      } else if (type === 'withdraw') {
+        await api.withdraw(accountId, {
+          currency,
+          amount
+        });
       }
       setSuccess(true);
       setAmount('');
       setCategory('');
       setDescription('');
+      setAccountName('');
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       alert('Error: ' + err);
@@ -154,19 +199,21 @@ const App: React.FC = () => {
             <div className={`inline-block px-4 py-1.5 rounded-full bg-gray-100/50 text-gray-400 text-[10px] font-black uppercase tracking-[0.4em]`}>
               Brøkeli Core
             </div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tighter">New Entry</h2>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+              {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'New Entry'}
+            </h2>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             
             {/* Type Selector (TABS) */}
-            <div className="flex p-1.5 bg-gray-100/80 rounded-[28px] gap-1 shadow-inner">
-              {(['expense', 'income', 'transfer'] as const).map((t) => (
+            <div className="grid grid-cols-3 p-1.5 bg-gray-100/80 rounded-[28px] gap-1 shadow-inner">
+              {(['expense', 'income', 'transfer', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setType(t)}
-                  className={`flex-1 flex flex-col items-center py-3.5 rounded-[22px] transition-all duration-500 ease-out ${
+                  className={`flex flex-col items-center py-3.5 rounded-[22px] transition-all duration-500 ease-out ${
                     type === t 
                       ? `${theme.tab} scale-[1.02] shadow-xl` 
                       : 'text-gray-400 hover:text-gray-600'
@@ -175,30 +222,18 @@ const App: React.FC = () => {
                   {t === 'expense' && <ArrowDownLeft size={20} strokeWidth={2.5} />}
                   {t === 'income' && <ArrowUpRight size={20} strokeWidth={2.5} />}
                   {t === 'transfer' && <ArrowRightLeft size={20} strokeWidth={2.5} />}
-                  <span className="text-[9px] font-black uppercase tracking-widest mt-1.5">{t}</span>
+                  {t === 'openAccount' && <PlusSquare size={20} strokeWidth={2.5} />}
+                  {t === 'deposit' && <ArrowDownToLine size={20} strokeWidth={2.5} />}
+                  {t === 'withdraw' && <ArrowUpFromLine size={20} strokeWidth={2.5} />}
+                  <span className="text-[9px] font-black uppercase tracking-widest mt-1.5">
+                    {t === 'openAccount' ? 'Account' : t}
+                  </span>
                 </button>
               ))}
             </div>
 
-            {/* Huge Amount Input */}
-            <div className="text-center relative group/input">
-              <div className="flex items-center justify-center gap-3">
-                <span className={`text-4xl font-black transition-colors duration-500 ${theme.primary}`}>
-                   {currency === 'EUR' ? '€' : currency === 'USD' ? '$' : '£'}
-                </span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  required 
-                  placeholder="0.00"
-                  value={amount} 
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full max-w-[200px] text-center text-7xl font-black outline-none bg-transparent placeholder:text-gray-100 transition-all caret-indigo-500"
-                  style={{ color: '#111827' }}
-                />
-              </div>
-
-              {/* Currency Badges */}
+            {/* Currency Badges for openAccount */}
+            {type === 'openAccount' && (
               <div className="flex justify-center gap-2.5 mt-4">
                 {['EUR', 'USD', 'GBP'].map(c => (
                   <button
@@ -215,85 +250,146 @@ const App: React.FC = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            )}
+
+            {/* Huge Amount Input */}
+            {type !== 'openAccount' && (
+              <div className="text-center relative group/input">
+                <div className="flex items-center justify-center gap-3">
+                  <span className={`text-4xl font-black transition-colors duration-500 ${theme.primary}`}>
+                     {currency === 'EUR' ? '€' : currency === 'USD' ? '$' : '£'}
+                  </span>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    required 
+                    placeholder="0.00"
+                    value={amount} 
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full max-w-[200px] text-center text-7xl font-black outline-none bg-transparent placeholder:text-gray-100 transition-all caret-indigo-500"
+                    style={{ color: '#111827' }}
+                  />
+                </div>
+
+                {/* Currency Badges */}
+                <div className="flex justify-center gap-2.5 mt-4">
+                  {['EUR', 'USD', 'GBP'].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCurrency(c)}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border ${
+                        currency === c 
+                          ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
+                          : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Detailed Fields */}
             <div className="space-y-4">
               
               {/* Account Dropdowns */}
-              <div className="flex flex-col gap-3">
-                <div className="relative group/field">
-                  <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                    <Banknote size={14} className="text-gray-300" />
-                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
-                      {type === 'transfer' ? 'From Account' : 'Account'}
-                    </span>
-                  </div>
-                  <select 
-                    value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
-                  >
-                    {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                  </select>
-                  <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
-                </div>
-
-                {type === 'transfer' && (
-                  <div className="relative animate-in slide-in-from-top-4 duration-500">
+              {type !== 'openAccount' && (
+                <div className="flex flex-col gap-3">
+                  <div className="relative group/field">
                     <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                      <ArrowRightLeft size={14} className="text-gray-300" />
-                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">To Account</span>
+                      <Banknote size={14} className="text-gray-300" />
+                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                        {type === 'transfer' ? 'From Account' : 'Account'}
+                      </span>
                     </div>
                     <select 
-                      value={toAccountId}
-                      onChange={(e) => setToAccountId(e.target.value)}
+                      value={accountId}
+                      onChange={(e) => setAccountId(e.target.value)}
                       className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
                     >
                       {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </select>
                     <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
                   </div>
-                )}
-              </div>
 
-              {/* Categorization */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="relative">
+                  {type === 'transfer' && (
+                    <div className="relative animate-in slide-in-from-top-4 duration-500">
+                      <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                        <ArrowRightLeft size={14} className="text-gray-300" />
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">To Account</span>
+                      </div>
+                      <select 
+                        value={toAccountId}
+                        onChange={(e) => setToAccountId(e.target.value)}
+                        className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
+                      >
+                        {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                      </select>
+                      <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Categorization (For Income, Expense, Transfer) */}
+              {(type === 'income' || type === 'expense' || type === 'transfer') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="relative">
+                    <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                      <Tag size={14} className="text-gray-300" />
+                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Category</span>
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Shopping..."
+                      value={category} 
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                      <AlignLeft size={14} className="text-gray-300" />
+                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Note</span>
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Brief note"
+                      value={description} 
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Account Name (For Open Account) */}
+              {type === 'openAccount' && (
+                <div className="relative group/field">
                   <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
                     <Tag size={14} className="text-gray-300" />
-                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Category</span>
+                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Account Name</span>
                   </div>
                   <input 
                     type="text" 
-                    placeholder="Shopping..."
-                    value={category} 
-                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                    placeholder="e.g. Main Wallet"
+                    value={accountName} 
+                    onChange={(e) => setAccountName(e.target.value)}
                     className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
                   />
                 </div>
-
-                <div className="relative">
-                  <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                    <AlignLeft size={14} className="text-gray-300" />
-                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Note</span>
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Brief note"
-                    value={description} 
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
-                  />
-                </div>
-              </div>
+              )}
 
             </div>
 
             {/* Submission Button */}
             <button 
               type="submit" 
-              disabled={isSubmitting || !amount}
+              disabled={isSubmitting || (type !== 'openAccount' && !amount) || (type === 'openAccount' && !accountName)}
               className={`w-full ${theme.btn} text-white font-black py-6 rounded-[32px] transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.3em] disabled:bg-gray-200 disabled:shadow-none`}
             >
               {isSubmitting ? (
@@ -301,7 +397,7 @@ const App: React.FC = () => {
               ) : (
                 <>
                   <Receipt size={18} strokeWidth={3} />
-                  Record Transaction
+                  {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'Record Transaction'}
                 </>
               )}
             </button>
