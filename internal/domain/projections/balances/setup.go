@@ -21,10 +21,21 @@ type BalancePeriod struct {
 	Amount   decimal.Decimal `json:"amount"`
 }
 
+type AccountDistribution struct {
+	ID           uuid.UUID       `json:"id"`
+	Currency     values.Currency `json:"currency"`
+	Amount       decimal.Decimal `json:"amount"`
+	UserID       string          `json:"user_id"`
+	ValueDate    time.Time       `json:"value_date"`
+	SystemAmount decimal.Decimal `json:"system_amount"`
+	OtherAmount  decimal.Decimal `json:"other_amount"`
+}
+
 type Repository interface {
-	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error
+	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error)
 	GetAllBalances(ctx context.Context) ([]BalancePeriod, error)
+	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error)
 }
 
 type Projection struct {
@@ -81,4 +92,8 @@ func (v *Projection) GetBalancesByAccount(ctx context.Context, accountID uuid.UU
 
 func (v *Projection) GetAllBalances(ctx context.Context) ([]BalancePeriod, error) {
 	return v.repository.GetAllBalances(ctx)
+}
+
+func (v *Projection) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error) {
+	return v.repository.GetAccountDistributions(ctx, accountID)
 }

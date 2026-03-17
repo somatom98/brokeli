@@ -4,6 +4,7 @@ CREATE TABLE balances_projection (
     currency TEXT NOT NULL,
     amount DECIMAL NOT NULL,
     user_id TEXT NOT NULL,
+    origin TEXT NOT NULL,
     value_date TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

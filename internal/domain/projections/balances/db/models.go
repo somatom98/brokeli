@@ -18,4 +18,5 @@ type BalancesProjection struct {
 	UserID    string    `json:"user_id"`
 	ValueDate time.Time `json:"value_date"`
 	CreatedAt time.Time `json:"created_at"`
+	Origin    string    `json:"origin"`
 }

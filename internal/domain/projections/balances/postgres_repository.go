@@ -23,7 +23,7 @@ func NewPostgresRepository(dbConn *sql.DB) (*PostgresRepository, error) {
 	}, nil
 }
 
-func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error {
+func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
 	return r.queries.InsertBalanceUpdate(ctx, db.InsertBalanceUpdateParams{
 		ID:        id,
 		AccountID: accountID,
@@ -31,6 +31,7 @@ func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UU
 		Amount:    amount.String(),
 		UserID:    userID,
 		ValueDate: valueDate,
+		Origin:    origin,
 	})
 }
 
@@ -84,4 +85,30 @@ func (r *PostgresRepository) GetAllBalances(ctx context.Context) ([]BalancePerio
 	}
 
 	return balances, nil
+}
+
+func (r *PostgresRepository) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error) {
+	rows, err := r.queries.GetAccountDistributions(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	distributions := make([]AccountDistribution, len(rows))
+	for i, row := range rows {
+		amount, _ := decimal.NewFromString(row.Amount)
+		systemAmount, _ := decimal.NewFromString(row.SystemAmount)
+		otherAmount, _ := decimal.NewFromString(row.OtherAmount)
+
+		distributions[i] = AccountDistribution{
+			ID:           row.ID,
+			Currency:     values.Currency(row.Currency),
+			Amount:       amount,
+			UserID:       row.UserID,
+			ValueDate:    row.ValueDate,
+			SystemAmount: systemAmount,
+			OtherAmount:  otherAmount,
+		}
+	}
+
+	return distributions, nil
 }

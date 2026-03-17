@@ -21,10 +21,11 @@ import (
 )
 
 type BalancesRepositoryMock struct {
-	Balances []balances.BalancePeriod
+	Balances      []balances.BalancePeriod
+	Distributions []balances.AccountDistribution
 }
 
-func (m *BalancesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error {
+func (m *BalancesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
 	return nil
 }
 
@@ -34,6 +35,10 @@ func (m *BalancesRepositoryMock) GetBalancesByAccount(ctx context.Context, accou
 
 func (m *BalancesRepositoryMock) GetAllBalances(ctx context.Context) ([]balances.BalancePeriod, error) {
 	return m.Balances, nil
+}
+
+func (m *BalancesRepositoryMock) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]balances.AccountDistribution, error) {
+	return m.Distributions, nil
 }
 
 func TestManageAccounts_Handlers(t *testing.T) {

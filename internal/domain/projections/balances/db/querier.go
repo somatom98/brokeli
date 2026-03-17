@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error)
 	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error

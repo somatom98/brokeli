@@ -12,6 +12,59 @@ import (
 	"github.com/google/uuid"
 )
 
+const getAccountDistributions = `-- name: GetAccountDistributions :many
+SELECT 
+    id, account_id, currency, amount, user_id, value_date,
+    SUM(CASE WHEN user_id = 'system' THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY value_date ASC, id ASC)::TEXT as system_amount,
+    SUM(CASE WHEN user_id != 'system' THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY value_date ASC, id ASC)::TEXT as other_amount
+FROM balances_projection
+WHERE account_id = $1 AND origin = 'movement'
+ORDER BY value_date DESC, id DESC
+`
+
+type GetAccountDistributionsRow struct {
+	ID           uuid.UUID `json:"id"`
+	AccountID    uuid.UUID `json:"account_id"`
+	Currency     string    `json:"currency"`
+	Amount       string    `json:"amount"`
+	UserID       string    `json:"user_id"`
+	ValueDate    time.Time `json:"value_date"`
+	SystemAmount string    `json:"system_amount"`
+	OtherAmount  string    `json:"other_amount"`
+}
+
+func (q *Queries) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAccountDistributions, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAccountDistributionsRow
+	for rows.Next() {
+		var i GetAccountDistributionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Currency,
+			&i.Amount,
+			&i.UserID,
+			&i.ValueDate,
+			&i.SystemAmount,
+			&i.OtherAmount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllBalances = `-- name: GetAllBalances :many
 SELECT DATE_TRUNC('month', value_date)::TIMESTAMP AS month, currency, SUM(amount)::TEXT AS amount
 FROM balances_projection
@@ -86,8 +139,8 @@ func (q *Queries) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID)
 }
 
 const insertBalanceUpdate = `-- name: InsertBalanceUpdate :exec
-INSERT INTO balances_projection (id, account_id, currency, amount, user_id, value_date)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO balances_projection (id, account_id, currency, amount, user_id, value_date, origin)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (id) DO NOTHING
 `
 
@@ -98,6 +151,7 @@ type InsertBalanceUpdateParams struct {
 	Amount    string    `json:"amount"`
 	UserID    string    `json:"user_id"`
 	ValueDate time.Time `json:"value_date"`
+	Origin    string    `json:"origin"`
 }
 
 func (q *Queries) InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error {
@@ -108,6 +162,7 @@ func (q *Queries) InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpda
 		arg.Amount,
 		arg.UserID,
 		arg.ValueDate,
+		arg.Origin,
 	)
 	return err
 }
