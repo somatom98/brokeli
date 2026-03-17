@@ -23,12 +23,13 @@ func NewPostgresRepository(dbConn *sql.DB) (*PostgresRepository, error) {
 	}, nil
 }
 
-func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, valueDate time.Time) error {
+func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error {
 	return r.queries.InsertBalanceUpdate(ctx, db.InsertBalanceUpdateParams{
 		ID:        id,
 		AccountID: accountID,
 		Currency:  string(currency),
 		Amount:    amount.String(),
+		UserID:    userID,
 		ValueDate: valueDate,
 	})
 }

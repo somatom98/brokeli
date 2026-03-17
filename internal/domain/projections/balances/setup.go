@@ -22,7 +22,7 @@ type BalancePeriod struct {
 }
 
 type Repository interface {
-	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, valueDate time.Time) error
+	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error
 	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error)
 	GetAllBalances(ctx context.Context) ([]BalancePeriod, error)
 }

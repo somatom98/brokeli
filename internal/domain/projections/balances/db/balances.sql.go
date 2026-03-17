@@ -86,8 +86,8 @@ func (q *Queries) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID)
 }
 
 const insertBalanceUpdate = `-- name: InsertBalanceUpdate :exec
-INSERT INTO balances_projection (id, account_id, currency, amount, value_date)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO balances_projection (id, account_id, currency, amount, user_id, value_date)
+VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (id) DO NOTHING
 `
 
@@ -96,6 +96,7 @@ type InsertBalanceUpdateParams struct {
 	AccountID uuid.UUID `json:"account_id"`
 	Currency  string    `json:"currency"`
 	Amount    string    `json:"amount"`
+	UserID    string    `json:"user_id"`
 	ValueDate time.Time `json:"value_date"`
 }
 
@@ -105,6 +106,7 @@ func (q *Queries) InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpda
 		arg.AccountID,
 		arg.Currency,
 		arg.Amount,
+		arg.UserID,
 		arg.ValueDate,
 	)
 	return err

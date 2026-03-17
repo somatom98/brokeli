@@ -20,7 +20,7 @@ type BalancesRepositoryMock struct {
 	Balances []balances.BalancePeriod
 }
 
-func (m *BalancesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, valueDate time.Time) error {
+func (m *BalancesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time) error {
 	return nil
 }
 

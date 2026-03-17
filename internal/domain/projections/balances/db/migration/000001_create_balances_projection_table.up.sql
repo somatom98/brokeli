@@ -3,6 +3,7 @@ CREATE TABLE balances_projection (
     account_id UUID NOT NULL,
     currency TEXT NOT NULL,
     amount DECIMAL NOT NULL,
+    user_id TEXT NOT NULL,
     value_date TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

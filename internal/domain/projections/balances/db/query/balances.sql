@@ -1,6 +1,6 @@
 -- name: InsertBalanceUpdate :exec
-INSERT INTO balances_projection (id, account_id, currency, amount, value_date)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO balances_projection (id, account_id, currency, amount, user_id, value_date)
+VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (id) DO NOTHING;
 
 -- name: GetBalancesByAccount :many
