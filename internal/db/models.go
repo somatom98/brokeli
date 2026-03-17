@@ -29,3 +29,15 @@ type BalanceUpdate struct {
 	ValueDate time.Time `json:"value_date"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type Transaction struct {
+	ID              uuid.UUID `json:"id"`
+	AccountID       uuid.UUID `json:"account_id"`
+	TransactionType string    `json:"transaction_type"`
+	Amount          string    `json:"amount"`
+	Currency        string    `json:"currency"`
+	Category        string    `json:"category"`
+	Description     string    `json:"description"`
+	HappenedAt      time.Time `json:"happened_at"`
+	CreatedAt       time.Time `json:"created_at"`
+}

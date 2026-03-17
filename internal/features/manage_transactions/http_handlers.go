@@ -225,3 +225,17 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (f *Feature) handleGetTransactions(w http.ResponseWriter, r *http.Request) {
+	transactions, err := f.transactionsView.ListTransactions(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(transactions); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+}

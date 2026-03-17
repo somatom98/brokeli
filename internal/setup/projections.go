@@ -6,6 +6,7 @@ import (
 	"github.com/somatom98/brokeli/internal/domain/account"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
+	"github.com/somatom98/brokeli/internal/domain/projections/transactions"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	"github.com/somatom98/brokeli/pkg/event_store"
 )
@@ -26,4 +27,13 @@ func BalanceUpdatesProjection(
 	repository balance_updates.Repository,
 ) *balance_updates.Projection {
 	return balance_updates.New(transactionES, accountES, repository)
+}
+
+func TransactionsProjection(
+	ctx context.Context,
+	transactionES event_store.Store[*transaction.Transaction],
+	accountES event_store.Store[*account.Account],
+	repository transactions.Repository,
+) *transactions.Projection {
+	return transactions.New(transactionES, accountES, repository)
 }

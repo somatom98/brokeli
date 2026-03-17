@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/somatom98/brokeli/internal/domain/projections/transactions"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
@@ -19,21 +20,25 @@ type Dispatcher interface {
 }
 
 type Feature struct {
-	httpHandler *http.ServeMux
-	dispatcher  Dispatcher
+	httpHandler      *http.ServeMux
+	dispatcher       Dispatcher
+	transactionsView *transactions.Projection
 }
 
 func New(
 	httpHandler *http.ServeMux,
 	api Dispatcher,
+	transactionsView *transactions.Projection,
 ) *Feature {
 	return &Feature{
-		httpHandler: httpHandler,
-		dispatcher:  api,
+		httpHandler:      httpHandler,
+		dispatcher:       api,
+		transactionsView: transactionsView,
 	}
 }
 
 func (f *Feature) Setup() {
+	f.httpHandler.HandleFunc("GET /api/transactions", f.handleGetTransactions)
 	f.httpHandler.HandleFunc("POST /api/expenses", f.handleRegisterExpense)
 	f.httpHandler.HandleFunc("POST /api/incomes", f.handleRegisterIncome)
 	f.httpHandler.HandleFunc("POST /api/transfers", f.handleRegisterTransfer)

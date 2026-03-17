@@ -14,6 +14,7 @@ import (
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	"github.com/somatom98/brokeli/internal/domain/projections/accounts"
 	"github.com/somatom98/brokeli/internal/domain/projections/balance_updates"
+	"github.com/somatom98/brokeli/internal/domain/projections/transactions"
 	"github.com/somatom98/brokeli/internal/domain/transaction"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
 	"github.com/somatom98/brokeli/internal/features/import_transactions"
@@ -63,6 +64,11 @@ func Setup(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("failed to create balance updates repository: %w", err)
 	}
 
+	transactionsRepository, err := transactions.NewPostgresRepository(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transactions repository: %w", err)
+	}
+
 	var transactionES event_store.Store[*transaction.Transaction]
 
 	transactionEventsFactory := map[string]func() any{
@@ -97,9 +103,10 @@ func Setup(ctx context.Context) (*App, error) {
 
 	accountsProjection := AccountsProjection(ctx, transactionES, accountES, accountsRepository)
 	balanceUpdatesProjection := BalanceUpdatesProjection(ctx, transactionES, accountES, balanceUpdatesRepository)
+	transactionsProjection := TransactionsProjection(ctx, transactionES, accountES, transactionsRepository)
 
 	manage_transactions.
-		New(httpHandler, transactionDispatcher).
+		New(httpHandler, transactionDispatcher, transactionsProjection).
 		Setup()
 
 	manage_accounts.
