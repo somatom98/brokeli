@@ -1,16 +1,24 @@
 services:
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.api
     restart: on-failure
-    ports:
-      - "8080:8080"
     environment:
       - PORT=8080
       - DB_DSN=postgres://postgres:postgres@db:5432/brokeli?sslmode=disable
       - PROJECT_ROOT=/app
-      - KAFKA_BROKERS=kafka:9092
     depends_on:
       - db
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
 
   db:
     image: postgres:16-alpine
@@ -25,4 +33,3 @@ services:
 
 volumes:
   postgres_data:
-
