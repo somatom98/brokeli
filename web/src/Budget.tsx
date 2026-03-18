@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil } from 'lucide-react';
 import { api } from './api';
-import type { Account } from './api';
-
-const AVAILABLE_CATEGORIES = [
-  'Groceries', 'Dining Out', 'Rent', 'Utilities', 
-  'Metro/Bus', 'Train', 'Gas', 'Entertainment', 
-  'Healthcare', 'Insurance', 'Shopping', 'Travel',
-  'Subscriptions', 'Personal Care', 'Education'
-];
+import type { Account, Transaction } from './api';
 
 interface BudgetItem {
   name: string;
@@ -25,14 +18,31 @@ interface BudgetData {
   };
 }
 
+// Fallback for crypto.randomUUID() if not in a secure context
+const generateId = () => {
+  try {
+    return crypto.randomUUID();
+  } catch (e) {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
+};
+
 const Budget: React.FC = () => {
-  const [view, setView] = useState<'list' | 'edit'>('list');
+  const [view, setView] = useState<'list' | 'edit' | 'view'>('list');
   const [budgets, setBudgets] = useState<BudgetData[]>([]);
+  const [selectedBudget, setSelectedBudget] = useState<BudgetData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isFetchingTransactions, setIsFetchingTransactions] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [budgetName, setBudgetName] = useState('Monthly Budget');
-  const [budgetId, setBudgetId] = useState<string>(crypto.randomUUID());
+  const [budgetId, setBudgetId] = useState<string>(generateId());
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -54,6 +64,15 @@ const Budget: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const cats = await api.getCategories();
+      setCategories(cats || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
@@ -68,7 +87,81 @@ const Budget: React.FC = () => {
     };
     fetchAccounts();
     fetchBudgets();
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (view === 'view' && selectedBudget) {
+      const fetchTransactions = async () => {
+        setIsFetchingTransactions(true);
+        try {
+          const data = await api.getTransactions();
+          setTransactions(data || []);
+        } catch (err) {
+          console.error('Error fetching transactions:', err);
+        } finally {
+          setIsFetchingTransactions(false);
+        }
+      };
+      fetchTransactions();
+    }
+  }, [view, selectedBudget]);
+
+  const budgetStats = useMemo(() => {
+    if (!selectedBudget) return { totalSpending: 0, totalIncome: 0, totalOutcome: 0, items: [] };
+
+    const selectedAccIds = selectedBudget.data.selectedAccounts || [];
+
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const filteredTransactions = transactions.filter(t => {
+      const happenedAt = new Date(t.happened_at);
+      const isAccountMatch = selectedAccIds.includes(t.account_id);
+      const isDateMatch = happenedAt >= start && happenedAt <= end;
+      return isAccountMatch && isDateMatch;
+    });
+
+    const totalIncome = filteredTransactions
+      .filter(t => t.transaction_type === 'CREDIT' || parseFloat(t.amount) > 0)
+      .reduce((sum, t) => {
+        const rate = parseFloat(t.system_total_rate || '1') || 1;
+        return sum + (parseFloat(t.amount) * rate);
+      }, 0);
+
+    const totalOutcome = filteredTransactions
+      .filter(t => t.transaction_type === 'DEBIT' || parseFloat(t.amount) < 0)
+      .reduce((sum, t) => {
+        const rate = parseFloat(t.system_total_rate || '1') || 1;
+        return sum + (Math.abs(parseFloat(t.amount)) * rate);
+      }, 0);
+
+    const totalSpending = totalOutcome; // For backward compatibility with the items mapping
+
+    return {
+      totalSpending,
+      totalIncome,
+      totalOutcome,
+      items: (selectedBudget.data.items || []).map(item => {
+        const itemTransactions = filteredTransactions.filter(t => 
+          (t.transaction_type === 'DEBIT' || parseFloat(t.amount) < 0) &&
+          item.categories.includes(t.category)
+        );
+        const itemSpent = itemTransactions.reduce((sum, t) => {
+          const rate = parseFloat(t.system_total_rate || '1') || 1;
+          return sum + (Math.abs(parseFloat(t.amount)) * rate);
+        }, 0);
+        const actualPercentage = totalSpending > 0 ? (itemSpent / totalSpending) * 100 : 0;
+
+        return {
+          ...item,
+          actualSpent: itemSpent,
+          actualPercentage: actualPercentage,
+        };
+      })
+    };
+  }, [selectedBudget, transactions, selectedMonth]);
 
   const handleAddAccount = (accountId: string) => {
     if (accountId && !selectedAccounts.includes(accountId)) {
@@ -147,8 +240,13 @@ const Budget: React.FC = () => {
     setView('edit');
   };
 
+  const handleViewBudget = (budget: BudgetData) => {
+    setSelectedBudget(budget);
+    setView('view');
+  };
+
   const handleCreateNew = () => {
-    setBudgetId(crypto.randomUUID());
+    setBudgetId(generateId());
     setBudgetName('New Budget');
     setItems([]);
     setSelectedAccounts([]);
@@ -182,8 +280,8 @@ const Budget: React.FC = () => {
   }, [items]);
 
   const unassignedCategories = useMemo(() => {
-    return AVAILABLE_CATEGORIES.filter(c => !assignedCategories.includes(c));
-  }, [assignedCategories]);
+    return categories.filter(c => !assignedCategories.includes(c));
+  }, [categories, assignedCategories]);
 
   const totalPercentage = items.reduce((sum, item) => sum + (item.percentage || 0), 0);
   const otherPercentage = Math.max(0, 100 - totalPercentage);
@@ -231,9 +329,7 @@ const Budget: React.FC = () => {
               {budgets.map((budget) => (
                 <div 
                   key={budget.id}
-                  onClick={() => {
-                    // Redirect to view card (not implemented yet)
-                  }}
+                  onClick={() => handleViewBudget(budget)}
                   className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 border border-white/50 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start mb-6">
@@ -288,6 +384,110 @@ const Budget: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'view' && selectedBudget) {
+    return (
+      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
+        <div className="w-full max-w-4xl space-y-8">
+          <div className="flex items-center justify-between px-4">
+             <button 
+              onClick={() => setView('list')}
+              className="p-4 text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px]"
+            >
+              <ChevronLeft size={16} strokeWidth={3} />
+              Back to List
+            </button>
+            <div className="text-right">
+              <h1 className="text-4xl font-black text-gray-900 tracking-tight">{selectedBudget.name}</h1>
+              <div className="flex items-center justify-end mt-2">
+                <input 
+                  type="month" 
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="bg-gray-100/50 border-none rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/20 text-gray-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] p-10 border border-white/50 shadow-sm relative overflow-hidden">
+            {isFetchingTransactions ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Analyzing transactions...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-10">
+                  <div>
+                    <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Total Income</div>
+                    <div className="text-5xl font-black text-emerald-600 tracking-tighter">
+                      + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-2">Total Outcome</div>
+                    <div className="text-5xl font-black text-rose-600 tracking-tighter">
+                      - {budgetStats.totalOutcome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Gain/Loss</div>
+                    <div className={`text-6xl font-black tracking-tighter ${budgetStats.totalIncome - budgetStats.totalOutcome >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                      {(budgetStats.totalIncome - budgetStats.totalOutcome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {budgetStats.items?.map((item, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <span className="text-xl font-bold text-gray-800">{item.name}</span>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.categories.slice(0, 3).map((c: string) => (
+                              <span key={c} className="text-[8px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{c}</span>
+                            ))}
+                            {item.categories.length > 3 && (
+                                <span className="text-[8px] font-bold text-gray-400 px-1 py-0.5 uppercase tracking-wider">+{item.categories.length - 3} more</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">{item.actualSpent?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                          <div className={`text-[10px] font-bold uppercase tracking-widest ${item.actualPercentage > item.percentage ? 'text-rose-500' : 'text-indigo-500'}`}>
+                            {item.actualPercentage?.toFixed(1)}% vs {item.percentage}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex relative">
+                        <div 
+                          className={`h-full transition-all duration-1000 ${item.actualPercentage > item.percentage ? 'bg-rose-500' : 'bg-indigo-500'}`}
+                          style={{ width: `${Math.min(100, item.actualPercentage)}%` }}
+                        />
+                        {/* Target line */}
+                        <div 
+                          className="absolute top-0 bottom-0 w-1 bg-gray-900/20 z-10"
+                          style={{ left: `${item.percentage}%` }}
+                          title={`Target: ${item.percentage}%`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {budgetStats.items?.length === 0 && (
+                      <div className="text-center py-10 text-gray-400 italic">No budget items defined</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

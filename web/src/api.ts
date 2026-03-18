@@ -13,6 +13,7 @@ export interface Transaction {
   description: string;
   happened_at: string;
   transaction_type: string;
+  system_total_rate?: string;
 }
 
 export interface BalancePeriod {
@@ -132,5 +133,11 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to delete budget');
     return res.status;
+  },
+  getCategories: async (): Promise<string[]> => {
+    const res = await fetch('/api/budgets/categories');
+    if (!res.ok) throw new Error('Failed to fetch categories');
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 };

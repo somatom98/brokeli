@@ -97,3 +97,7 @@ func (r *PostgresRepository) ListTransactions(ctx context.Context) ([]Transactio
 
 	return transactions, nil
 }
+
+func (r *PostgresRepository) ListCategories(ctx context.Context) ([]string, error) {
+	return r.queries.ListCategories(ctx)
+}
