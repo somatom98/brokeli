@@ -95,16 +95,18 @@ func TestDeposit(t *testing.T) {
 		user := "user-123"
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), amount, user, now)
+		evt, err := acc.Deposit(values.Currency("EUR"), amount, "Income", "Paycheck", user, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyDeposited{
-			AccountID:  id,
-			Currency:   values.Currency("EUR"),
-			Amount:     amount,
-			User:       user,
-			HappenedAt: now,
+			AccountID:   id,
+			Currency:    values.Currency("EUR"),
+			Amount:      amount,
+			Category:    "Income",
+			Description: "Paycheck",
+			User:        user,
+			HappenedAt:  now,
 		}, evt)
 	})
 
@@ -113,7 +115,7 @@ func TestDeposit(t *testing.T) {
 		acc := account.New(uuid.New())
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), decimal.NewFromInt(100), "user", now)
+		evt, err := acc.Deposit(values.Currency("EUR"), decimal.NewFromInt(100), "", "", "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrAccountNotOpened)
@@ -126,7 +128,7 @@ func TestDeposit(t *testing.T) {
 		acc.State = account.State_Opened
 
 		// act
-		evt, err := acc.Deposit(values.Currency("EUR"), decimal.Zero, "user", now)
+		evt, err := acc.Deposit(values.Currency("EUR"), decimal.Zero, "", "", "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrNegativeOrNullAmount)
@@ -145,16 +147,18 @@ func TestWithdraw(t *testing.T) {
 		user := "user-123"
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), amount, user, now)
+		evt, err := acc.Withdraw(values.Currency("EUR"), amount, "Food", "Lunch", user, now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.MoneyWithdrawn{
-			AccountID:  id,
-			Currency:   values.Currency("EUR"),
-			Amount:     amount,
-			User:       user,
-			HappenedAt: now,
+			AccountID:   id,
+			Currency:    values.Currency("EUR"),
+			Amount:      amount,
+			Category:    "Food",
+			Description: "Lunch",
+			User:        user,
+			HappenedAt:  now,
 		}, evt)
 	})
 
@@ -163,7 +167,7 @@ func TestWithdraw(t *testing.T) {
 		acc := account.New(uuid.New())
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(50), "user", now)
+		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(50), "", "", "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrAccountNotOpened)
@@ -176,7 +180,7 @@ func TestWithdraw(t *testing.T) {
 		acc.State = account.State_Opened
 
 		// act
-		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(-1), "user", now)
+		evt, err := acc.Withdraw(values.Currency("EUR"), decimal.NewFromInt(-1), "", "", "user", now)
 
 		// assert
 		require.ErrorIs(t, err, account.ErrNegativeOrNullAmount)

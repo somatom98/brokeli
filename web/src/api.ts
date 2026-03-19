@@ -22,6 +22,16 @@ export interface BalancePeriod {
   amount: string;
 }
 
+export interface AccountDistribution {
+  id: string;
+  currency: string;
+  amount: string;
+  user_id: string;
+  value_date: string;
+  system_amount: string;
+  other_amount: string;
+}
+
 export interface TransactionFilter {
   start_date?: string;
   end_date?: string;
@@ -78,6 +88,12 @@ export const api = {
   getBalancesByAccount: async (accountId: string): Promise<BalancePeriod[]> => {
     const res = await fetch(`/api/accounts/${accountId}/balances`);
     if (!res.ok) throw new Error('Failed to fetch account balances');
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
+  getAccountDistributions: async (accountId: string): Promise<AccountDistribution[]> => {
+    const res = await fetch(`/api/accounts/${accountId}/distributions`);
+    if (!res.ok) throw new Error('Failed to fetch account distributions');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },

@@ -75,13 +75,17 @@ func (v *Projection) ApplyReimbursementReceived(ctx context.Context, idStr strin
 		TransactionType: string(values.TransactionType_Reimbursement),
 		Amount:          e.Amount,
 		Currency:        e.Currency,
-		Category:        "Reimbursement",
-		Description:     fmt.Sprintf("Reimbursement from %s", e.From),
+		Category:        e.Category,
+		Description:     e.Description,
 		HappenedAt:      e.HappenedAt,
 	})
 }
 
 func (v *Projection) ApplyMoneyDeposited(ctx context.Context, idStr string, e account_events.MoneyDeposited) error {
+	if e.User == "system" {
+		return nil
+	}
+
 	id := uuid.NewMD5(uuid.NameSpaceOID, []byte(idStr))
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
@@ -89,13 +93,17 @@ func (v *Projection) ApplyMoneyDeposited(ctx context.Context, idStr string, e ac
 		TransactionType: string(values.TransactionType_Deposit),
 		Amount:          e.Amount,
 		Currency:        e.Currency,
-		Category:        "Deposit",
-		Description:     fmt.Sprintf("Deposit from %s", e.User),
+		Category:        e.Category,
+		Description:     e.Description,
 		HappenedAt:      e.HappenedAt,
 	})
 }
 
 func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, idStr string, e account_events.MoneyWithdrawn) error {
+	if e.User == "system" {
+		return nil
+	}
+
 	id := uuid.NewMD5(uuid.NameSpaceOID, []byte(idStr))
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
@@ -103,8 +111,8 @@ func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, idStr string, e ac
 		TransactionType: string(values.TransactionType_Withdrawal),
 		Amount:          e.Amount.Neg(),
 		Currency:        e.Currency,
-		Category:        "Withdrawal",
-		Description:     fmt.Sprintf("Withdrawal by %s", e.User),
+		Category:        e.Category,
+		Description:     e.Description,
 		HappenedAt:      e.HappenedAt,
 	})
 }

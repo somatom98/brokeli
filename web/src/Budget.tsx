@@ -17,15 +17,19 @@ const generateId = () => {
   }
 };
 
-const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account[], currency: string }> = ({ transactions, accounts, currency }) => {
+const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account[] }> = ({ transactions, accounts }) => {
   if (transactions.length === 0) return <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest py-4 px-2 italic">No transactions</div>;
   
   return (
     <div className="mt-4 border-t border-gray-50 pt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
       {transactions.map((t) => {
+        const amount = Math.abs(parseFloat(t.amount));
         const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
                        (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
                        parseFloat(t.amount) < 0;
+        const rate = (parseFloat(t.system_total_rate || '1') || 1);
+        const systemAmount = amount * rate;
+        
         return (
           <div key={t.id} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-xl transition-colors">
             <div className="flex flex-col">
@@ -38,11 +42,11 @@ const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account
             </div>
             <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${isDebit ? 'text-rose-500' : 'text-emerald-500'}`}>
               {isDebit ? '-' : '+'}
-              {Math.abs(parseFloat(t.amount) * (parseFloat(t.system_total_rate || '1') || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              <span className="text-[8px] opacity-70 ml-0.5">{currency}</span>
-              {t.system_total_rate && parseFloat(t.system_total_rate) !== 1 && (
+              {amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              <span className="text-[8px] opacity-70 ml-0.5">{t.currency}</span>
+              {rate !== 1 && (
                 <span className="text-[9px] text-gray-400 font-bold ml-1 italic opacity-60">
-                  ({Math.abs(parseFloat(t.amount)).toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
+                  (System: {systemAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
                 </span>
               )}
             </div>
@@ -61,7 +65,7 @@ interface ProcessedBudgetItem extends BudgetItem {
   avg12MonthsPercentage?: number;
 }
 
-const Budget: React.FC<{ currency: string }> = ({ currency }) => {
+const Budget: React.FC = () => {
   const [view, setView] = useState<'list' | 'edit' | 'view'>('list');
   const [budgets, setBudgets] = useState<BudgetData[]>([]);
   const [selectedBudget, setSelectedBudget] = useState<BudgetData | null>(null);
@@ -175,7 +179,8 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
         transactions: [] as Transaction[],
         categories: [] as string[],
         percentage: 0
-      }
+      },
+      expectedSavingsPercentage: 0
     };
 
     const selectedAccIds = selectedBudget.data.selectedAccounts || [];
@@ -248,7 +253,9 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
     const otherTransactions = outcomeTransactions.filter(t => !assignedCategories.has(t.category));
     const otherSpent = otherTransactions.reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
 
-    const budgetOtherPercentage = selectedBudget.data.otherPercentage !== undefined ? selectedBudget.data.otherPercentage : (100 - (selectedBudget.data.items || []).reduce((sum, i) => sum + (i.percentage || 0), 0));
+    const totalAssignedPercentage = (selectedBudget.data.items || []).reduce((sum, i) => sum + (i.percentage || 0), 0);
+    const budgetOtherPercentage = selectedBudget.data.otherPercentage || 0;
+    const expectedSavingsPercentage = Math.max(0, 100 - totalAssignedPercentage - budgetOtherPercentage);
 
     const items = (selectedBudget.data.items || []).map(item => {
       const itemTransactions = currentTransactions.filter(t => 
@@ -284,6 +291,7 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
         prevMonthPercentage: calcPeriodStats(null, prevMonthStart, prevMonthEnd),
         avg12MonthsPercentage: calcPeriodStats(null, last12Start, last12End)
       },
+      expectedSavingsPercentage,
       items
     };
   }, [selectedBudget, transactions, selectedMonth]);
@@ -339,7 +347,7 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
           title={`Target: ${item.percentage}%`}
         />
       </div>
-      {expandedSections.includes(id) && <TransactionList transactions={item.transactions || []} accounts={accounts} currency={currency} />}
+      {expandedSections.includes(id) && <TransactionList transactions={item.transactions || []} accounts={accounts} />}
     </div>
   );
 
@@ -613,7 +621,7 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
                   <div className="text-6xl font-black text-gray-900 tracking-tighter">
                     + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  {expandedSections.includes('income') && <TransactionList transactions={budgetStats.incomeTransactions || []} accounts={accounts} currency={currency} />}
+                  {expandedSections.includes('income') && <TransactionList transactions={budgetStats.incomeTransactions || []} accounts={accounts} />}
                 </div>
 
                 {/* 2. Total Outcome with Expenses Breakdown */}
@@ -647,7 +655,7 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Gain/Loss</div>
                   {(() => {
                     const netGain = budgetStats.totalIncome - budgetStats.totalOutcome;
-                    const expectedSavingRate = budgetStats.otherItem.percentage / 100;
+                    const expectedSavingRate = budgetStats.expectedSavingsPercentage / 100;
                     const expectedSaving = budgetStats.totalIncome * expectedSavingRate;
                     
                     let color = 'rgb(107, 114, 128)'; // Gray-500 (neutral)
@@ -897,12 +905,12 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
           ))}
         </div>
 
-        {/* Other Item (Expected Savings) */}
-        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-6 flex flex-col gap-4 mb-8">
+        {/* Other Item */}
+        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-6 flex flex-col gap-4 mb-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <div className="text-xl font-bold text-gray-500">Expected Savings (Others)</div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Remaining categories and target savings</p>
+              <div className="text-xl font-bold text-gray-500">Others</div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Budget for all remaining categories</p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -930,6 +938,17 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
                 <span className="text-gray-400 text-sm font-medium italic">None</span>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Expected Savings (Calculated) */}
+        <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 flex flex-col gap-1 mb-8">
+          <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Calculated Expected Savings</div>
+          <div className="flex items-baseline gap-2">
+            <div className="text-4xl font-black text-indigo-600">
+              {(100 - items.reduce((sum, i) => sum + (i.percentage || 0), 0) - (otherPercentage || 0)).toFixed(1)}%
+            </div>
+            <div className="text-sm font-bold text-indigo-400">of total income</div>
           </div>
         </div>
 

@@ -140,6 +140,8 @@ func (a *Transaction) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
 	if a.State > State_Created {
@@ -151,10 +153,12 @@ func (a *Transaction) RegisterReimbursement(
 	}
 
 	return &events.ReimbursementReceived{
-		AccountID:  accountID,
-		From:       from,
-		Currency:   currency,
-		Amount:     amount,
-		HappenedAt: happenedAt,
+		AccountID:   accountID,
+		From:        from,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+		HappenedAt:  happenedAt,
 	}, nil
 }

@@ -145,11 +145,13 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 	}
 
 	type RegisterReimbursementRequest struct {
-		AccountID  uuid.UUID       `json:"account_id"`
-		From       string          `json:"from"`
-		Currency   values.Currency `json:"currency"`
-		Amount     decimal.Decimal `json:"amount"`
-		HappenedAt time.Time       `json:"happened_at"`
+		AccountID   uuid.UUID       `json:"account_id"`
+		From        string          `json:"from"`
+		Currency    values.Currency `json:"currency"`
+		Amount      decimal.Decimal `json:"amount"`
+		Category    string          `json:"category"`
+		Description string          `json:"description"`
+		HappenedAt  time.Time       `json:"happened_at"`
 	}
 
 	var req RegisterReimbursementRequest
@@ -170,6 +172,8 @@ func (f *Feature) handleRegisterReimbursement(w http.ResponseWriter, r *http.Req
 		req.From,
 		req.Currency,
 		req.Amount,
+		req.Category,
+		req.Description,
 		req.HappenedAt,
 	); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)

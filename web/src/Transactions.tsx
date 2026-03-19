@@ -11,7 +11,7 @@ import {
 import { api } from './api';
 import type { Account, Transaction, TransactionFilter } from './api';
 
-const Transactions: React.FC<{ currency: string }> = ({ currency }) => {
+const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,23 +181,28 @@ const Transactions: React.FC<{ currency: string }> = ({ currency }) => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-50">
-                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Date</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Type</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Amount</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] min-w-[140px]">Date</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Type</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {transactions.map((t) => {
+                    const amount = Math.abs(parseFloat(t.amount));
                     const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
                                    (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
                                    parseFloat(t.amount) < 0;
+                    const isMovement = ['DEPOSIT', 'WITHDRAWAL'].includes(t.transaction_type);
+                    const rate = isMovement ? 1 : (parseFloat(t.system_total_rate || '1') || 1);
+                    const systemAmount = amount * rate;
+
                     return (
                       <tr key={t.id} className="hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-8 py-6">
+                        <td className="px-6 py-6">
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-900">
+                            <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
                               {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
@@ -205,36 +210,36 @@ const Transactions: React.FC<{ currency: string }> = ({ currency }) => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        <td className="px-6 py-6">
+                          <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${
                             isDebit ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
                           }`}>
                             {t.transaction_type.replace('_', ' ')}
                           </span>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        <td className="px-6 py-6">
+                          <span className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                             {t.category || 'General'}
                           </span>
                         </td>
-                        <td className="px-8 py-6">
+                        <td className="px-6 py-6">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-700">{t.description || 'No description'}</span>
+                            <span className="text-sm font-medium text-gray-700 min-w-[200px]">{t.description || 'No description'}</span>
                             <span className="text-[10px] font-bold text-gray-300">
                                 Account: {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
                             </span>
                           </div>
                         </td>
-                        <td className="px-8 py-6 text-right">
+                        <td className="px-6 py-6 text-right">
                           <div className={`flex flex-col items-end ${isDebit ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            <div className="flex items-center gap-1.5 font-black text-lg tracking-tighter">
+                            <div className="flex items-center gap-1.5 font-black text-lg tracking-tighter whitespace-nowrap">
                               {isDebit ? <ArrowDownLeft size={16} strokeWidth={3} /> : <ArrowUpRight size={16} strokeWidth={3} />}
-                              {Math.abs(parseFloat(t.amount)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               <span className="text-xs ml-1">{t.currency}</span>
                             </div>
-                            {t.system_total_rate && parseFloat(t.system_total_rate) !== 1 && (
-                                <span className="text-[9px] font-bold opacity-60">
-                                    {(Math.abs(parseFloat(t.amount)) * parseFloat(t.system_total_rate)).toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+                            {rate !== 1 && (
+                                <span className="text-[9px] font-bold opacity-60 italic whitespace-nowrap">
+                                    (System: {systemAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
                                 </span>
                             )}
                           </div>

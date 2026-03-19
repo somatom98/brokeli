@@ -21,13 +21,13 @@ var ErrEmptyAmount = errors.New("empty amounts")
 type TransactionDispatcher interface {
 	RegisterTransfer(ctx context.Context, id uuid.UUID, fromAccountID uuid.UUID, fromCurrency values.Currency, fromAmount decimal.Decimal, toAccountID uuid.UUID, toCurrency values.Currency, toAmount decimal.Decimal, category, description string, happenedAt time.Time) error
 	RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error
-	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, happenedAt time.Time) error
+	RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, category string, description string, happenedAt time.Time) error
 	RegisterIncome(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error
 }
 
 type AccountDispatcher interface {
-	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
-	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
+	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error
+	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error
 	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error
 }
 
@@ -141,6 +141,8 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				fromStr,
 				t.credit.Currency,
 				t.credit.Amount,
+				t.category,
+				t.description,
 				t.happenedAt,
 			)
 			if err != nil {
@@ -166,6 +168,8 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.credit.AccountID,
 				t.credit.Currency,
 				t.credit.Amount,
+				t.category,
+				t.description,
 				t.description,
 				t.happenedAt,
 			)
@@ -178,6 +182,8 @@ func (f *Feature) ImportTransactions(ctx context.Context, filePath string) error
 				t.debit.AccountID,
 				t.debit.Currency,
 				t.debit.Amount,
+				t.category,
+				t.description,
 				t.description,
 				t.happenedAt,
 			)
@@ -257,19 +263,8 @@ func newFromRecord(record []string) (transaction, error) {
 }
 
 func (t transaction) Type() (values.TransactionType, error) {
-	switch {
-	case t.trxType == "Transfer" &&
-		t.debit.Amount.IsZero() &&
-		t.credit.Amount.IsPositive():
-		return values.TransactionType_Deposit, nil
-	case t.trxType == "Transfer" &&
-		t.debit.Amount.IsPositive() &&
-		t.credit.Amount.IsZero():
-		return values.TransactionType_Withdrawal, nil
-	case t.trxType == "Transfer":
-		if t.debit.Amount.IsZero() && t.credit.Amount.IsZero() {
-			return values.TransactionType_Expense, fmt.Errorf("null amount")
-		}
+	// Movement between accounts is always a transfer, regardless of trxType
+	if !t.debit.Amount.IsZero() && !t.credit.Amount.IsZero() {
 		if t.debit.Amount.IsNegative() {
 			return values.TransactionType_Expense, fmt.Errorf("negative debit: %v", t.debit.Amount)
 		}
@@ -280,6 +275,19 @@ func (t transaction) Type() (values.TransactionType, error) {
 			t.debit.Currency == t.credit.Currency {
 			return values.TransactionType_Expense, fmt.Errorf("debit and credit account are the same: %v", t.debit.AccountID)
 		}
+		return values.TransactionType_Transfer, nil
+	}
+
+	switch {
+	case t.trxType == "Transfer" &&
+		t.debit.Amount.IsZero() &&
+		t.credit.Amount.IsPositive():
+		return values.TransactionType_Deposit, nil
+	case t.trxType == "Transfer" &&
+		t.debit.Amount.IsPositive() &&
+		t.credit.Amount.IsZero():
+		return values.TransactionType_Withdrawal, nil
+	case t.trxType == "Transfer":
 		return values.TransactionType_Transfer, nil
 	case t.trxType == "Income" ||
 		(t.trxType == "" && !t.credit.Amount.IsZero() && t.debit.Amount.IsZero()):

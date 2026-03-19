@@ -18,7 +18,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { api } from './api';
-import type { Account, BalancePeriod } from './api';
+import type { Account, BalancePeriod, AccountDistribution } from './api';
 
 ChartJS.register(
   CategoryScale,
@@ -34,6 +34,7 @@ ChartJS.register(
 interface AccountWithMetadata extends Account {
   lastTransactionAt?: string;
   history?: BalancePeriod[];
+  distributions?: AccountDistribution[];
 }
 
 const Sparkline: React.FC<{ data: BalancePeriod[], color: string }> = ({ data, color }) => {
@@ -108,12 +109,16 @@ const Balances: React.FC = () => {
             : undefined;
           
           // Fetch history for sparkline
-          const accHistory = await api.getBalancesByAccount(acc.id);
+          const [accHistory, distributions] = await Promise.all([
+            api.getBalancesByAccount(acc.id),
+            api.getAccountDistributions(acc.id)
+          ]);
 
           return {
             ...acc,
             lastTransactionAt: lastTx,
-            history: accHistory
+            history: accHistory,
+            distributions: distributions
           };
         }));
 
@@ -314,14 +319,34 @@ const Balances: React.FC = () => {
               <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-6">{account.name}</h2>
               
               <div className="space-y-4">
-                {Object.entries(account.balance).map(([curr, amt]) => (
-                  <div key={curr} className="flex items-baseline justify-between p-4 bg-gray-50/50 rounded-2xl group-hover:bg-white transition-colors duration-500">
-                    <span className="text-xs font-black text-gray-400">{curr}</span>
-                    <span className="text-xl font-black text-gray-900 tracking-tighter">
-                      {parseFloat(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                ))}
+                {Object.entries(account.balance).map(([curr, amt]) => {
+                  const latestDist = account.distributions?.find(d => d.currency === curr);
+                  const systemAmt = parseFloat(latestDist?.system_amount || '0');
+                  const otherAmt = parseFloat(latestDist?.other_amount || '0');
+
+                  return (
+                    <div key={curr} className="flex flex-col gap-2 p-4 bg-gray-50/50 rounded-2xl group-hover:bg-white transition-colors duration-500">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs font-black text-gray-400">{curr}</span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xl font-black text-gray-900 tracking-tighter">
+                            {parseFloat(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          {(() => {
+                            const total = systemAmt + otherAmt;
+                            const rate = total !== 0 ? systemAmt / total : 0;
+                            if (rate === 1 || total === 0) return null;
+                            return (
+                              <span className="text-[10px] font-bold text-indigo-500 italic">
+                                Rate: {(rate * 100).toFixed(1)}%
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

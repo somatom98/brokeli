@@ -69,5 +69,6 @@ func (t *Transaction) ApplyReimbursementReceived(e events.ReimbursementReceived)
 		Side:      values.Side_Credit,
 	}
 	t.Entries = append(t.Entries, entry)
-	t.Description = e.From
+	t.Category = e.Category
+	t.Description = e.Description
 }

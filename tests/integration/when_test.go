@@ -21,9 +21,11 @@ func (w *When) Deposit(amount interface{}, currency string, user string, account
 	amountStr := fmt.Sprint(amount)
 	w.s.t.Logf("Depositing %s %s from %s to %s...", amountStr, currency, user, accountAlias)
 	depositReq := map[string]interface{}{
-		"currency": currency,
-		"amount":   amountStr,
-		"user":     user,
+		"currency":    currency,
+		"amount":      amountStr,
+		"user":        user,
+		"category":    "Deposit",
+		"description": "Initial deposit",
 	}
 	depositBody, _ := json.Marshal(depositReq)
 	resp, err := w.s.client.Post(w.s.baseURL+"/accounts/"+accountID+"/deposits", "application/json", bytes.NewBuffer(depositBody))

@@ -51,7 +51,7 @@ func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, cu
 	return nil
 }
 func (m *DispatcherMock) UpdateName(ctx context.Context, id uuid.UUID, name string, happenedAt time.Time) error { return nil }
-func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
+func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error {
 	m.Deposits = append(m.Deposits, depositCall{
 		ID:       id,
 		Currency: currency,
@@ -61,7 +61,7 @@ func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency val
 	return nil
 }
 
-func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
+func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error {
 	m.Withdrawals = append(m.Withdrawals, withdrawalCall{
 		ID:       id,
 		Currency: currency,

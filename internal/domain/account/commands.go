@@ -50,6 +50,8 @@ func (a *Account) UpdateName(
 func (a *Account) Deposit(
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	user string,
 	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
@@ -62,17 +64,21 @@ func (a *Account) Deposit(
 	}
 
 	return &events.MoneyDeposited{
-		AccountID:  a.ID,
-		Currency:   currency,
-		Amount:     amount,
-		User:       user,
-		HappenedAt: happenedAt,
+		AccountID:   a.ID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+		User:        user,
+		HappenedAt:  happenedAt,
 	}, nil
 }
 
 func (a *Account) Withdraw(
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	user string,
 	happenedAt time.Time,
 ) (evt event_store.Event, err error) {
@@ -85,10 +91,12 @@ func (a *Account) Withdraw(
 	}
 
 	return &events.MoneyWithdrawn{
-		AccountID:  a.ID,
-		Currency:   currency,
-		Amount:     amount,
-		User:       user,
-		HappenedAt: happenedAt,
+		AccountID:   a.ID,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+		User:        user,
+		HappenedAt:  happenedAt,
 	}, nil
 }

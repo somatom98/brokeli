@@ -67,11 +67,13 @@ type transferCall struct {
 }
 
 type reimbursementCall struct {
-	AccountID  uuid.UUID
-	From       string
-	Currency   values.Currency
-	Amount     decimal.Decimal
-	HappenedAt time.Time
+	AccountID   uuid.UUID
+	From        string
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
+	HappenedAt  time.Time
 }
 
 func (m *DispatcherMock) RegisterExpense(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description string, happenedAt time.Time) error {
@@ -98,7 +100,7 @@ func (m *DispatcherMock) RegisterIncome(ctx context.Context, id uuid.UUID, accou
 	return nil
 }
 
-func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
+func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error {
 	m.Withdrawals = append(m.Withdrawals, withdrawalCall{
 		AccountID: id,
 		Currency:  currency,
@@ -107,7 +109,7 @@ func (m *DispatcherMock) Withdraw(ctx context.Context, id uuid.UUID, currency va
 	return nil
 }
 
-func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error {
+func (m *DispatcherMock) Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error {
 	m.Deposits = append(m.Deposits, depositCall{
 		AccountID: id,
 		Currency:  currency,
@@ -131,13 +133,15 @@ func (m *DispatcherMock) RegisterTransfer(ctx context.Context, id uuid.UUID, fro
 	return nil
 }
 
-func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, happenedAt time.Time) error {
+func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, from string, currency values.Currency, amount decimal.Decimal, category string, description string, happenedAt time.Time) error {
 	m.Reimbursements = append(m.Reimbursements, reimbursementCall{
-		AccountID:  accountID,
-		From:       from,
-		Currency:   currency,
-		Amount:     amount,
-		HappenedAt: happenedAt,
+		AccountID:   accountID,
+		From:        from,
+		Currency:    currency,
+		Amount:      amount,
+		Category:    category,
+		Description: description,
+		HappenedAt:  happenedAt,
 	})
 	return nil
 }
@@ -227,6 +231,8 @@ func TestImportTransactions(t *testing.T) {
 			assert.Equal(t, "Refund for repairs", reimbursement.From)
 			assert.Equal(t, values.Currency("DKK"), reimbursement.Currency)
 			assert.True(t, decimal.NewFromInt(80).Equal(reimbursement.Amount))
+			assert.Equal(t, "Home", reimbursement.Category)
+			assert.Equal(t, "Refund for repairs", reimbursement.Description)
 		})
 
 		t.Run("withdrawal correctly registered", func(t *testing.T) {
@@ -330,10 +336,10 @@ func TestImportTransactions_Integration(t *testing.T) {
 
 	// assert
 	require.NoError(t, err)
-	assert.Len(t, dispatcher.Expenses, 2175)
+	assert.Len(t, dispatcher.Expenses, 2174)
 	assert.Len(t, dispatcher.Incomes, 128)
 	assert.Len(t, dispatcher.Withdrawals, 2)
 	assert.Len(t, dispatcher.Deposits, 5)
-	assert.Len(t, dispatcher.Transfers, 253)
+	assert.Len(t, dispatcher.Transfers, 254)
 	assert.Len(t, dispatcher.Reimbursements, 68)
 }

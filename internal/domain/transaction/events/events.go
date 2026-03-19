@@ -71,11 +71,13 @@ func (e MoneyTransfered) Content() any {
 }
 
 type ReimbursementReceived struct {
-	AccountID  uuid.UUID
-	From       string
-	Currency   values.Currency
-	Amount     decimal.Decimal
-	HappenedAt time.Time
+	AccountID   uuid.UUID
+	From        string
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
+	HappenedAt  time.Time
 }
 
 type ExpectedReimbursementSet struct {

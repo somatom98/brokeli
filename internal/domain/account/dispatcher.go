@@ -50,11 +50,13 @@ func (d *Dispatcher) Deposit(
 	id uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	user string,
 	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.Deposit(currency, amount, user, happenedAt)
+		return aggr.Deposit(currency, amount, category, description, user, happenedAt)
 	})
 }
 
@@ -63,10 +65,12 @@ func (d *Dispatcher) Withdraw(
 	id uuid.UUID,
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	user string,
 	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Account, version uint64) (event_store.Event, error) {
-		return aggr.Withdraw(currency, amount, user, happenedAt)
+		return aggr.Withdraw(currency, amount, category, description, user, happenedAt)
 	})
 }

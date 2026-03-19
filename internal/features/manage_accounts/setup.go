@@ -17,8 +17,8 @@ import (
 type AccountDispatcher interface {
 	Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error
 	UpdateName(ctx context.Context, id uuid.UUID, name string, happenedAt time.Time) error
-	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
-	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, user string, happenedAt time.Time) error
+	Deposit(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error
+	Withdraw(ctx context.Context, id uuid.UUID, currency values.Currency, amount decimal.Decimal, category, description, user string, happenedAt time.Time) error
 }
 
 type Feature struct {
@@ -51,6 +51,7 @@ func (f *Feature) Setup(ctx context.Context) {
 	f.httpHandler.HandleFunc("GET /api/accounts", f.handleGetAccounts)
 	f.httpHandler.HandleFunc("POST /api/accounts", f.handleOpenAccount)
 	f.httpHandler.HandleFunc("GET /api/accounts/{id}/balances", f.handleGetAccountBalances)
+	f.httpHandler.HandleFunc("GET /api/accounts/{id}/distributions", f.handleGetAccountDistributions)
 	f.httpHandler.HandleFunc("GET /api/balances", f.handleGetAllBalances)
 	f.httpHandler.HandleFunc("POST /api/accounts/{id}/deposits", f.handleDeposit)
 	f.httpHandler.HandleFunc("POST /api/accounts/{id}/withdrawals", f.handleWithdrawal)

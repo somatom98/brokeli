@@ -53,6 +53,31 @@ func (f *Feature) handleGetAccountBalances(w http.ResponseWriter, r *http.Reques
 	w.Write(jsonBalances)
 }
 
+func (f *Feature) handleGetAccountDistributions(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	distributions, err := f.balanceUpdatesView.GetAccountDistributions(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	jsonDistributions, err := json.Marshal(distributions)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonDistributions)
+}
+
 func (f *Feature) handleGetAllBalances(w http.ResponseWriter, r *http.Request) {
 	balances, err := f.balanceUpdatesView.GetAllBalances(r.Context())
 	if err != nil {
@@ -80,10 +105,12 @@ func (f *Feature) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type DepositRequest struct {
-		Currency   values.Currency `json:"currency"`
-		Amount     decimal.Decimal `json:"amount"`
-		User       string          `json:"user"`
-		HappenedAt time.Time       `json:"happened_at"`
+		Currency    values.Currency `json:"currency"`
+		Amount      decimal.Decimal `json:"amount"`
+		Category    string          `json:"category"`
+		Description string          `json:"description"`
+		User        string          `json:"user"`
+		HappenedAt  time.Time       `json:"happened_at"`
 	}
 
 	var req DepositRequest
@@ -102,6 +129,8 @@ func (f *Feature) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		id,
 		req.Currency,
 		req.Amount,
+		req.Category,
+		req.Description,
 		req.User,
 		req.HappenedAt,
 	); err != nil {
@@ -122,10 +151,12 @@ func (f *Feature) handleWithdrawal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type WithdrawalRequest struct {
-		Currency   values.Currency `json:"currency"`
-		Amount     decimal.Decimal `json:"amount"`
-		User       string          `json:"user"`
-		HappenedAt time.Time       `json:"happened_at"`
+		Currency    values.Currency `json:"currency"`
+		Amount      decimal.Decimal `json:"amount"`
+		Category    string          `json:"category"`
+		Description string          `json:"description"`
+		User        string          `json:"user"`
+		HappenedAt  time.Time       `json:"happened_at"`
 	}
 
 	var req WithdrawalRequest
@@ -144,6 +175,8 @@ func (f *Feature) handleWithdrawal(w http.ResponseWriter, r *http.Request) {
 		id,
 		req.Currency,
 		req.Amount,
+		req.Category,
+		req.Description,
 		req.User,
 		req.HappenedAt,
 	); err != nil {

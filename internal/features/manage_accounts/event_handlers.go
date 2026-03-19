@@ -24,6 +24,8 @@ func (f *Feature) handleMoneyTransfered(ctx context.Context, event transaction_e
 		event.FromAccountID,
 		event.FromCurrency,
 		event.FromAmount,
+		event.Category,
+		event.Description,
 		"system",
 		event.HappenedAt,
 	)
@@ -36,6 +38,8 @@ func (f *Feature) handleMoneyTransfered(ctx context.Context, event transaction_e
 		event.ToAccountID,
 		event.ToCurrency,
 		event.ToAmount,
+		event.Category,
+		event.Description,
 		"system",
 		event.HappenedAt,
 	)

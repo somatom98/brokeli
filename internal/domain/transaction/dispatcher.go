@@ -90,9 +90,11 @@ func (d *Dispatcher) RegisterReimbursement(
 	from string,
 	currency values.Currency,
 	amount decimal.Decimal,
+	category string,
+	description string,
 	happenedAt time.Time,
 ) error {
 	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
-		return aggr.RegisterReimbursement(accountID, from, currency, amount, happenedAt)
+		return aggr.RegisterReimbursement(accountID, from, currency, amount, category, description, happenedAt)
 	})
 }

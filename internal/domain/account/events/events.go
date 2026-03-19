@@ -45,11 +45,13 @@ func (e NameUpdated) Content() any {
 }
 
 type MoneyDeposited struct {
-	AccountID  uuid.UUID
-	Currency   values.Currency
-	Amount     decimal.Decimal
-	User       string
-	HappenedAt time.Time
+	AccountID   uuid.UUID
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
+	User        string
+	HappenedAt  time.Time
 }
 
 func (e MoneyDeposited) Type() string {
@@ -61,11 +63,13 @@ func (e MoneyDeposited) Content() any {
 }
 
 type MoneyWithdrawn struct {
-	AccountID  uuid.UUID
-	Currency   values.Currency
-	Amount     decimal.Decimal
-	User       string
-	HappenedAt time.Time
+	AccountID   uuid.UUID
+	Currency    values.Currency
+	Amount      decimal.Decimal
+	Category    string
+	Description string
+	User        string
+	HappenedAt  time.Time
 }
 
 func (e MoneyWithdrawn) Type() string {

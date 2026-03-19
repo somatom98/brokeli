@@ -317,16 +317,18 @@ func TestRegisterReimbursement(t *testing.T) {
 		now := time.Now()
 
 		// act
-		evt, err := tx.RegisterReimbursement(accountID, "company", values.Currency("USD"), amount, now)
+		evt, err := tx.RegisterReimbursement(accountID, "company", values.Currency("USD"), amount, "Work", "Lunch reimbursement", now)
 
 		// assert
 		require.NoError(t, err)
 		assert.Equal(t, &events.ReimbursementReceived{
-			AccountID:  accountID,
-			From:       "company",
-			Currency:   values.Currency("USD"),
-			Amount:     amount,
-			HappenedAt: now,
+			AccountID:   accountID,
+			From:        "company",
+			Currency:    values.Currency("USD"),
+			Amount:      amount,
+			Category:    "Work",
+			Description: "Lunch reimbursement",
+			HappenedAt:  now,
 		}, evt)
 	})
 
@@ -336,7 +338,7 @@ func TestRegisterReimbursement(t *testing.T) {
 		tx.State = transaction.State_Deleted
 
 		// act
-		evt, err := tx.RegisterReimbursement(uuid.New(), "company", values.Currency("USD"), decimal.NewFromInt(75), time.Now())
+		evt, err := tx.RegisterReimbursement(uuid.New(), "company", values.Currency("USD"), decimal.NewFromInt(75), "", "", time.Now())
 
 		// assert
 		require.NoError(t, err)
@@ -348,7 +350,7 @@ func TestRegisterReimbursement(t *testing.T) {
 		tx := transaction.New(uuid.New())
 
 		// act
-		evt, err := tx.RegisterReimbursement(uuid.New(), "company", values.Currency("USD"), decimal.NewFromInt(0), time.Now())
+		evt, err := tx.RegisterReimbursement(uuid.New(), "company", values.Currency("USD"), decimal.NewFromInt(0), "", "", time.Now())
 
 		// assert
 		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
