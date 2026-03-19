@@ -5,13 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/somatom98/brokeli/internal/domain/values"
 	account_events "github.com/somatom98/brokeli/internal/domain/account/events"
 	transaction_events "github.com/somatom98/brokeli/internal/domain/transaction/events"
-)
-
-const (
-	TypeDebit  = "DEBIT"
-	TypeCredit = "CREDIT"
 )
 
 func (v *Projection) ApplyMoneySpent(ctx context.Context, idStr string, e transaction_events.MoneySpent) error {
@@ -19,7 +15,7 @@ func (v *Projection) ApplyMoneySpent(ctx context.Context, idStr string, e transa
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
 		AccountID:       e.AccountID,
-		TransactionType: TypeDebit,
+		TransactionType: string(values.TransactionType_Expense),
 		Amount:          e.Amount.Neg(),
 		Currency:        e.Currency,
 		Category:        e.Category,
@@ -33,7 +29,7 @@ func (v *Projection) ApplyMoneyReceived(ctx context.Context, idStr string, e tra
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
 		AccountID:       e.AccountID,
-		TransactionType: TypeCredit,
+		TransactionType: string(values.TransactionType_Income),
 		Amount:          e.Amount,
 		Currency:        e.Currency,
 		Category:        e.Category,
@@ -47,7 +43,7 @@ func (v *Projection) ApplyMoneyTransfered(ctx context.Context, idStr string, e t
 	err := v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              idSource,
 		AccountID:       e.FromAccountID,
-		TransactionType: TypeDebit,
+		TransactionType: string(values.TransactionType_Transfer),
 		Amount:          e.FromAmount.Neg(),
 		Currency:        e.FromCurrency,
 		Category:        e.Category,
@@ -62,7 +58,7 @@ func (v *Projection) ApplyMoneyTransfered(ctx context.Context, idStr string, e t
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              idDestination,
 		AccountID:       e.ToAccountID,
-		TransactionType: TypeCredit,
+		TransactionType: string(values.TransactionType_Transfer),
 		Amount:          e.ToAmount,
 		Currency:        e.ToCurrency,
 		Category:        e.Category,
@@ -76,7 +72,7 @@ func (v *Projection) ApplyReimbursementReceived(ctx context.Context, idStr strin
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
 		AccountID:       e.AccountID,
-		TransactionType: TypeCredit,
+		TransactionType: string(values.TransactionType_Reimbursement),
 		Amount:          e.Amount,
 		Currency:        e.Currency,
 		Category:        "Reimbursement",
@@ -90,7 +86,7 @@ func (v *Projection) ApplyMoneyDeposited(ctx context.Context, idStr string, e ac
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
 		AccountID:       e.AccountID,
-		TransactionType: TypeCredit,
+		TransactionType: string(values.TransactionType_Deposit),
 		Amount:          e.Amount,
 		Currency:        e.Currency,
 		Category:        "Deposit",
@@ -104,7 +100,7 @@ func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, idStr string, e ac
 	return v.repository.CreateTransaction(ctx, TransactionRecord{
 		ID:              id,
 		AccountID:       e.AccountID,
-		TransactionType: TypeDebit,
+		TransactionType: string(values.TransactionType_Withdrawal),
 		Amount:          e.Amount.Neg(),
 		Currency:        e.Currency,
 		Category:        "Withdrawal",
@@ -112,3 +108,4 @@ func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, idStr string, e ac
 		HappenedAt:      e.HappenedAt,
 	})
 }
+

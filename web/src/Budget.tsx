@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil } from 'lucide-react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil, ChevronDown, ChevronRight } from 'lucide-react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { api } from './api';
+
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 import type { Account, Transaction, TransactionFilter, BudgetItem, BudgetData } from './api';
 
 // Fallback for crypto.randomUUID() if not in a secure context
@@ -12,7 +17,51 @@ const generateId = () => {
   }
 };
 
-const Budget: React.FC = () => {
+const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account[], currency: string }> = ({ transactions, accounts, currency }) => {
+  if (transactions.length === 0) return <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest py-4 px-2 italic">No transactions</div>;
+  
+  return (
+    <div className="mt-4 border-t border-gray-50 pt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+      {transactions.map((t) => {
+        const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
+                       (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
+                       parseFloat(t.amount) < 0;
+        return (
+          <div key={t.id} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-xl transition-colors">
+            <div className="flex flex-col">
+              <span className="text-[11px] font-bold text-gray-900 leading-tight">
+                {t.description || t.category || 'Transaction'}
+              </span>
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
+              </span>
+            </div>
+            <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${isDebit ? 'text-rose-500' : 'text-emerald-500'}`}>
+              {isDebit ? '-' : '+'}
+              {Math.abs(parseFloat(t.amount) * (parseFloat(t.system_total_rate || '1') || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              <span className="text-[8px] opacity-70 ml-0.5">{currency}</span>
+              {t.system_total_rate && parseFloat(t.system_total_rate) !== 1 && (
+                <span className="text-[9px] text-gray-400 font-bold ml-1 italic opacity-60">
+                  ({Math.abs(parseFloat(t.amount)).toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+interface ProcessedBudgetItem extends BudgetItem {
+  actualSpent: number;
+  actualPercentage: number;
+  transactions: Transaction[];
+  prevMonthPercentage?: number;
+  avg12MonthsPercentage?: number;
+}
+
+const Budget: React.FC<{ currency: string }> = ({ currency }) => {
   const [view, setView] = useState<'list' | 'edit' | 'view'>('list');
   const [budgets, setBudgets] = useState<BudgetData[]>([]);
   const [selectedBudget, setSelectedBudget] = useState<BudgetData | null>(null);
@@ -21,11 +70,19 @@ const Budget: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => 
+      prev.includes(sectionId) ? prev.filter(s => s !== sectionId) : [...prev, sectionId]
+    );
+  };
   const [items, setItems] = useState<BudgetItem[]>([]);
+  const [otherPercentage, setOtherPercentage] = useState<number>(0);
   const [budgetName, setBudgetName] = useState('Monthly Budget');
   const [budgetId, setBudgetId] = useState<string>(generateId());
   const [isSaving, setIsSaving] = useState(false);
@@ -81,12 +138,13 @@ const Budget: React.FC = () => {
         setIsFetchingTransactions(true);
         try {
           const [year, month] = selectedMonth.split('-').map(Number);
-          const start = new Date(year, month - 1, 1).toISOString();
-          const end = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+          // Fetch last 13 months (current month + 12 previous months)
+          const currentEnd = new Date(year, month, 0, 23, 59, 59, 999);
+          const historicalStart = new Date(year, month - 13, 1).toISOString();
           
           const filter: TransactionFilter = {
-            start_date: start,
-            end_date: end,
+            start_date: historicalStart,
+            end_date: currentEnd.toISOString(),
             account_id: selectedBudget.data.selectedAccounts
           };
 
@@ -103,7 +161,22 @@ const Budget: React.FC = () => {
   }, [view, selectedBudget, selectedMonth]);
 
   const budgetStats = useMemo(() => {
-    if (!selectedBudget) return { totalSpending: 0, totalIncome: 0, totalOutcome: 0, items: [] };
+    if (!selectedBudget) return { 
+      totalSpending: 0, 
+      totalIncome: 0, 
+      totalOutcome: 0, 
+      items: [], 
+      incomeTransactions: [], 
+      outcomeTransactions: [],
+      otherItem: {
+        name: 'Others',
+        actualSpent: 0,
+        actualPercentage: 0,
+        transactions: [] as Transaction[],
+        categories: [] as string[],
+        percentage: 0
+      }
+    };
 
     const selectedAccIds = selectedBudget.data.selectedAccounts || [];
 
@@ -111,52 +184,164 @@ const Budget: React.FC = () => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
 
-    const filteredTransactions = transactions.filter(t => {
+    const currentTransactions = transactions.filter(t => {
       const happenedAt = new Date(t.happened_at);
       const isAccountMatch = selectedAccIds.includes(t.account_id);
       const isDateMatch = happenedAt >= start && happenedAt <= end;
       return isAccountMatch && isDateMatch;
     });
 
-    const totalIncome = filteredTransactions
-      .filter(t => t.transaction_type === 'CREDIT' || parseFloat(t.amount) > 0)
+    const incomeTransactions = currentTransactions
+      .filter(t => t.transaction_type !== 'DEPOSIT' && t.transaction_type !== 'TRANSFER' &&
+                   (['INCOME'].includes(t.transaction_type) || 
+                   (t.transaction_type === '' && parseFloat(t.amount) > 0)));
+
+    const totalIncome = incomeTransactions
       .reduce((sum, t) => {
         const rate = parseFloat(t.system_total_rate || '1') || 1;
         return sum + (parseFloat(t.amount) * rate);
       }, 0);
 
-    const totalOutcome = filteredTransactions
-      .filter(t => t.transaction_type === 'DEBIT' || parseFloat(t.amount) < 0)
+    const outcomeTransactions = currentTransactions
+      .filter(t => t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
+                   (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || 
+                   (t.transaction_type === '' && parseFloat(t.amount) < 0)));
+
+    const totalOutcome = outcomeTransactions
       .reduce((sum, t) => {
         const rate = parseFloat(t.system_total_rate || '1') || 1;
-        return sum + (Math.abs(parseFloat(t.amount)) * rate);
+        const amount = parseFloat(t.amount);
+        return sum + ((-amount) * rate);
       }, 0);
 
-    const totalSpending = totalOutcome; // For backward compatibility with the items mapping
+    const totalSpending = totalOutcome;
+
+    const assignedCategories = new Set((selectedBudget.data.items || []).flatMap(i => i.categories));
+    
+    // Helper to calculate percentage of income for a category over a period
+    const calcPeriodStats = (cats: string[] | null, startDate: Date, endDate: Date) => {
+      const periodTransactions = transactions.filter(t => {
+        const d = new Date(t.happened_at);
+        const isAccountMatch = selectedAccIds.includes(t.account_id);
+        return isAccountMatch && d >= startDate && d <= endDate;
+      });
+
+      const periodIncome = periodTransactions
+        .filter(t => t.transaction_type !== 'DEPOSIT' && t.transaction_type !== 'TRANSFER' &&
+                     (['INCOME'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) > 0)))
+        .reduce((sum, t) => sum + (parseFloat(t.amount) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
+
+      const periodSpent = periodTransactions
+        .filter(t => t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
+                     (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
+                     (cats === null ? !assignedCategories.has(t.category) : cats.includes(t.category)))
+        .reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
+
+      return periodIncome > 0 ? (periodSpent / periodIncome) * 100 : 0;
+    };
+
+    const prevMonthStart = new Date(year, month - 2, 1);
+    const prevMonthEnd = new Date(year, month - 1, 0, 23, 59, 59, 999);
+    const last12Start = new Date(year, month - 13, 1);
+    const last12End = new Date(year, month - 1, 0, 23, 59, 59, 999);
+
+    const otherTransactions = outcomeTransactions.filter(t => !assignedCategories.has(t.category));
+    const otherSpent = otherTransactions.reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
+
+    const budgetOtherPercentage = selectedBudget.data.otherPercentage !== undefined ? selectedBudget.data.otherPercentage : (100 - (selectedBudget.data.items || []).reduce((sum, i) => sum + (i.percentage || 0), 0));
+
+    const items = (selectedBudget.data.items || []).map(item => {
+      const itemTransactions = currentTransactions.filter(t => 
+        t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
+        (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
+        item.categories.includes(t.category)
+      );
+      const itemSpent = itemTransactions.reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
+      
+      return {
+        ...item,
+        actualSpent: itemSpent,
+        actualPercentage: totalIncome > 0 ? (itemSpent / totalIncome) * 100 : 0,
+        transactions: itemTransactions,
+        prevMonthPercentage: calcPeriodStats(item.categories, prevMonthStart, prevMonthEnd),
+        avg12MonthsPercentage: calcPeriodStats(item.categories, last12Start, last12End)
+      };
+    }).sort((a, b) => b.actualSpent - a.actualSpent);
 
     return {
       totalSpending,
       totalIncome,
       totalOutcome,
-      items: (selectedBudget.data.items || []).map(item => {
-        const itemTransactions = filteredTransactions.filter(t => 
-          (t.transaction_type === 'DEBIT' || parseFloat(t.amount) < 0) &&
-          item.categories.includes(t.category)
-        );
-        const itemSpent = itemTransactions.reduce((sum, t) => {
-          const rate = parseFloat(t.system_total_rate || '1') || 1;
-          return sum + (Math.abs(parseFloat(t.amount)) * rate);
-        }, 0);
-        const actualPercentage = totalSpending > 0 ? (itemSpent / totalSpending) * 100 : 0;
-
-        return {
-          ...item,
-          actualSpent: itemSpent,
-          actualPercentage: actualPercentage,
-        };
-      })
+      incomeTransactions,
+      outcomeTransactions,
+      otherItem: {
+        name: 'Others',
+        actualSpent: otherSpent,
+        actualPercentage: totalIncome > 0 ? (otherSpent / totalIncome) * 100 : 0,
+        transactions: otherTransactions,
+        categories: [] as string[],
+        percentage: budgetOtherPercentage,
+        prevMonthPercentage: calcPeriodStats(null, prevMonthStart, prevMonthEnd),
+        avg12MonthsPercentage: calcPeriodStats(null, last12Start, last12End)
+      },
+      items
     };
   }, [selectedBudget, transactions, selectedMonth]);
+
+  const renderBudgetItemRow = (item: ProcessedBudgetItem, id: string) => (
+    <div key={id} className="space-y-3 p-4 hover:bg-gray-50/50 rounded-3xl transition-colors cursor-pointer group/item" onClick={() => toggleSection(id)}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-gray-800">{item.name}</span>
+            {expandedSections.includes(id) ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-300 group-hover/item:text-indigo-400 transition-colors" />}
+          </div>
+          {item.categories && item.categories.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {item.categories.slice(0, 3).map((c: string) => (
+                <span key={c} className="text-[8px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{c}</span>
+              ))}
+              {item.categories.length > 3 && (
+                  <span className="text-[8px] font-bold text-gray-400 px-1 py-0.5 uppercase tracking-wider">+{item.categories.length - 3} more</span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="text-right flex flex-col items-end gap-3">
+          <div className="flex flex-col items-end">
+            <div className="text-lg font-bold text-gray-900">{item.actualSpent?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-widest ${item.actualPercentage > item.percentage ? 'text-rose-500' : 'text-indigo-500'}`}>
+              {item.actualPercentage?.toFixed(1)}% vs {item.percentage}%
+            </div>
+          </div>
+          
+          <div className="flex gap-4 border-t border-gray-50 pt-2">
+            <div className="flex flex-col items-end">
+              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Prev. Month</span>
+              <span className="text-[10px] font-bold text-gray-500">{item.prevMonthPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">12M Avg</span>
+              <span className="text-[10px] font-bold text-gray-500">{item.avg12MonthsPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex relative">
+        <div 
+          className={`h-full transition-all duration-1000 ${item.actualPercentage > item.percentage ? 'bg-rose-500' : 'bg-indigo-500'}`}
+          style={{ width: `${Math.min(100, item.actualPercentage)}%` }}
+        />
+        {/* Target line */}
+        <div 
+          className="absolute top-0 bottom-0 w-1 bg-gray-900/20 z-10"
+          style={{ left: `${item.percentage}%` }}
+          title={`Target: ${item.percentage}%`}
+        />
+      </div>
+      {expandedSections.includes(id) && <TransactionList transactions={item.transactions || []} accounts={accounts} currency={currency} />}
+    </div>
+  );
 
   const handleAddAccount = (accountId: string) => {
     if (accountId && !selectedAccounts.includes(accountId)) {
@@ -195,6 +380,7 @@ const Budget: React.FC = () => {
         data: {
           items,
           selectedAccounts,
+          otherPercentage,
         }
       });
       setSuccess(true);
@@ -232,6 +418,7 @@ const Budget: React.FC = () => {
     setBudgetName(budget.name);
     setItems(budget.data.items || []);
     setSelectedAccounts(budget.data.selectedAccounts || []);
+    setOtherPercentage(budget.data.otherPercentage || 0);
     setView('edit');
   };
 
@@ -245,6 +432,7 @@ const Budget: React.FC = () => {
     setBudgetName('New Budget');
     setItems([]);
     setSelectedAccounts([]);
+    setOtherPercentage(0);
     setView('edit');
   };
 
@@ -279,7 +467,6 @@ const Budget: React.FC = () => {
   }, [categories, assignedCategories]);
 
   const totalPercentage = items.reduce((sum, item) => sum + (item.percentage || 0), 0);
-  const otherPercentage = Math.max(0, 100 - totalPercentage);
 
   if (view === 'list') {
     return (
@@ -416,69 +603,141 @@ const Budget: React.FC = () => {
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Analyzing transactions...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-10">
-                  <div>
-                    <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Total Income</div>
-                    <div className="text-5xl font-black text-emerald-600 tracking-tighter">
-                      + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+              <div className="flex flex-col gap-12">
+                {/* 1. Total Income */}
+                <div className="cursor-pointer group/stat" onClick={() => toggleSection('income')}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Income</div>
+                    {expandedSections.includes('income') ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-300 group-hover/stat:text-indigo-500 transition-colors" />}
                   </div>
+                  <div className="text-6xl font-black text-gray-900 tracking-tighter">
+                    + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {expandedSections.includes('income') && <TransactionList transactions={budgetStats.incomeTransactions || []} accounts={accounts} currency={currency} />}
+                </div>
 
-                  <div>
-                    <div className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-2">Total Outcome</div>
-                    <div className="text-5xl font-black text-rose-600 tracking-tighter">
+                {/* 2. Total Outcome with Expenses Breakdown */}
+                <div className="cursor-pointer group/stat" onClick={() => toggleSection('breakdown')}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Outcome</div>
+                    {expandedSections.includes('breakdown') ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-300 group-hover/stat:text-indigo-500 transition-colors" />}
+                  </div>
+                  <div className="flex items-center justify-end mb-4">
+                    <div className="text-6xl font-black text-gray-900 tracking-tighter">
                       - {budgetStats.totalOutcome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
-
-                  <div className="pt-6 border-t border-gray-100">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Gain/Loss</div>
-                    <div className={`text-6xl font-black tracking-tighter ${budgetStats.totalIncome - budgetStats.totalOutcome >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
-                      {(budgetStats.totalIncome - budgetStats.totalOutcome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  
+                  {expandedSections.includes('breakdown') && (
+                    <div className="space-y-4 pt-6 border-t border-gray-50 animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
+                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 pb-2">Expenses Breakdown</div>
+                      <div className="space-y-4">
+                        {budgetStats.items?.map((item, i) => renderBudgetItemRow(item, `item-${i}`))}
+                        {(budgetStats.otherItem.actualSpent > 0 || budgetStats.otherItem.transactions.length > 0) && renderBudgetItemRow(budgetStats.otherItem, 'item-others')}
+                        {budgetStats.items?.length === 0 && budgetStats.otherItem.actualSpent === 0 && (
+                            <div className="text-center py-10 text-gray-400 italic">No expenses recorded</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                <div className="space-y-8">
-                  {budgetStats.items?.map((item, i) => (
-                    <div key={i} className="space-y-3">
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <span className="text-xl font-bold text-gray-800">{item.name}</span>
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {item.categories.slice(0, 3).map((c: string) => (
-                              <span key={c} className="text-[8px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{c}</span>
-                            ))}
-                            {item.categories.length > 3 && (
-                                <span className="text-[8px] font-bold text-gray-400 px-1 py-0.5 uppercase tracking-wider">+{item.categories.length - 3} more</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900">{item.actualSpent?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                          <div className={`text-[10px] font-bold uppercase tracking-widest ${item.actualPercentage > item.percentage ? 'text-rose-500' : 'text-indigo-500'}`}>
-                            {item.actualPercentage?.toFixed(1)}% vs {item.percentage}%
-                          </div>
-                        </div>
+                {/* 3. Net Gain/Loss */}
+                <div className="pt-10 border-t-4 border-gray-900">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Gain/Loss</div>
+                  {(() => {
+                    const netGain = budgetStats.totalIncome - budgetStats.totalOutcome;
+                    const expectedSavingRate = budgetStats.otherItem.percentage / 100;
+                    const expectedSaving = budgetStats.totalIncome * expectedSavingRate;
+                    
+                    let color = 'rgb(107, 114, 128)'; // Gray-500 (neutral)
+                    
+                    if (netGain > 0) {
+                      if (expectedSaving > 0) {
+                        const ratio = Math.pow(Math.min(1, netGain / expectedSaving), 0.5);
+                        // Interpolate between neutral gray and emerald-600 (5, 150, 105)
+                        const r = Math.round(107 + (5 - 107) * ratio);
+                        const g = Math.round(114 + (150 - 114) * ratio);
+                        const b = Math.round(128 + (105 - 128) * ratio);
+                        color = `rgb(${r}, ${g}, ${b})`;
+                      } else {
+                        color = 'rgb(5, 150, 105)'; // Full green if no expected saving but positive gain
+                      }
+                    } else if (netGain < 0) {
+                      // Interpolate between neutral gray and rose-600 (225, 29, 72)
+                      const ratio = Math.pow(Math.min(1, Math.abs(netGain) / (budgetStats.totalIncome || 1)), 0.5);
+                      const r = Math.round(107 + (225 - 107) * ratio);
+                      const g = Math.round(114 + (29 - 114) * ratio);
+                      const b = Math.round(128 + (72 - 128) * ratio);
+                      color = `rgb(${r}, ${g}, ${b})`;
+                    }
+
+                    return (
+                      <div className="text-7xl font-black tracking-tighter" style={{ color }}>
+                        {netGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex relative">
-                        <div 
-                          className={`h-full transition-all duration-1000 ${item.actualPercentage > item.percentage ? 'bg-rose-500' : 'bg-indigo-500'}`}
-                          style={{ width: `${Math.min(100, item.actualPercentage)}%` }}
-                        />
-                        {/* Target line */}
-                        <div 
-                          className="absolute top-0 bottom-0 w-1 bg-gray-900/20 z-10"
-                          style={{ left: `${item.percentage}%` }}
-                          title={`Target: ${item.percentage}%`}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {budgetStats.items?.length === 0 && (
-                      <div className="text-center py-10 text-gray-400 italic">No budget items defined</div>
-                  )}
+                    );
+                  })()}
+                </div>
+
+                {/* 4. Distribution Chart */}
+                <div className="pt-12 border-t border-gray-100 flex flex-col items-center">
+                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-10 w-full text-left px-4">Distribution of Income</div>
+                   <div className="w-full max-w-xl aspect-square p-8">
+                     <Pie 
+                        data={{
+                          labels: [
+                            ...budgetStats.items.map(i => i.name),
+                            budgetStats.otherItem.name,
+                            'Net Savings'
+                          ],
+                          datasets: [{
+                            data: [
+                              ...budgetStats.items.map(i => i.actualSpent),
+                              budgetStats.otherItem.actualSpent,
+                              Math.max(0, budgetStats.totalIncome - budgetStats.totalOutcome)
+                            ],
+                            backgroundColor: [
+                              '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e',
+                              '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+                              '#06b6d4', '#0ea5e9', '#3b82f6', '#4f46e5', '#94a3b8'
+                            ],
+                            borderWidth: 0,
+                          }]
+                        }}
+                        options={{
+                          layout: {
+                            padding: 40
+                          },
+                          plugins: {
+                            legend: {
+                              display: false
+                            },
+                            datalabels: {
+                              color: '#4b5563',
+                              anchor: 'end',
+                              align: 'end',
+                              offset: 10,
+                              display: 'auto',
+                              font: {
+                                size: 9,
+                                weight: 'bold',
+                                family: 'Inter, system-ui, sans-serif'
+                              },
+                              formatter: (value, context) => {
+                                const total = (context.dataset.data as number[]).reduce((a, b) => a + b, 0);
+                                const percentage = (value / total) * 100;
+                                if (percentage < 1) return null;
+                                
+                                const label = context.chart.data.labels![context.dataIndex] as string;
+                                return `${label}\n${percentage.toFixed(1)}%`;
+                              },
+                              textAlign: 'center'
+                            }
+                          }
+                        }}
+                     />
+                   </div>
                 </div>
               </div>
             )}
@@ -636,33 +895,40 @@ const Budget: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
 
-          {/* Other Item (Read-only) */}
-          <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-6 flex flex-col gap-4 opacity-75">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex-1">
-                <div className="text-xl font-bold text-gray-500">Other</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-gray-200/50 text-gray-500 font-bold rounded-xl px-3 py-2 text-right">
-                  {otherPercentage}
-                </div>
-                <span className="text-gray-400 font-bold">%</span>
-              </div>
+        {/* Other Item (Expected Savings) */}
+        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-6 flex flex-col gap-4 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex-1">
+              <div className="text-xl font-bold text-gray-500">Expected Savings (Others)</div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Remaining categories and target savings</p>
             </div>
-            <div className="mt-2">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Remaining Categories</div>
-              <div className="flex flex-wrap gap-2">
-                {unassignedCategories.length > 0 ? (
-                  unassignedCategories.map(cat => (
-                    <div key={cat} className="flex items-center gap-1.5 bg-gray-200/50 text-gray-500 px-3 py-1.5 rounded-xl text-sm font-medium">
-                      {cat}
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-gray-400 text-sm font-medium italic">None</span>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={otherPercentage || ''}
+                onChange={(e) => setOtherPercentage(parseFloat(e.target.value) || 0)}
+                className="w-20 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                placeholder="0"
+              />
+              <span className="text-gray-400 font-bold">%</span>
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Remaining Categories</div>
+            <div className="flex flex-wrap gap-2">
+              {unassignedCategories.length > 0 ? (
+                unassignedCategories.map(cat => (
+                  <div key={cat} className="flex items-center gap-1.5 bg-gray-200/50 text-gray-500 px-3 py-1.5 rounded-xl text-sm font-medium">
+                    {cat}
+                  </div>
+                ))
+              ) : (
+                <span className="text-gray-400 text-sm font-medium italic">None</span>
+              )}
             </div>
           </div>
         </div>

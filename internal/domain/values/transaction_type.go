@@ -1,13 +1,13 @@
 package values
 
-type TransactionType int
+type TransactionType string
 
 const (
-	TransactionType_Expense TransactionType = iota
-	TransactionType_Income
-	TransactionType_Transfer
-	TransactionType_Reimbursement
-	TransactionType_ExpectedReimbursement
-	TransactionType_Deposit
-	TransactionType_Withdrawal
+	TransactionType_Expense               TransactionType = "EXPENSE"
+	TransactionType_Income                TransactionType = "INCOME"
+	TransactionType_Transfer              TransactionType = "TRANSFER"
+	TransactionType_Reimbursement         TransactionType = "REIMBURSEMENT"
+	TransactionType_ExpectedReimbursement TransactionType = "EXPECTED_REIMBURSEMENT"
+	TransactionType_Deposit               TransactionType = "DEPOSIT"
+	TransactionType_Withdrawal            TransactionType = "WITHDRAWAL"
 )

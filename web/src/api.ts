@@ -41,6 +41,7 @@ export interface BudgetData {
   data: {
     items: BudgetItem[];
     selectedAccounts: string[];
+    otherPercentage?: number;
   };
 }
 
@@ -149,7 +150,7 @@ export const api = {
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  saveBudget: async (data: { id?: string, name: string, data: { items: BudgetItem[], selectedAccounts: string[] } }) => {
+  saveBudget: async (data: { id?: string, name: string, data: { items: BudgetItem[], selectedAccounts: string[], otherPercentage?: number } }) => {
     const res = await fetch('/api/budgets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

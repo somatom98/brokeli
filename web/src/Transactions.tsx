@@ -11,7 +11,7 @@ import {
 import { api } from './api';
 import type { Account, Transaction, TransactionFilter } from './api';
 
-const Transactions: React.FC = () => {
+const Transactions: React.FC<{ currency: string }> = ({ currency }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,8 +128,12 @@ const Transactions: React.FC = () => {
                   className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer"
                 >
                   <option value="">All Types</option>
-                  <option value="DEBIT">Debit (Expense)</option>
-                  <option value="CREDIT">Credit (Income)</option>
+                  <option value="EXPENSE">Expense</option>
+                  <option value="INCOME">Income</option>
+                  <option value="TRANSFER">Transfer</option>
+                  <option value="REIMBURSEMENT">Reimbursement</option>
+                  <option value="DEPOSIT">Deposit</option>
+                  <option value="WITHDRAWAL">Withdrawal</option>
                 </select>
               </div>
 
@@ -178,6 +182,7 @@ const Transactions: React.FC = () => {
                 <thead>
                   <tr className="border-b border-gray-50">
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Date</th>
+                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Type</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Amount</th>
@@ -185,7 +190,9 @@ const Transactions: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {transactions.map((t) => {
-                    const isDebit = t.transaction_type === 'DEBIT' || parseFloat(t.amount) < 0;
+                    const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
+                                   (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
+                                   parseFloat(t.amount) < 0;
                     return (
                       <tr key={t.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-6">
@@ -197,6 +204,13 @@ const Transactions: React.FC = () => {
                                 {new Date(t.happened_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                            isDebit ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
+                          }`}>
+                            {t.transaction_type.replace('_', ' ')}
+                          </span>
                         </td>
                         <td className="px-8 py-6">
                           <span className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -220,7 +234,7 @@ const Transactions: React.FC = () => {
                             </div>
                             {t.system_total_rate && parseFloat(t.system_total_rate) !== 1 && (
                                 <span className="text-[9px] font-bold opacity-60">
-                                    {(Math.abs(parseFloat(t.amount)) * parseFloat(t.system_total_rate)).toLocaleString(undefined, { minimumFractionDigits: 2 })} EUR
+                                    {(Math.abs(parseFloat(t.amount)) * parseFloat(t.system_total_rate)).toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
                                 </span>
                             )}
                           </div>

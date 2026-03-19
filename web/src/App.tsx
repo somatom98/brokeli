@@ -505,11 +505,11 @@ import {
         </div>
       ) : currentView === 'budget' ? (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
-          <Budget />
+          <Budget currency={currency} />
         </div>
       ) : (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
-          <Transactions />
+          <Transactions currency={currency} />
         </div>
       )}
     </div>
