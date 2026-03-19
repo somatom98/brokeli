@@ -75,6 +75,12 @@ export const api = {
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
+  getBalancesByAccount: async (accountId: string): Promise<BalancePeriod[]> => {
+    const res = await fetch(`/api/accounts/${accountId}/balances`);
+    if (!res.ok) throw new Error('Failed to fetch account balances');
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
   getTransactions: async (filter?: TransactionFilter): Promise<Transaction[]> => {
     const query = new URLSearchParams();
     if (filter) {
