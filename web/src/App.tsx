@@ -17,12 +17,14 @@ import {
   X,
   XCircle,
   Home,
-  PieChart
+  PieChart,
+  BarChart3
   } from 'lucide-react';
   import { api } from './api';
   import type { Account } from './api';
   import Budget from './Budget';
   import Transactions from './Transactions';
+  import Balances from './Balances';
 
   const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -32,7 +34,7 @@ import {
   const [errorMessage, setErrorMessage] = useState('');
   // App Navigation State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'budget' | 'transactions'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'budget' | 'transactions' | 'balances'>('home');
 
   // Form State
   const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw'>('expense');
@@ -241,6 +243,17 @@ import {
             <span>Ledger</span>
           </button>
           <button
+            onClick={() => { setCurrentView('balances'); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
+              currentView === 'balances' 
+                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            <BarChart3 size={20} strokeWidth={2.5} />
+            <span>Balances</span>
+          </button>
+          <button
             onClick={() => { setCurrentView('transactions'); setIsSidebarOpen(false); }}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
               currentView === 'transactions' 
@@ -375,11 +388,11 @@ import {
                           currency === c 
                             ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
                             : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
                   </div>
                 </div>
               )}
@@ -502,6 +515,10 @@ import {
              <div className={`w-2 h-2 rounded-full ${theme.primary} shadow-[0_0_10px_currentColor] animate-pulse`} />
              Cloud Node Sync Active
           </div>
+        </div>
+      ) : currentView === 'balances' ? (
+        <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <Balances />
         </div>
       ) : currentView === 'budget' ? (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">

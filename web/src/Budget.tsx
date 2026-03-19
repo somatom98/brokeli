@@ -318,11 +318,11 @@ const Budget: React.FC<{ currency: string }> = ({ currency }) => {
           <div className="flex gap-4 border-t border-gray-50 pt-2">
             <div className="flex flex-col items-end">
               <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Prev. Month</span>
-              <span className="text-[10px] font-bold text-gray-500">{item.prevMonthPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+              <span className={`text-[10px] font-bold ${(item.prevMonthPercentage ?? 0) > item.percentage ? 'text-rose-300' : 'text-gray-500'}`}>{item.prevMonthPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">12M Avg</span>
-              <span className="text-[10px] font-bold text-gray-500">{item.avg12MonthsPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+              <span className={`text-[10px] font-bold ${(item.avg12MonthsPercentage ?? 0) > item.percentage ? 'text-rose-300' : 'text-gray-500'}`}>{item.avg12MonthsPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
             </div>
           </div>
         </div>
