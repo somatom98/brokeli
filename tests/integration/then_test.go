@@ -84,30 +84,3 @@ func (t *Then) TransactionsDistributionShouldMatch(expected []map[string]string)
 
 	return t
 }
-
-func (t *Then) AccountTransactionsCountShouldBeAtLeast(accountAlias string, count int) *Then {
-	accountID := t.s.accounts[accountAlias]
-	require.NotEmpty(t.s.t, accountID, "Account alias %s not found", accountAlias)
-
-	t.s.t.Logf("Checking account %s transactions count should be at least %d...", accountAlias, count)
-	assert.Eventually(t.s.t, func() bool {
-		resp, err := t.s.client.Get(t.s.baseURL + "/accounts/" + accountID + "/transactions")
-		if err != nil {
-			return false
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return false
-		}
-
-		var transactions []map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&transactions); err != nil {
-			return false
-		}
-
-		return len(transactions) >= count
-	}, 30*time.Second, 1*time.Second, "Account transactions count did not match")
-
-	return t
-}

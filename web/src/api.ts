@@ -22,6 +22,28 @@ export interface BalancePeriod {
   amount: string;
 }
 
+export interface TransactionFilter {
+  start_date?: string;
+  end_date?: string;
+  account_id?: string[];
+  transaction_type?: string;
+}
+
+export interface BudgetItem {
+  name: string;
+  categories: string[];
+  percentage: number;
+}
+
+export interface BudgetData {
+  id: string;
+  name: string;
+  data: {
+    items: BudgetItem[];
+    selectedAccounts: string[];
+  };
+}
+
 export const api = {
   getAccounts: async (): Promise<Account[]> => {
     const res = await fetch('/api/accounts');
@@ -52,8 +74,17 @@ export const api = {
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  getTransactions: async (): Promise<Transaction[]> => {
-    const res = await fetch('/api/transactions');
+  getTransactions: async (filter?: TransactionFilter): Promise<Transaction[]> => {
+    const query = new URLSearchParams();
+    if (filter) {
+      if (filter.start_date) query.append('start_date', filter.start_date);
+      if (filter.end_date) query.append('end_date', filter.end_date);
+      if (filter.account_id) {
+        filter.account_id.forEach(id => query.append('account_id', id));
+      }
+      if (filter.transaction_type) query.append('transaction_type', filter.transaction_type);
+    }
+    const res = await fetch(`/api/transactions?${query.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch transactions');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -112,13 +143,13 @@ export const api = {
     if (!res.ok) throw new Error('Failed to withdraw');
     return res.status;
   },
-  getBudgets: async (): Promise<any[]> => {
+  getBudgets: async (): Promise<BudgetData[]> => {
     const res = await fetch('/api/budgets');
     if (!res.ok) throw new Error('Failed to fetch budgets');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  saveBudget: async (data: { id?: string, name: string, data: any }) => {
+  saveBudget: async (data: { id?: string, name: string, data: { items: BudgetItem[], selectedAccounts: string[] } }) => {
     const res = await fetch('/api/budgets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

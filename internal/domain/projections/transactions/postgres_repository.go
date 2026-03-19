@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/somatom98/brokeli/internal/db"
 	"github.com/somatom98/brokeli/internal/domain/values"
@@ -36,39 +35,33 @@ func (r *PostgresRepository) CreateTransaction(ctx context.Context, tx Transacti
 	})
 }
 
-func (r *PostgresRepository) ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]TransactionRecord, error) {
-	rows, err := r.queries.ListTransactionsByAccount(ctx, accountID)
-	if err != nil {
-		return nil, err
+func (r *PostgresRepository) ListTransactions(ctx context.Context, params ListTransactionsParams) ([]TransactionRecord, error) {
+	arg := db.ListTransactionsParams{
+		AccountIds: params.AccountIDs,
 	}
 
-	transactions := make([]TransactionRecord, len(rows))
-	for i, row := range rows {
-		amount, _ := decimal.NewFromString(row.Amount)
-		
-		var rate decimal.Decimal
-		if row.SystemTotalRate != nil {
-			rate, _ = decimal.NewFromString(fmt.Sprintf("%v", row.SystemTotalRate))
-		}
-
-		transactions[i] = TransactionRecord{
-			ID:              row.ID,
-			AccountID:       row.AccountID,
-			TransactionType: row.TransactionType,
-			Amount:          amount,
-			Currency:        values.Currency(row.Currency),
-			Category:        row.Category,
-			Description:     row.Description,
-			HappenedAt:      row.HappenedAt,
-			SystemTotalRate: rate,
+	if params.StartDate != nil {
+		arg.StartDate = sql.NullTime{
+			Time:  *params.StartDate,
+			Valid: true,
 		}
 	}
 
-	return transactions, nil
-}
+	if params.EndDate != nil {
+		arg.EndDate = sql.NullTime{
+			Time:  *params.EndDate,
+			Valid: true,
+		}
+	}
 
-func (r *PostgresRepository) ListTransactions(ctx context.Context) ([]TransactionRecord, error) {
-	rows, err := r.queries.ListTransactions(ctx)
+	if params.TransactionType != nil {
+		arg.TransactionType = sql.NullString{
+			String: *params.TransactionType,
+			Valid:  true,
+		}
+	}
+
+	rows, err := r.queries.ListTransactions(ctx, arg)
 	if err != nil {
 		return nil, err
 	}

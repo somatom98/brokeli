@@ -27,10 +27,16 @@ type TransactionRecord struct {
 	SystemTotalRate decimal.Decimal `json:"system_total_rate"`
 }
 
+type ListTransactionsParams struct {
+	StartDate       *time.Time
+	EndDate         *time.Time
+	AccountIDs      []uuid.UUID
+	TransactionType *string
+}
+
 type Repository interface {
 	CreateTransaction(ctx context.Context, tx TransactionRecord) error
-	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]TransactionRecord, error)
-	ListTransactions(ctx context.Context) ([]TransactionRecord, error)
+	ListTransactions(ctx context.Context, params ListTransactionsParams) ([]TransactionRecord, error)
 	ListCategories(ctx context.Context) ([]string, error)
 }
 
@@ -83,12 +89,8 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 	return nil
 }
 
-func (v *Projection) ListTransactions(ctx context.Context) ([]TransactionRecord, error) {
-	return v.repository.ListTransactions(ctx)
-}
-
-func (v *Projection) ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]TransactionRecord, error) {
-	return v.repository.ListTransactionsByAccount(ctx, accountID)
+func (v *Projection) ListTransactions(ctx context.Context, params ListTransactionsParams) ([]TransactionRecord, error) {
+	return v.repository.ListTransactions(ctx, params)
 }
 
 func (v *Projection) ListCategories(ctx context.Context) ([]string, error) {

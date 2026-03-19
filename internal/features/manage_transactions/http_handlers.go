@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/somatom98/brokeli/internal/domain/projections/transactions"
 	"github.com/somatom98/brokeli/internal/domain/values"
 )
 
@@ -227,33 +228,35 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 }
 
 func (f *Feature) handleGetTransactions(w http.ResponseWriter, r *http.Request) {
-	transactions, err := f.transactionsView.ListTransactions(r.Context())
-	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
+	query := r.URL.Query()
+
+	params := transactions.ListTransactionsParams{}
+
+	if startStr := query.Get("start_date"); startStr != "" {
+		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
+			params.StartDate = &t
+		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(transactions); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (f *Feature) handleGetAccountTransactions(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
-	if accountID == "" {
-		http.Error(w, "bad request: missing account id", http.StatusBadRequest)
-		return
+	if endStr := query.Get("end_date"); endStr != "" {
+		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
+			params.EndDate = &t
+		}
 	}
 
-	id, err := uuid.Parse(accountID)
-	if err != nil {
-		http.Error(w, "bad request: invalid account id", http.StatusBadRequest)
-		return
+	if accounts := query["account_id"]; len(accounts) > 0 {
+		for _, a := range accounts {
+			if id, err := uuid.Parse(a); err == nil {
+				params.AccountIDs = append(params.AccountIDs, id)
+			}
+		}
 	}
 
-	transactions, err := f.transactionsView.ListTransactionsByAccount(r.Context(), id)
+	if tType := query.Get("transaction_type"); tType != "" {
+		params.TransactionType = &tType
+	}
+
+	transactions, err := f.transactionsView.ListTransactions(r.Context(), params)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

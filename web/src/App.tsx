@@ -22,6 +22,7 @@ import {
   import { api } from './api';
   import type { Account } from './api';
   import Budget from './Budget';
+  import Transactions from './Transactions';
 
   const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -31,7 +32,7 @@ import {
   const [errorMessage, setErrorMessage] = useState('');
   // App Navigation State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'budget'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'budget' | 'transactions'>('home');
 
   // Form State
   const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw'>('expense');
@@ -240,6 +241,17 @@ import {
             <span>Ledger</span>
           </button>
           <button
+            onClick={() => { setCurrentView('transactions'); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
+              currentView === 'transactions' 
+                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            <AlignLeft size={20} strokeWidth={2.5} />
+            <span>Transactions</span>
+          </button>
+          <button
             onClick={() => { setCurrentView('budget'); setIsSidebarOpen(false); }}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
               currentView === 'budget' 
@@ -255,7 +267,7 @@ import {
 
       {currentView === 'home' ? (
         <div className="w-full max-w-[440px] relative z-10 transition-all duration-500 scale-95 animate-in fade-in zoom-in-95 duration-1000">
-          {/* Main Panel */}
+          {/* Main Panel Content ... */}
           <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 relative overflow-hidden group">
             
             {/* Success Overlay */}
@@ -491,9 +503,13 @@ import {
              Cloud Node Sync Active
           </div>
         </div>
-      ) : (
+      ) : currentView === 'budget' ? (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
           <Budget />
+        </div>
+      ) : (
+        <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <Transactions />
         </div>
       )}
     </div>

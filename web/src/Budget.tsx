@@ -1,28 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil } from 'lucide-react';
 import { api } from './api';
-import type { Account, Transaction } from './api';
-
-interface BudgetItem {
-  name: string;
-  categories: string[];
-  percentage: number;
-}
-
-interface BudgetData {
-  id: string;
-  name: string;
-  data: {
-    items: BudgetItem[];
-    selectedAccounts: string[];
-  };
-}
+import type { Account, Transaction, TransactionFilter, BudgetItem, BudgetData } from './api';
 
 // Fallback for crypto.randomUUID() if not in a secure context
 const generateId = () => {
   try {
     return crypto.randomUUID();
-  } catch (e) {
+  } catch {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 };
@@ -95,7 +80,17 @@ const Budget: React.FC = () => {
       const fetchTransactions = async () => {
         setIsFetchingTransactions(true);
         try {
-          const data = await api.getTransactions();
+          const [year, month] = selectedMonth.split('-').map(Number);
+          const start = new Date(year, month - 1, 1).toISOString();
+          const end = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+          
+          const filter: TransactionFilter = {
+            start_date: start,
+            end_date: end,
+            account_id: selectedBudget.data.selectedAccounts
+          };
+
+          const data = await api.getTransactions(filter);
           setTransactions(data || []);
         } catch (err) {
           console.error('Error fetching transactions:', err);
@@ -105,7 +100,7 @@ const Budget: React.FC = () => {
       };
       fetchTransactions();
     }
-  }, [view, selectedBudget]);
+  }, [view, selectedBudget, selectedMonth]);
 
   const budgetStats = useMemo(() => {
     if (!selectedBudget) return { totalSpending: 0, totalIncome: 0, totalOutcome: 0, items: [] };

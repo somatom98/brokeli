@@ -28,6 +28,5 @@ func TestBalanceScenario(t *testing.T) {
 			{"category": "Deposit", "system_total_rate": "0.5"},
 			{"category": "Fun", "system_total_rate": "1"},
 			{"category": "Deposit", "system_total_rate": "1"},
-		}).
-		AccountTransactionsCountShouldBeAtLeast("main", 5)
+		})
 }

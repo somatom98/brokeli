@@ -26,8 +26,7 @@ type Querier interface {
 	GetBudgets(ctx context.Context) ([]Budget, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error
 	ListCategories(ctx context.Context) ([]string, error)
-	ListTransactions(ctx context.Context) ([]ListTransactionsRow, error)
-	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]ListTransactionsByAccountRow, error)
+	ListTransactions(ctx context.Context, arg ListTransactionsParams) ([]ListTransactionsRow, error)
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpdateAccountName(ctx context.Context, arg UpdateAccountNameParams) error
 	UpsertPlaceholderAccount(ctx context.Context, arg UpsertPlaceholderAccountParams) error
