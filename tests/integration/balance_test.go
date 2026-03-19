@@ -12,21 +12,25 @@ func TestBalanceScenario(t *testing.T) {
 		Account("other", EUR)
 
 	s.When().
-		Deposit(100, EUR, "system", "main").
+		Income(100, EUR, "Initial", "Initial balance", "main").
 		Expense(10, EUR, "Fun", "Cinema", "main").
 		Deposit(100, EUR, "user1", "main").
 		Expense(10, EUR, "Food", "Lunch", "main").
 		Deposit(100, EUR, "user1", "other").
-		Expense(10, EUR, "Food", "Lunch", "main")
+		Expense(10, EUR, "Food", "Lunch", "main").
+		Transfer(50, EUR, "main", "other")
 
 	s.Then().
-		BalanceShouldBe("main", EUR, 170).
+		BalanceShouldBe("main", EUR, 120).
+		BalanceShouldBe("other", EUR, 150).
 		TransactionsDistributionShouldMatch([]map[string]string{
-			{"category": "Food", "system_total_rate": "0.5"},
+			{"category": "Transfer", "system_total_rate": "-0.4167"},
+			{"category": "Transfer", "system_total_rate": "0.3333"},
+			{"category": "Food", "system_total_rate": "0"},
 			{"category": "Deposit", "system_total_rate": "0"},
-			{"category": "Food", "system_total_rate": "0.5"},
-			{"category": "Deposit", "system_total_rate": "0.5"},
-			{"category": "Fun", "system_total_rate": "1"},
-			{"category": "Deposit", "system_total_rate": "1"},
+			{"category": "Food", "system_total_rate": "0"},
+			{"category": "Deposit", "system_total_rate": "0"},
+			{"category": "Fun", "system_total_rate": "0"},
+			{"category": "Initial", "system_total_rate": "0"},
 		})
 }
