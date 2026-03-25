@@ -11,7 +11,12 @@ import {
 import { api } from './api';
 import type { Account, Transaction, TransactionFilter } from './api';
 
-const Transactions: React.FC = () => {
+interface TransactionsProps {
+  refreshKey?: number;
+  hideHeader?: boolean;
+}
+
+const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +50,7 @@ const Transactions: React.FC = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [fetchTransactions]);
+  }, [fetchTransactions, refreshKey]);
 
   const toggleAccount = (accountId: string) => {
     const current = filter.account_id || [];
@@ -61,37 +66,64 @@ const Transactions: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
-      <div className="w-full max-w-5xl space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">Transactions</h1>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Historical Ledger Activity</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-[0.98] ${
-                isFilterOpen || Object.keys(filter).length > 0 
-                  ? 'bg-indigo-600 text-white shadow-indigo-200' 
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <Filter size={20} />
-              Filters {Object.keys(filter).length > 0 && `(${Object.keys(filter).length})`}
-            </button>
-            {Object.keys(filter).length > 0 && (
+    <div className={`w-full flex items-start justify-center ${hideHeader ? '' : 'p-4 md:p-8 pb-20'}`}>
+      <div className="w-full max-w-5xl space-y-4">
+        {hideHeader ? (
+          <div className="flex justify-end px-4 mb-2">
+            <div className="flex items-center gap-3">
               <button 
-                onClick={clearFilters}
-                className="p-3 text-gray-400 hover:text-rose-500 transition-colors"
-                title="Clear all filters"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs ${
+                  isFilterOpen || Object.keys(filter).length > 0 
+                    ? 'bg-indigo-600 text-white shadow-indigo-200' 
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
               >
-                <X size={20} strokeWidth={3} />
+                <Filter size={16} />
+                Filters {Object.keys(filter).length > 0 && `(${Object.keys(filter).length})`}
               </button>
-            )}
+              {Object.keys(filter).length > 0 && (
+                <button 
+                  onClick={clearFilters}
+                  className="p-2 text-gray-400 hover:text-rose-500 transition-colors"
+                  title="Clear all filters"
+                >
+                  <X size={16} strokeWidth={3} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
+            <div>
+              <h1 className="text-4xl font-black text-gray-900 tracking-tight">Transactions</h1>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Historical Ledger Activity</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-[0.98] ${
+                  isFilterOpen || Object.keys(filter).length > 0 
+                    ? 'bg-indigo-600 text-white shadow-indigo-200' 
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Filter size={20} />
+                Filters {Object.keys(filter).length > 0 && `(${Object.keys(filter).length})`}
+              </button>
+              {Object.keys(filter).length > 0 && (
+                <button 
+                  onClick={clearFilters}
+                  className="p-3 text-gray-400 hover:text-rose-500 transition-colors"
+                  title="Clear all filters"
+                >
+                  <X size={20} strokeWidth={3} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {isFilterOpen && (
           <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-8 border border-white/50 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
@@ -163,12 +195,12 @@ const Transactions: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-xl rounded-[48px] border border-white/50">
+          <div className={`flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-xl rounded-[48px] border border-white/50 ${hideHeader ? 'h-[800px]' : ''}`}>
             <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
             <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching Ledger Data...</p>
           </div>
         ) : transactions.length === 0 ? (
-          <div className="bg-white/50 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 flex flex-col items-center text-center">
+          <div className={`bg-white/50 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 flex flex-col items-center text-center justify-center ${hideHeader ? 'h-[800px]' : ''}`}>
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
               <Search size={32} className="text-gray-400" />
             </div>
@@ -176,8 +208,8 @@ const Transactions: React.FC = () => {
             <p className="text-gray-400 max-w-xs">Adjust your filters to see more transaction data.</p>
           </div>
         ) : (
-          <div className="bg-white/90 backdrop-blur-2xl rounded-[40px] border border-white/50 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className={`bg-white/90 backdrop-blur-2xl rounded-[40px] border border-white/50 shadow-sm overflow-hidden flex flex-col ${hideHeader ? 'h-[800px]' : ''}`}>
+            <div className="overflow-x-auto overflow-y-auto flex-1">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-50">

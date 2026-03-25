@@ -37,7 +37,8 @@ import {
   const [errorMessage, setErrorMessage] = useState('');
   // App Navigation State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'budget' | 'transactions' | 'balances'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'budget' | 'balances'>('home');
+  const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
 
   // Form State
   const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw'>('expense');
@@ -203,6 +204,7 @@ import {
         return now.toISOString().slice(0, 16);
       });
       fetchCategories();
+      setTransactionsRefreshKey(prev => prev + 1);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       setError(true);
@@ -220,7 +222,7 @@ import {
   );
 
   return (
-    <div className={`min-h-screen w-full relative flex ${currentView === 'budget' ? 'items-start' : 'items-center'} justify-center p-4 antialiased`}>
+    <div className={`min-h-screen w-full relative flex ${currentView === 'budget' || currentView === 'home' ? 'items-start' : 'items-center'} justify-center p-4 antialiased`}>
       
       {/* Animated Mesh Background */}
       <div className={`fixed inset-0 z-0 mesh-bg bg-gradient-to-tr ${theme.mesh} transition-colors duration-1000`} />
@@ -280,17 +282,6 @@ import {
             <span>Balances</span>
           </button>
           <button
-            onClick={() => { setCurrentView('transactions'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
-              currentView === 'transactions' 
-                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            <AlignLeft size={20} strokeWidth={2.5} />
-            <span>Transactions</span>
-          </button>
-          <button
             onClick={() => { setCurrentView('budget'); setIsSidebarOpen(false); }}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
               currentView === 'budget' 
@@ -305,117 +296,69 @@ import {
       </div>
 
       {currentView === 'home' ? (
-        <div className="w-full max-w-[440px] relative z-10 transition-all duration-500 scale-95 animate-in fade-in zoom-in-95 duration-1000">
-          {/* Main Panel Content ... */}
-          <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 relative overflow-hidden group">
-            
-            {/* Success Overlay */}
-            <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-white/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-               <div className={`w-24 h-24 ${theme.btn} text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
-                 <Check size={48} strokeWidth={4} />
-               </div>
-               <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
-               <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Ledger Updated</p>
-            </div>
-
-            {/* Error Overlay */}
-            <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-               <div className={`w-24 h-24 bg-rose-500 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
-                 <XCircle size={48} strokeWidth={4} />
-               </div>
-               <h3 className="text-4xl font-black text-gray-900 tracking-tight text-center px-6">Error</h3>
-               <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-[10px] text-center px-10 leading-relaxed">{errorMessage}</p>
-            </div>
-
-            <header className="text-center mb-8 space-y-3">
-              <div className={`inline-block px-4 py-1.5 rounded-full bg-gray-100/50 text-gray-400 text-[10px] font-black uppercase tracking-[0.4em]`}>
-                Brøkeli Core
-              </div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
-                {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'New Entry'}
-              </h2>
-            </header>
-
-            <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start justify-center gap-8 lg:gap-12 relative z-10 transition-all duration-500 animate-in fade-in zoom-in-100 duration-1000 pt-20 pb-12 lg:pt-24">
+          <div className="w-full max-w-[440px] lg:sticky lg:top-24">
+            {/* Main Panel Content */}
+            <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 relative overflow-hidden group">
               
-              {/* Type Selector (TABS) */}
-              <div className="grid grid-cols-3 p-1.5 bg-gray-100/80 rounded-[28px] gap-1 shadow-inner">
-                {(['expense', 'income', 'transfer', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setType(t)}
-                    className={`flex flex-col items-center py-3.5 rounded-[22px] transition-all duration-500 ease-out ${
-                      type === t 
-                        ? `${theme.tab} scale-[1.02] shadow-xl` 
-                        : 'text-gray-400 hover:text-gray-600'
-                    }`}
-                  >
-                    {t === 'expense' && <ArrowDownLeft size={20} strokeWidth={2.5} />}
-                    {t === 'income' && <ArrowUpRight size={20} strokeWidth={2.5} />}
-                    {t === 'transfer' && <ArrowRightLeft size={20} strokeWidth={2.5} />}
-                    {t === 'openAccount' && <PlusSquare size={20} strokeWidth={2.5} />}
-                    {t === 'deposit' && <ArrowDownToLine size={20} strokeWidth={2.5} />}
-                    {t === 'withdraw' && <ArrowUpFromLine size={20} strokeWidth={2.5} />}
-                    <span className="text-[9px] font-black uppercase tracking-widest mt-1.5">
-                      {t === 'openAccount' ? 'Account' : t}
-                    </span>
-                  </button>
-                ))}
+              {/* Success Overlay */}
+              <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-white/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+                 <div className={`w-24 h-24 ${theme.btn} text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+                   <Check size={48} strokeWidth={4} />
+                 </div>
+                 <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
+                 <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Ledger Updated</p>
               </div>
 
-              {/* Currency Badges for openAccount */}
-              {type === 'openAccount' && (
-                <div className="flex justify-center items-center gap-2.5 mt-4">
-                  {['EUR', 'DKK'].map(c => (
+              {/* Error Overlay */}
+              <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+                 <div className={`w-24 h-24 bg-rose-500 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+                   <XCircle size={48} strokeWidth={4} />
+                 </div>
+                 <h3 className="text-4xl font-black text-gray-900 tracking-tight text-center px-6">Error</h3>
+                 <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-[10px] text-center px-10 leading-relaxed">{errorMessage}</p>
+              </div>
+
+              <header className="text-center mb-8 space-y-3">
+                <div className={`inline-block px-4 py-1.5 rounded-full bg-gray-100/50 text-gray-400 text-[10px] font-black uppercase tracking-[0.4em]`}>
+                  Brøkeli Core
+                </div>
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+                  {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'New Entry'}
+                </h2>
+              </header>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                
+                {/* Type Selector (TABS) ... rest of the form ... */}
+                {/* I'll use a larger block for old_string to avoid ambiguity */}
+                <div className="grid grid-cols-3 p-1.5 bg-gray-100/80 rounded-[28px] gap-1 shadow-inner">
+                  {(['expense', 'income', 'transfer', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
                     <button
-                      key={c}
+                      key={t}
                       type="button"
-                      onClick={() => setCurrency(c)}
-                      className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border ${
-                        currency === c 
-                          ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
-                          : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                      onClick={() => setType(t)}
+                      className={`flex flex-col items-center py-3.5 rounded-[22px] transition-all duration-500 ease-out ${
+                        type === t 
+                          ? `${theme.tab} scale-[1.02] shadow-xl` 
+                          : 'text-gray-400 hover:text-gray-600'
                       }`}
                     >
-                      {c}
+                      {t === 'expense' && <ArrowDownLeft size={20} strokeWidth={2.5} />}
+                      {t === 'income' && <ArrowUpRight size={20} strokeWidth={2.5} />}
+                      {t === 'transfer' && <ArrowRightLeft size={20} strokeWidth={2.5} />}
+                      {t === 'openAccount' && <PlusSquare size={20} strokeWidth={2.5} />}
+                      {t === 'deposit' && <ArrowDownToLine size={20} strokeWidth={2.5} />}
+                      {t === 'withdraw' && <ArrowUpFromLine size={20} strokeWidth={2.5} />}
+                      <span className="text-[9px] font-black uppercase tracking-widest mt-1.5">
+                        {t === 'openAccount' ? 'Account' : t}
+                      </span>
                     </button>
                   ))}
-                  <input 
-                    type="text" 
-                    placeholder="OTHER"
-                    maxLength={3}
-                    value={!['EUR', 'DKK'].includes(currency) ? currency : ''}
-                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                    className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border w-20 text-center outline-none ${
-                      !['EUR', 'DKK'].includes(currency) && currency !== ''
-                        ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
-                        : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
-                    }`}
-                  />
                 </div>
-              )}
 
-              {/* Huge Amount Input */}
-              {type !== 'openAccount' && (
-                <div className="text-center relative group/input">
-                  <div className="flex items-center justify-center gap-3">
-                    <span className={`text-4xl font-black transition-colors duration-500 ${theme.primary}`}>
-                       {currency === 'EUR' ? '€' : currency === 'DKK' ? 'kr' : currency}
-                    </span>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      required 
-                      placeholder="0.00"
-                      value={amount} 
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full max-w-[200px] text-center text-7xl font-black outline-none bg-transparent placeholder:text-gray-100 transition-all caret-indigo-500"
-                      style={{ color: '#111827' }}
-                    />
-                  </div>
-
-                  {/* Currency Badges */}
+                {/* Currency Badges for openAccount */}
+                {type === 'openAccount' && (
                   <div className="flex justify-center items-center gap-2.5 mt-4">
                     {['EUR', 'DKK'].map(c => (
                       <button
@@ -444,163 +387,214 @@ import {
                       }`}
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Detailed Fields */}
-              <div className="space-y-4">
-                
-                {/* Account Dropdowns */}
+                {/* Huge Amount Input */}
                 {type !== 'openAccount' && (
-                  <div className="flex flex-col gap-3">
-                    <div className="relative group/field">
-                      <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                        <Banknote size={14} className="text-gray-300" />
-                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
-                          {type === 'transfer' ? 'From Account' : 'Account'}
-                        </span>
-                      </div>
-                      <select 
-                        value={accountId}
-                        onChange={(e) => setAccountId(e.target.value)}
-                        className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
-                      >
-                        {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                      </select>
-                      <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
+                  <div className="text-center relative group/input">
+                    <div className="flex items-center justify-center gap-3">
+                      <span className={`text-4xl font-black transition-colors duration-500 ${theme.primary}`}>
+                         {currency === 'EUR' ? '€' : currency === 'DKK' ? 'kr' : currency}
+                      </span>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        required 
+                        placeholder="0.00"
+                        value={amount} 
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="w-full max-w-[200px] text-center text-7xl font-black outline-none bg-transparent placeholder:text-gray-100 transition-all caret-indigo-500"
+                        style={{ color: '#111827' }}
+                      />
                     </div>
 
-                    {type === 'transfer' && (
-                      <div className="relative animate-in slide-in-from-top-4 duration-500">
+                    {/* Currency Badges */}
+                    <div className="flex justify-center items-center gap-2.5 mt-4">
+                      {['EUR', 'DKK'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCurrency(c)}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border ${
+                            currency === c 
+                              ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
+                              : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                      <input 
+                        type="text" 
+                        placeholder="OTHER"
+                        maxLength={3}
+                        value={!['EUR', 'DKK'].includes(currency) ? currency : ''}
+                        onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                        className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border w-20 text-center outline-none ${
+                          !['EUR', 'DKK'].includes(currency) && currency !== ''
+                            ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
+                            : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Fields */}
+                <div className="space-y-4">
+                  
+                  {/* Account Dropdowns */}
+                  {type !== 'openAccount' && (
+                    <div className="flex flex-col gap-3">
+                      <div className="relative group/field">
                         <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                          <ArrowRightLeft size={14} className="text-gray-300" />
-                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">To Account</span>
+                          <Banknote size={14} className="text-gray-300" />
+                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                            {type === 'transfer' ? 'From Account' : 'Account'}
+                          </span>
                         </div>
                         <select 
-                          value={toAccountId}
-                          onChange={(e) => setToAccountId(e.target.value)}
+                          value={accountId}
+                          onChange={(e) => setAccountId(e.target.value)}
                           className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
                         >
                           {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </select>
                         <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
                       </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Date & Time Selection */}
-                {type !== 'openAccount' && (
-                  <div className="relative">
-                    <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                      <Calendar size={14} className="text-gray-300" />
-                      <Clock size={14} className="text-gray-300" />
-                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Date & Time</span>
+                      {type === 'transfer' && (
+                        <div className="relative animate-in slide-in-from-top-4 duration-500">
+                          <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                            <ArrowRightLeft size={14} className="text-gray-300" />
+                            <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">To Account</span>
+                          </div>
+                          <select 
+                            value={toAccountId}
+                            onChange={(e) => setToAccountId(e.target.value)}
+                            className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
+                          >
+                            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                          </select>
+                          <ChevronDown size={18} className="absolute right-5 bottom-4 text-gray-300 pointer-events-none" />
+                        </div>
+                      )}
                     </div>
-                    <input 
-                      type="datetime-local" 
-                      required
-                      value={happenedAtDateTime} 
-                      onChange={(e) => setHappenedAtDateTime(e.target.value)}
-                      className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50"
-                    />
-                  </div>
-                )}
+                  )}
 
-                {/* Categorization (For Income, Expense, Transfer) */}
-                {(type === 'income' || type === 'expense' || type === 'transfer') && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Date & Time Selection */}
+                  {type !== 'openAccount' && (
                     <div className="relative">
+                      <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                        <Calendar size={14} className="text-gray-300" />
+                        <Clock size={14} className="text-gray-300" />
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Date & Time</span>
+                      </div>
+                      <input 
+                        type="datetime-local" 
+                        required
+                        value={happenedAtDateTime} 
+                        onChange={(e) => setHappenedAtDateTime(e.target.value)}
+                        className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50"
+                      />
+                    </div>
+                  )}
+
+                  {/* Categorization (For Income, Expense, Transfer) */}
+                  {(type === 'income' || type === 'expense' || type === 'transfer') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="relative">
+                        <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                          <Tag size={14} className="text-gray-300" />
+                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Category</span>
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="Shopping..."
+                          list="category-suggestions"
+                          value={category} 
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                        />
+                        <datalist id="category-suggestions">
+                          {categories.map(cat => (
+                            <option key={cat} value={cat} />
+                          ))}
+                        </datalist>
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                          <AlignLeft size={14} className="text-gray-300" />
+                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Note</span>
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="Brief note"
+                          value={description} 
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Account Name (For Open Account) */}
+                  {type === 'openAccount' && (
+                    <div className="relative group/field">
                       <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
                         <Tag size={14} className="text-gray-300" />
-                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Category</span>
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Account Name</span>
                       </div>
                       <input 
                         type="text" 
-                        placeholder="Shopping..."
-                        list="category-suggestions"
-                        value={category} 
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
-                      />
-                      <datalist id="category-suggestions">
-                        {categories.map(cat => (
-                          <option key={cat} value={cat} />
-                        ))}
-                      </datalist>
-                    </div>
-
-                    <div className="relative">
-                      <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                        <AlignLeft size={14} className="text-gray-300" />
-                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Note</span>
-                      </div>
-                      <input 
-                        type="text" 
-                        placeholder="Brief note"
-                        value={description} 
-                        onChange={(e) => setDescription(e.target.value)}
+                        required
+                        placeholder="e.g. Main Wallet"
+                        value={accountName} 
+                        onChange={(e) => setAccountName(e.target.value)}
                         className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
                       />
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Account Name (For Open Account) */}
-                {type === 'openAccount' && (
-                  <div className="relative group/field">
-                    <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
-                      <Tag size={14} className="text-gray-300" />
-                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Account Name</span>
-                    </div>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. Main Wallet"
-                      value={accountName} 
-                      onChange={(e) => setAccountName(e.target.value)}
-                      className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
-                    />
-                  </div>
-                )}
+                </div>
 
-              </div>
+                {/* Submission Button */}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting || (type !== 'openAccount' && !amount) || (type === 'openAccount' && !accountName)}
+                  className={`w-full ${theme.btn} text-white font-black py-6 rounded-[32px] transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.3em] disabled:bg-gray-200 disabled:shadow-none`}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin" size={20} strokeWidth={4} />
+                  ) : (
+                    <>
+                      <Receipt size={18} strokeWidth={3} />
+                      {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'Record Transaction'}
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
 
-              {/* Submission Button */}
-              <button 
-                type="submit" 
-                disabled={isSubmitting || (type !== 'openAccount' && !amount) || (type === 'openAccount' && !accountName)}
-                className={`w-full ${theme.btn} text-white font-black py-6 rounded-[32px] transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.3em] disabled:bg-gray-200 disabled:shadow-none`}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin" size={20} strokeWidth={4} />
-                ) : (
-                  <>
-                    <Receipt size={18} strokeWidth={3} />
-                    {type === 'openAccount' ? 'Open Account' : type === 'deposit' ? 'Deposit' : type === 'withdraw' ? 'Withdraw' : 'Record Transaction'}
-                  </>
-                )}
-              </button>
-            </form>
+            {/* Status Indicator */}
+            <div className="mt-8 flex justify-center items-center gap-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+               <div className={`w-2 h-2 rounded-full ${theme.primary} shadow-[0_0_10px_currentColor] animate-pulse`} />
+               Cloud Node Sync Active
+            </div>
           </div>
 
-          {/* Status Indicator */}
-          <div className="mt-8 flex justify-center items-center gap-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-             <div className={`w-2 h-2 rounded-full ${theme.primary} shadow-[0_0_10px_currentColor] animate-pulse`} />
-             Cloud Node Sync Active
+          <div className="flex-1 w-full min-w-0">
+            <Transactions refreshKey={transactionsRefreshKey} hideHeader />
           </div>
         </div>
       ) : currentView === 'balances' ? (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
           <Balances />
         </div>
-      ) : currentView === 'budget' ? (
-        <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
-          <Budget />
-        </div>
       ) : (
         <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
-          <Transactions />
+          <Budget />
         </div>
       )}
     </div>
