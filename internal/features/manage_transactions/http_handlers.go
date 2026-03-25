@@ -3,6 +3,7 @@ package manage_transactions
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -258,6 +259,38 @@ func (f *Feature) handleGetTransactions(w http.ResponseWriter, r *http.Request) 
 
 	if tType := query.Get("transaction_type"); tType != "" {
 		params.TransactionType = &tType
+	}
+
+	isPaginated := query.Get("paginated") == "true"
+	if isPaginated {
+		page := 1
+		pageSize := 50
+
+		if p, err := strconv.Atoi(query.Get("page")); err == nil && p > 0 {
+			page = p
+		}
+		if ps, err := strconv.Atoi(query.Get("page_size")); err == nil && ps > 0 {
+			pageSize = ps
+		}
+
+		paginatedParams := transactions.ListTransactionsPaginatedParams{
+			ListTransactionsParams: params,
+			Limit:                  int32(pageSize),
+			Offset:                 int32((page - 1) * pageSize),
+		}
+
+		results, err := f.transactionsView.ListTransactionsPaginated(r.Context(), paginatedParams)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(results); err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		return
 	}
 
 	transactions, err := f.transactionsView.ListTransactions(r.Context(), params)

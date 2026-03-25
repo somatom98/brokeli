@@ -37,6 +37,14 @@ export interface TransactionFilter {
   end_date?: string;
   account_id?: string[];
   transaction_type?: string;
+  paginated?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedTransactions {
+  transactions: Transaction[];
+  total_count: number;
 }
 
 export interface BudgetItem {
@@ -111,6 +119,22 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch transactions');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
+  },
+  getPaginatedTransactions: async (filter: TransactionFilter): Promise<PaginatedTransactions> => {
+    const query = new URLSearchParams();
+    query.append('paginated', 'true');
+    if (filter.start_date) query.append('start_date', filter.start_date);
+    if (filter.end_date) query.append('end_date', filter.end_date);
+    if (filter.account_id) {
+      filter.account_id.forEach(id => query.append('account_id', id));
+    }
+    if (filter.transaction_type) query.append('transaction_type', filter.transaction_type);
+    if (filter.page) query.append('page', filter.page.toString());
+    if (filter.page_size) query.append('page_size', filter.page_size.toString());
+    
+    const res = await fetch(`/api/transactions?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch paginated transactions');
+    return await res.json();
   },
   registerExpense: async (data: { account_id: string, currency: string, amount: string, category?: string, description?: string, happened_at?: string }) => {
     const res = await fetch('/api/expenses', {

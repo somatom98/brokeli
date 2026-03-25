@@ -34,9 +34,21 @@ type ListTransactionsParams struct {
 	TransactionType *string
 }
 
+type ListTransactionsPaginatedParams struct {
+	ListTransactionsParams
+	Limit  int32
+	Offset int32
+}
+
+type PaginatedTransactions struct {
+	Transactions []TransactionRecord `json:"transactions"`
+	TotalCount   int64               `json:"total_count"`
+}
+
 type Repository interface {
 	CreateTransaction(ctx context.Context, tx TransactionRecord) error
 	ListTransactions(ctx context.Context, params ListTransactionsParams) ([]TransactionRecord, error)
+	ListTransactionsPaginated(ctx context.Context, params ListTransactionsPaginatedParams) (PaginatedTransactions, error)
 	ListCategories(ctx context.Context) ([]string, error)
 }
 
@@ -91,6 +103,10 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 
 func (v *Projection) ListTransactions(ctx context.Context, params ListTransactionsParams) ([]TransactionRecord, error) {
 	return v.repository.ListTransactions(ctx, params)
+}
+
+func (v *Projection) ListTransactionsPaginated(ctx context.Context, params ListTransactionsPaginatedParams) (PaginatedTransactions, error) {
+	return v.repository.ListTransactionsPaginated(ctx, params)
 }
 
 func (v *Projection) ListCategories(ctx context.Context) ([]string, error) {

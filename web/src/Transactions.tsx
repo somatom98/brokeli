@@ -20,18 +20,46 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState<TransactionFilter>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const pageSize = 100;
 
-  const fetchTransactions = useCallback(async () => {
-    setLoading(true);
+  const fetchTransactions = useCallback(async (p: number, isInitial = false) => {
+    if (isInitial) {
+      setLoading(true);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const data = await api.getTransactions(filter);
-      setTransactions(data || []);
+      const data = await api.getPaginatedTransactions({
+        ...filter,
+        page: p,
+        page_size: pageSize
+      });
+
+      const newTransactions = data.transactions || [];
+      const totalCount = data.total_count || 0;
+
+      if (isInitial) {
+        setTransactions(newTransactions);
+        setHasMore(newTransactions.length < totalCount);
+      } else {
+        setTransactions(prev => {
+          const updated = [...prev, ...newTransactions];
+          setHasMore(updated.length < totalCount);
+          return updated;
+        });
+      }
     } catch (err) {
       console.error('Error fetching transactions:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [filter]);
 
@@ -49,8 +77,29 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
   }, []);
 
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions, refreshKey]);
+    setPage(1);
+    fetchTransactions(1, true);
+  }, [filter, refreshKey, fetchTransactions]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchTransactions(page, false);
+    }
+  }, [page, fetchTransactions]);
+
+  const observer = React.useRef<IntersectionObserver>(null);
+  const lastElementRef = useCallback((node: HTMLTableRowElement | null) => {
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore, hasMore]);
 
   const toggleAccount = (accountId: string) => {
     const current = filter.account_id || [];
@@ -221,7 +270,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {transactions.map((t) => {
+                  {transactions.map((t, index) => {
                     const amount = Math.abs(parseFloat(t.amount));
                     const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
                                    (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
@@ -229,9 +278,14 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                     const isMovement = ['DEPOSIT', 'WITHDRAWAL'].includes(t.transaction_type);
                     const rate = isMovement ? 1 : (parseFloat(t.system_total_rate || '1') || 1);
                     const systemAmount = amount * rate;
+                    const isLast = index === transactions.length - 1;
 
                     return (
-                      <tr key={t.id} className="hover:bg-gray-50/50 transition-colors group">
+                      <tr 
+                        key={t.id} 
+                        ref={isLast ? lastElementRef : undefined}
+                        className="hover:bg-gray-50/50 transition-colors group"
+                      >
                         <td className="px-6 py-6">
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
@@ -279,6 +333,16 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                       </tr>
                     );
                   })}
+                  {loadingMore && (
+                    <tr>
+                      <td colSpan={5} className="py-8">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="animate-spin text-indigo-600" size={16} />
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading more...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

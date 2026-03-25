@@ -48,7 +48,9 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 }
 
 const listCategories = `-- name: ListCategories :many
-SELECT DISTINCT category FROM transactions ORDER BY category
+SELECT DISTINCT category 
+FROM transactions 
+ORDER BY category
 `
 
 func (q *Queries) ListCategories(ctx context.Context) ([]string, error) {
@@ -141,6 +143,95 @@ func (q *Queries) ListTransactions(ctx context.Context, arg ListTransactionsPara
 			&i.HappenedAt,
 			&i.CreatedAt,
 			&i.SystemTotalRate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTransactionsPaginated = `-- name: ListTransactionsPaginated :many
+WITH distributions AS (
+    SELECT
+        id,
+        SUM(CASE WHEN transaction_type IN ('TRANSFER') THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY happened_at ASC, id ASC) as system_amount,
+        SUM(CASE WHEN transaction_type IN ('DEPOSIT', 'WITHDRAWAL') THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY happened_at ASC, id ASC) as other_amount
+    FROM transactions
+)
+SELECT
+    t.id, t.account_id, t.transaction_type, t.amount, t.currency, t.category, t.description, t.happened_at, t.created_at,
+    COALESCE(CASE 
+        WHEN d.system_amount + d.other_amount != 0 THEN ROUND(d.system_amount::DECIMAL / (d.system_amount + d.other_amount)::DECIMAL, 4)::TEXT ELSE '0' END, '0') as system_total_rate,
+    COUNT(*) OVER() as total_count
+FROM transactions t
+JOIN distributions d ON t.id = d.id
+WHERE
+    (t.happened_at >= $1 OR $1 IS NULL) AND
+    (t.happened_at <= $2 OR $2 IS NULL) AND
+    (t.account_id = ANY($3::UUID[]) OR $3 IS NULL) AND
+    (t.transaction_type = $4 OR $4 IS NULL)
+ORDER BY t.happened_at DESC, t.id DESC
+LIMIT $6 OFFSET $5
+`
+
+type ListTransactionsPaginatedParams struct {
+	StartDate       sql.NullTime   `json:"start_date"`
+	EndDate         sql.NullTime   `json:"end_date"`
+	AccountIds      []uuid.UUID    `json:"account_ids"`
+	TransactionType sql.NullString `json:"transaction_type"`
+	OffsetVal       int32          `json:"offset_val"`
+	LimitVal        int32          `json:"limit_val"`
+}
+
+type ListTransactionsPaginatedRow struct {
+	ID              uuid.UUID   `json:"id"`
+	AccountID       uuid.UUID   `json:"account_id"`
+	TransactionType string      `json:"transaction_type"`
+	Amount          string      `json:"amount"`
+	Currency        string      `json:"currency"`
+	Category        string      `json:"category"`
+	Description     string      `json:"description"`
+	HappenedAt      time.Time   `json:"happened_at"`
+	CreatedAt       time.Time   `json:"created_at"`
+	SystemTotalRate interface{} `json:"system_total_rate"`
+	TotalCount      int64       `json:"total_count"`
+}
+
+func (q *Queries) ListTransactionsPaginated(ctx context.Context, arg ListTransactionsPaginatedParams) ([]ListTransactionsPaginatedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTransactionsPaginated,
+		arg.StartDate,
+		arg.EndDate,
+		pq.Array(arg.AccountIds),
+		arg.TransactionType,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTransactionsPaginatedRow
+	for rows.Next() {
+		var i ListTransactionsPaginatedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.TransactionType,
+			&i.Amount,
+			&i.Currency,
+			&i.Category,
+			&i.Description,
+			&i.HappenedAt,
+			&i.CreatedAt,
+			&i.SystemTotalRate,
+			&i.TotalCount,
 		); err != nil {
 			return nil, err
 		}
