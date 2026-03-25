@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
+  ArrowRightLeft,
+  RotateCcw,
   Search,
   Calendar,
   Filter,
@@ -115,14 +117,14 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
   };
 
   return (
-    <div className={`w-full flex items-start justify-center ${hideHeader ? '' : 'p-4 md:p-8 pb-20'}`}>
-      <div className="w-full max-w-5xl space-y-4">
+    <div className={`w-full h-full flex flex-col ${hideHeader ? 'pt-0' : 'p-4 md:p-8'}`}>
+      <div className="w-full flex-1 flex flex-col min-h-0 space-y-4 pt-0">
         {hideHeader ? (
-          <div className="flex justify-end px-4 mb-2">
+          <div className="flex justify-end px-4">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold transition-all shadow-lg active:scale-[0.98] text-xs ${
                   isFilterOpen || Object.keys(filter).length > 0 
                     ? 'bg-indigo-600 text-white shadow-indigo-200' 
                     : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -134,7 +136,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
               {Object.keys(filter).length > 0 && (
                 <button 
                   onClick={clearFilters}
-                  className="p-2 text-gray-400 hover:text-rose-500 transition-colors"
+                  className="p-2.5 bg-white rounded-xl text-gray-400 hover:text-rose-500 transition-colors shadow-md border border-gray-100"
                   title="Clear all filters"
                 >
                   <X size={16} strokeWidth={3} />
@@ -175,7 +177,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
         )}
 
         {isFilterOpen && (
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-8 border border-white/50 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-8 border border-white/50 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500 shrink-0 mx-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -187,13 +189,13 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                     type="date"
                     value={filter.start_date || ''}
                     onChange={(e) => setFilter({ ...filter, start_date: e.target.value })}
-                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-50/20"
                   />
                   <input 
                     type="date"
                     value={filter.end_date || ''}
                     onChange={(e) => setFilter({ ...filter, end_date: e.target.value })}
-                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-50/20"
                   />
                 </div>
               </div>
@@ -206,7 +208,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                 <select 
                   value={filter.transaction_type || ''}
                   onChange={(e) => setFilter({ ...filter, transaction_type: e.target.value || undefined })}
-                  className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer"
+                  className="w-full bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-50/20 appearance-none cursor-pointer"
                 >
                   <option value="">All Types</option>
                   <option value="EXPENSE">Expense</option>
@@ -244,107 +246,112 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
         )}
 
         {loading ? (
-          <div className={`flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-xl rounded-[48px] border border-white/50 ${hideHeader ? 'h-[800px]' : ''}`}>
+          <div className="flex-1 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[48px] border border-white/50 m-4">
             <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
             <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching Ledger Data...</p>
           </div>
         ) : transactions.length === 0 ? (
-          <div className={`bg-white/50 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 flex flex-col items-center text-center justify-center ${hideHeader ? 'h-[800px]' : ''}`}>
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+          <div className="flex-1 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 text-center m-4">
+            <div className="w-20 h-20 bg-gray-100/50 rounded-full flex items-center justify-center mb-6">
               <Search size={32} className="text-gray-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No results found</h3>
             <p className="text-gray-400 max-w-xs">Adjust your filters to see more transaction data.</p>
           </div>
         ) : (
-          <div className={`bg-white/90 backdrop-blur-2xl rounded-[40px] border border-white/50 shadow-sm overflow-hidden flex flex-col ${hideHeader ? 'h-[800px]' : ''}`}>
-            <div className="overflow-x-auto overflow-y-auto flex-1">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-50">
-                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] min-w-[140px]">Date</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Type</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {transactions.map((t, index) => {
-                    const amount = Math.abs(parseFloat(t.amount));
-                    const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
-                                   (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
-                                   parseFloat(t.amount) < 0;
-                    const isMovement = ['DEPOSIT', 'WITHDRAWAL'].includes(t.transaction_type);
-                    const rate = isMovement ? 1 : (parseFloat(t.system_total_rate || '1') || 1);
-                    const systemAmount = amount * rate;
-                    const isLast = index === transactions.length - 1;
+          <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-3 custom-scrollbar min-h-0">
+            <div className="grid grid-cols-1 gap-3">
+              {transactions.map((t, index) => {
+                const amount = Math.abs(parseFloat(t.amount));
+                const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
+                               (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
+                               parseFloat(t.amount) < 0;
+                const isMovement = ['DEPOSIT', 'WITHDRAWAL'].includes(t.transaction_type);
+                const rate = isMovement ? 1 : (parseFloat(t.system_total_rate || '1') || 1);
+                const systemAmount = amount * rate;
+                const isLast = index === transactions.length - 1;
 
-                    return (
-                      <tr 
-                        key={t.id} 
-                        ref={isLast ? lastElementRef : undefined}
-                        className="hover:bg-gray-50/50 transition-colors group"
-                      >
-                        <td className="px-6 py-6">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
-                              {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                                {new Date(t.happened_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-6">
-                          <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${
-                            isDebit ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
-                          }`}>
-                            {t.transaction_type.replace('_', ' ')}
+                return (
+                  <div 
+                    key={t.id} 
+                    ref={isLast ? lastElementRef : undefined}
+                    className="bg-white/80 backdrop-blur-xl rounded-[24px] p-5 border border-white/60 shadow-sm hover:shadow-md transition-all duration-300 group flex items-center gap-5"
+                  >
+                    {/* Left: Type Icon/Badge */}
+                    <div className={`p-4 rounded-2xl shrink-0 shadow-sm ${
+                      t.transaction_type === 'TRANSFER' ? 'bg-indigo-50 text-indigo-500' :
+                      t.transaction_type === 'REIMBURSEMENT' ? 'bg-amber-50 text-amber-500' :
+                      isDebit ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'
+                    }`}>
+                      {t.transaction_type === 'TRANSFER' ? <ArrowRightLeft size={22} strokeWidth={2.5} /> :
+                       t.transaction_type === 'REIMBURSEMENT' ? <RotateCcw size={22} strokeWidth={2.5} /> :
+                       isDebit ? <ArrowDownLeft size={22} strokeWidth={2.5} /> : 
+                       <ArrowUpRight size={22} strokeWidth={2.5} />}
+                    </div>
+
+                    {/* Middle: Description & Meta */}
+                    <div className="flex-1 min-w-0 py-1">
+                      <div className="flex items-center gap-3 mb-1.5">
+                        <span className="text-base font-bold text-gray-900 truncate tracking-tight">
+                          {t.description || 'No description'}
+                        </span>
+                        <span className="px-2.5 py-1 bg-gray-100/80 text-gray-500 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap">
+                          {t.category || 'General'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400/40" />
+                          <span className="uppercase tracking-wider">
+                            {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
                           </span>
-                        </td>
-                        <td className="px-6 py-6">
-                          <span className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
-                            {t.category || 'General'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-6">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-700 min-w-[200px]">{t.description || 'No description'}</span>
-                            <span className="text-[10px] font-bold text-gray-300">
-                                Account: {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-6 text-right">
-                          <div className={`flex flex-col items-end ${isDebit ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            <div className="flex items-center gap-1.5 font-black text-lg tracking-tighter whitespace-nowrap">
-                              {isDebit ? <ArrowDownLeft size={16} strokeWidth={3} /> : <ArrowUpRight size={16} strokeWidth={3} />}
-                              {amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              <span className="text-xs ml-1">{t.currency}</span>
-                            </div>
-                            {rate !== 1 && (
-                                <span className="text-[9px] font-bold opacity-60 italic whitespace-nowrap">
-                                    (System: {systemAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
-                                </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {loadingMore && (
-                    <tr>
-                      <td colSpan={5} className="py-8">
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="animate-spin text-indigo-600" size={16} />
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading more...</span>
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                        <span className="text-gray-200 font-normal">|</span>
+                        <span className="tracking-tight">
+                          {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-gray-200" />
+                        <span className="tracking-tight">
+                          {new Date(t.happened_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: Amount & Type Label */}
+                    <div className="text-right flex flex-col items-end gap-1 px-2">
+                      <div className={`flex items-center gap-1 font-black text-xl tracking-tighter ${
+                        t.transaction_type === 'TRANSFER' ? 'text-indigo-600' :
+                        t.transaction_type === 'REIMBURSEMENT' ? 'text-amber-600' :
+                        isDebit ? 'text-rose-500' : 'text-emerald-500'
+                      }`}>
+                        {isDebit ? '-' : '+'}{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <span className="text-xs ml-0.5 font-bold">{t.currency}</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-end">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${
+                          t.transaction_type === 'TRANSFER' ? 'text-indigo-400' :
+                          t.transaction_type === 'REIMBURSEMENT' ? 'text-amber-400' :
+                          isDebit ? 'text-rose-400' : 'text-emerald-400'
+                        }`}>
+                          {t.transaction_type.replace('_', ' ')}
+                        </span>
+                        {rate !== 1 && (
+                          <span className="text-[9px] font-bold text-gray-300 italic mt-0.5">
+                            ≈ {systemAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {loadingMore && (
+                <div className="py-6 flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin text-indigo-600" size={16} />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading more...</span>
+                </div>
+              )}
             </div>
           </div>
         )}
