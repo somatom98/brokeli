@@ -79,7 +79,7 @@ WITH distributions AS (
     SELECT
         id,
         SUM(CASE WHEN transaction_type IN ('TRANSFER') THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY happened_at ASC, id ASC) as system_amount,
-        SUM(CASE WHEN transaction_type IN ('DEPOSIT', 'WITHDRAWAL', 'INCOME', 'EXPENSE') THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY happened_at ASC, id ASC) as other_amount
+        SUM(CASE WHEN transaction_type IN ('DEPOSIT', 'WITHDRAWAL') THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY happened_at ASC, id ASC) as other_amount
     FROM transactions
 )
 SELECT

@@ -148,7 +148,7 @@ export const api = {
     if (!res.ok) throw new Error('Failed to open account');
     return res.status;
   },
-  deposit: async (accountId: string, data: { currency: string, amount: string }) => {
+  deposit: async (accountId: string, data: { currency: string, amount: string, happened_at?: string }) => {
     const res = await fetch(`/api/accounts/${accountId}/deposits`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,7 +157,7 @@ export const api = {
     if (!res.ok) throw new Error('Failed to deposit');
     return res.status;
   },
-  withdraw: async (accountId: string, data: { currency: string, amount: string }) => {
+  withdraw: async (accountId: string, data: { currency: string, amount: string, happened_at?: string }) => {
     const res = await fetch(`/api/accounts/${accountId}/withdrawals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

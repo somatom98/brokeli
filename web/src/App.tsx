@@ -18,7 +18,9 @@ import {
   XCircle,
   Home,
   PieChart,
-  BarChart3
+  BarChart3,
+  Calendar,
+  Clock
   } from 'lucide-react';
   import { api } from './api';
   import type { Account } from './api';
@@ -28,6 +30,7 @@ import {
 
   const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(false);
@@ -45,6 +48,11 @@ import {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [happenedAtDateTime, setHappenedAtDateTime] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchAccounts = async () => {
@@ -65,8 +73,17 @@ import {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const cats = await api.getCategories();
+      setCategories(cats || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
   useEffect(() => {
-    fetchAccounts();
+    Promise.all([fetchAccounts(), fetchCategories()]);
   }, []);
 
   const themes = {
@@ -124,7 +141,8 @@ import {
     
     setIsSubmitting(true);
     try {
-      const happenedAt = new Date().toISOString();
+      const happenedAt = new Date(happenedAtDateTime).toISOString();
+      
       if (type === 'transfer') {
         await api.registerTransfer({
           from_account_id: accountId,
@@ -164,12 +182,14 @@ import {
       } else if (type === 'deposit') {
         await api.deposit(accountId, {
           currency,
-          amount
+          amount,
+          happened_at: happenedAt
         });
       } else if (type === 'withdraw') {
         await api.withdraw(accountId, {
           currency,
-          amount
+          amount,
+          happened_at: happenedAt
         });
       }
       setSuccess(true);
@@ -177,6 +197,12 @@ import {
       setCategory('');
       setDescription('');
       setAccountName('');
+      setHappenedAtDateTime(() => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+      });
+      fetchCategories();
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       setError(true);
@@ -340,8 +366,8 @@ import {
 
               {/* Currency Badges for openAccount */}
               {type === 'openAccount' && (
-                <div className="flex justify-center gap-2.5 mt-4">
-                  {['EUR', 'USD', 'GBP'].map(c => (
+                <div className="flex justify-center items-center gap-2.5 mt-4">
+                  {['EUR', 'DKK'].map(c => (
                     <button
                       key={c}
                       type="button"
@@ -355,6 +381,18 @@ import {
                       {c}
                     </button>
                   ))}
+                  <input 
+                    type="text" 
+                    placeholder="OTHER"
+                    maxLength={3}
+                    value={!['EUR', 'DKK'].includes(currency) ? currency : ''}
+                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                    className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border w-20 text-center outline-none ${
+                      !['EUR', 'DKK'].includes(currency) && currency !== ''
+                        ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
+                        : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                    }`}
+                  />
                 </div>
               )}
 
@@ -363,7 +401,7 @@ import {
                 <div className="text-center relative group/input">
                   <div className="flex items-center justify-center gap-3">
                     <span className={`text-4xl font-black transition-colors duration-500 ${theme.primary}`}>
-                       {currency === 'EUR' ? '€' : currency === 'USD' ? '$' : '£'}
+                       {currency === 'EUR' ? '€' : currency === 'DKK' ? 'kr' : currency}
                     </span>
                     <input 
                       type="number" 
@@ -378,8 +416,8 @@ import {
                   </div>
 
                   {/* Currency Badges */}
-                  <div className="flex justify-center gap-2.5 mt-4">
-                    {['EUR', 'USD', 'GBP'].map(c => (
+                  <div className="flex justify-center items-center gap-2.5 mt-4">
+                    {['EUR', 'DKK'].map(c => (
                       <button
                         key={c}
                         type="button"
@@ -388,11 +426,23 @@ import {
                           currency === c 
                             ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
                             : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                    <input 
+                      type="text" 
+                      placeholder="OTHER"
+                      maxLength={3}
+                      value={!['EUR', 'DKK'].includes(currency) ? currency : ''}
+                      onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all duration-500 border w-20 text-center outline-none ${
+                        !['EUR', 'DKK'].includes(currency) && currency !== ''
+                          ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
+                          : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
                       }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
+                    />
                   </div>
                 </div>
               )}
@@ -439,6 +489,24 @@ import {
                   </div>
                 )}
 
+                {/* Date & Time Selection */}
+                {type !== 'openAccount' && (
+                  <div className="relative">
+                    <div className="absolute left-5 top-3 flex items-center gap-2 pointer-events-none">
+                      <Calendar size={14} className="text-gray-300" />
+                      <Clock size={14} className="text-gray-300" />
+                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Date & Time</span>
+                    </div>
+                    <input 
+                      type="datetime-local" 
+                      required
+                      value={happenedAtDateTime} 
+                      onChange={(e) => setHappenedAtDateTime(e.target.value)}
+                      className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50"
+                    />
+                  </div>
+                )}
+
                 {/* Categorization (For Income, Expense, Transfer) */}
                 {(type === 'income' || type === 'expense' || type === 'transfer') && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -450,10 +518,16 @@ import {
                       <input 
                         type="text" 
                         placeholder="Shopping..."
+                        list="category-suggestions"
                         value={category} 
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full bg-gray-50/50 border-none rounded-[24px] px-5 pt-8 pb-3.5 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
                       />
+                      <datalist id="category-suggestions">
+                        {categories.map(cat => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
                     </div>
 
                     <div className="relative">
