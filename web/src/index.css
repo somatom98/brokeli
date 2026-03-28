@@ -119,3 +119,33 @@ body {
   width: 100%;
   min-height: 100dvh;
 }
+
+/* Better Mobile Experience */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+  .mesh-bg {
+    filter: blur(80px); /* Heavier blur on mobile for better text readability */
+  }
+}
+

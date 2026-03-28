@@ -277,14 +277,14 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                   <div 
                     key={t.id} 
                     ref={isLast ? lastElementRef : undefined}
-                    className={`bg-card rounded-[24px] p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group flex items-center gap-5 ${
+                    className={`bg-card rounded-[24px] p-4 lg:p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group flex items-center gap-3 lg:gap-5 ${
                         isDebit 
                           ? 'border-border-pearl' 
                           : 'border-primary/20'
                     }`}
                   >
                     {/* Left: Type Icon/Badge */}
-                    <div className={`p-4 rounded-2xl shrink-0 shadow-sm ${typeColorClasses}`}>
+                    <div className={`p-3 lg:p-4 rounded-2xl shrink-0 shadow-sm ${typeColorClasses}`}>
                       {t.transaction_type === 'TRANSFER' ? <ArrowRightLeft size={22} strokeWidth={2.5} /> :
                        t.transaction_type === 'REIMBURSEMENT' ? <RotateCcw size={22} strokeWidth={2.5} /> :
                        t.transaction_type === 'WITHDRAWAL' ? <ArrowDownLeft size={22} strokeWidth={2.5} /> :
@@ -295,11 +295,11 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
 
                     {/* Middle: Description & Meta */}
                     <div className="flex-1 min-w-0 py-1">
-                      <div className="flex items-center gap-3 mb-1.5">
-                        <span className={`text-base font-bold truncate tracking-tight text-text-main`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1.5">
+                        <span className={`text-sm lg:text-base font-bold line-clamp-2 tracking-tight text-text-main`}>
                           {t.description || 'No description'}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap ${typeColorClasses.replace('bg-accent/20', 'bg-accent/10').replace('bg-negative/20', 'bg-negative/10').replace('bg-primary/20', 'bg-primary/10').replace('bg-neutral/20', 'bg-neutral/10')}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap w-fit ${typeColorClasses.replace('bg-accent/20', 'bg-accent/10').replace('bg-negative/20', 'bg-negative/10').replace('bg-primary/20', 'bg-primary/10').replace('bg-neutral/20', 'bg-neutral/10')}`}>
                           {t.category || 'General'}
                         </span>
                       </div>
@@ -322,8 +322,8 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                     </div>
 
                     {/* Right: Amount & Type Label */}
-                    <div className="text-right flex flex-col items-end gap-1 px-2">
-                      <div className={`flex items-center gap-1 font-black text-xl tracking-tighter ${
+                    <div className="text-right flex flex-col items-end gap-1 px-2 shrink-0">
+                      <div className={`flex items-center gap-1 font-black text-lg lg:text-xl tracking-tighter ${
                         t.transaction_type === 'TRANSFER' ? 'text-neutral' :
                         t.transaction_type === 'REIMBURSEMENT' ? 'text-primary' :
                         t.transaction_type === 'WITHDRAWAL' ? 'text-neutral' :

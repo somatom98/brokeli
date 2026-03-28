@@ -221,7 +221,7 @@ import {
   );
 
   return (
-    <div className="h-screen w-full relative flex flex-col overflow-hidden antialiased bg-transparent text-text-main">
+    <div className="min-h-screen lg:h-screen w-full relative flex flex-col lg:overflow-hidden antialiased bg-transparent text-text-main">
       
       {/* Animated Mesh Background */}
       <div className={`fixed inset-0 z-0 mesh-bg bg-gradient-to-tr ${theme.mesh} transition-colors duration-1000`} />
@@ -298,12 +298,12 @@ import {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full relative z-10 overflow-hidden bg-transparent">
+      <main className="flex-1 w-full relative z-10 lg:overflow-hidden bg-transparent">
         {currentView === 'home' ? (
-          <div className="w-full h-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-12 transition-all duration-500 animate-in fade-in zoom-in-100 duration-1000 px-6 pb-6 lg:px-10 lg:pb-10 pt-2 lg:pt-2">
+          <div className="w-full h-auto lg:h-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-stretch justify-start lg:justify-center gap-8 lg:gap-12 transition-all duration-500 animate-in fade-in zoom-in-100 duration-1000 px-6 pb-10 lg:px-10 lg:pb-10 pt-20 lg:pt-4">
             <div className="w-full lg:w-[440px] flex flex-col shrink-0 min-h-0">
               {/* Alignment Spacer: Matches Transactions Filter height + gap */}
-              <div className="h-[54px] shrink-0" />
+              <div className="h-[54px] shrink-0 hidden lg:block" />
               
               {/* Main Panel Content (WHITE CARD) */}
               <div className="bg-card rounded-[40px] shadow-sm hover:shadow-xl border border-border-pearl p-8 relative overflow-hidden group flex flex-col flex-1 min-h-0 transition-all duration-300">
@@ -548,18 +548,18 @@ import {
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 h-full">
+            <div className="flex-1 min-w-0 h-auto lg:h-full">
               <Transactions refreshKey={transactionsRefreshKey} hideHeader />
             </div>
           </div>
         ) : currentView === 'balances' ? (
-          <div className="w-full h-full overflow-y-auto custom-scrollbar pt-16">
+          <div className="w-full h-auto lg:h-full overflow-y-auto custom-scrollbar pt-20 lg:pt-16">
             <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
               <Balances />
             </div>
           </div>
         ) : (
-          <div className="w-full h-full overflow-y-auto custom-scrollbar pt-16">
+          <div className="w-full h-auto lg:h-full overflow-y-auto custom-scrollbar pt-20 lg:pt-16">
             <div className="w-full relative z-10 animate-in fade-in zoom-in-95 duration-500">
               <Budget />
             </div>
