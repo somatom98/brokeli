@@ -1,6 +1,9 @@
 # Brøkeli
 
-![Logo](https://github.com/user-attachments/assets/84d1a33c-d30c-4727-bb97-c1da0976bd9e)
+<p align="left">
+  <img src="web/src/assets/BrokeliLogo.png" height="100" alt="Brøkeli Logo">
+  <img src="web/src/assets/BrokeliText.png" height="55" alt="Brøkeli Text">
+</p>
 
 Grow Your Green, Smartly
 

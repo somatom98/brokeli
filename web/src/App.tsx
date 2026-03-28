@@ -26,6 +26,8 @@ import {
   import Budget from './Budget';
   import Transactions from './Transactions';
   import Balances from './Balances';
+  import BrokeliText from './assets/BrokeliText.png';
+  import BrokeliLogo from './assets/BrokeliLogo.png';
 
   const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -252,7 +254,10 @@ import {
         } flex flex-col border-r border-glass-border`}
       >
         <div className="p-8 flex justify-between items-center border-b border-glass-border">
-          <h2 className="text-2xl font-black text-text-on-dark tracking-tighter">Brøkeli</h2>
+          <div className="flex items-center gap-4">
+            <img src={BrokeliLogo} alt="Logo" className="h-14 w-auto object-contain" />
+            <img src={BrokeliText} alt="Brøkeli" className="h-8 w-auto object-contain mt-1" />
+          </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
             className="p-2 bg-glass-dark rounded-full hover:bg-glass-dark-hover transition-colors text-text-on-dark"
