@@ -1,11 +1,110 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  /* Semantic Brand Palette */
+  --color-primary: #32CD32;
+  --color-secondary: #228B22;
+  --color-accent: #408a27;    /* Rich Green */
+  --color-accent-secondary: #F4B528;
+  --color-accent-bg: rgba(64, 138, 39, 0.1);
+  --color-accent-border: rgba(64, 138, 39, 0.2);
+  --color-neutral: #FFD700;   /* Original Yellow */
+  --color-negative: #FF5733;  /* Vivid Persimmon (Orangy Red) */
+  
+  /* Layout Surfaces */
+  --color-app-bg: #bcd665;        /* Fresh Sage */
+  --color-card: #ffffff;        /* Pure White for cards */
+  --color-card-muted: #f9fafb;  /* Very Light Gray */
+  --color-social-bg: rgba(0, 0, 0, 0.05);
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-glass: rgba(255, 255, 255, 0.1);
+  --color-glass-hover: rgba(255, 255, 255, 0.2);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-dark: rgba(0, 0, 0, 0.05);
+  --color-glass-dark-hover: rgba(0, 0, 0, 0.1);
+  
+  /* Typography */
+  --color-text-main: #000000;   /* Black */
+  --color-text-muted: #6c757d;  /* Muted Gray */
+  --color-text-h: #000000;      /* Header Text */
+  --color-text-on-dark: #000000;
+  
+  /* Borders & Dividers */
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-border-pearl: rgba(0, 0, 0, 0.1);
+  --color-border-forest: rgba(0, 0, 0, 0.1);
+
+  /* Effects */
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* Chart Palette */
+  --color-chart-1: #2D5A27;
+  --color-chart-2: #4A7C44;
+  --color-chart-3: #6B9E65;
+  --color-chart-4: #8DBF88;
+  --color-chart-5: #B0E0AC;
+  --color-chart-6: #D2FFD0;
+  --color-chart-7: #1B3D17;
+  --color-chart-8: #385F33;
+  --color-chart-9: #568150;
+  --color-chart-10: #73A46E;
+  --color-chart-11: #91C78D;
+  --color-chart-12: #AFE9AD;
+  --color-chart-others: #43783a;
+
   line-height: 1.5;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
-  color: #1a1d1f;
+  color: var(--color-text-main);
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-accent-secondary: var(--color-accent-secondary);
+  --color-accent-bg: var(--color-accent-bg);
+  --color-accent-border: var(--color-accent-border);
+  --color-neutral: var(--color-neutral);
+  --color-negative: var(--color-negative);
+  
+  --color-app-bg: var(--color-app-bg);
+  --color-card: var(--color-card);
+  --color-card-muted: var(--color-card-muted);
+  --color-social-bg: var(--color-social-bg);
+  --color-overlay: var(--color-overlay);
+  --color-glass: var(--color-glass);
+  --color-glass-hover: var(--color-glass-hover);
+  --color-glass-border: var(--color-glass-border);
+  --color-glass-dark: var(--color-glass-dark);
+  --color-glass-dark-hover: var(--color-glass-dark-hover);
+  
+  --color-text-main: var(--color-text-main);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-h: var(--color-text-h);
+  --color-text-on-dark: var(--color-text-on-dark);
+  
+  --color-border: var(--color-border);
+  --color-border-pearl: var(--color-border-pearl);
+  --color-border-forest: var(--color-border-forest);
+
+  --shadow: var(--shadow);
+
+  --color-chart-1: var(--color-chart-1);
+  --color-chart-2: var(--color-chart-2);
+  --color-chart-3: var(--color-chart-3);
+  --color-chart-4: var(--color-chart-4);
+  --color-chart-5: var(--color-chart-5);
+  --color-chart-6: var(--color-chart-6);
+  --color-chart-7: var(--color-chart-7);
+  --color-chart-8: var(--color-chart-8);
+  --color-chart-9: var(--color-chart-9);
+  --color-chart-10: var(--color-chart-10);
+  --color-chart-11: var(--color-chart-11);
+  --color-chart-12: var(--color-chart-12);
+  --color-chart-others: var(--color-chart-others);
+  
+  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
 }
 
 body {
@@ -13,29 +112,10 @@ body {
   padding: 0;
   min-height: 100dvh;
   overflow-y: auto;
-  background-color: #f8fafc;
+  background-color: var(--color-app-bg);
 }
 
 #root {
   width: 100%;
   min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@keyframes mesh {
-  0% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(2%, 5%) scale(1.1); }
-  66% { transform: translate(-3%, 2%) scale(0.9); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-
-.mesh-bg {
-  position: fixed;
-  inset: -50%;
-  filter: blur(60px);
-  opacity: 0.8;
-  animation: mesh 15s ease-in-out infinite alternate;
-  pointer-events: none;
 }

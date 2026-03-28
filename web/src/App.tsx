@@ -88,46 +88,46 @@ import {
 
   const themes = {
     expense: {
-      primary: 'text-rose-500',
-      bg: 'bg-rose-500/10',
-      btn: 'bg-rose-500 hover:bg-rose-600 shadow-rose-200',
-      mesh: 'from-rose-400 via-orange-300 to-amber-200',
-      tab: 'text-rose-600 bg-white/90 shadow-rose-200/50'
+      primary: 'text-negative',
+      bg: 'bg-negative/10',
+      btn: 'bg-negative hover:bg-negative/90 shadow-negative/20',
+      mesh: 'from-negative/5 via-app-bg to-app-bg',
+      tab: 'text-negative bg-card/90 shadow-negative/10'
     },
     income: {
-      primary: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
-      btn: 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200',
-      mesh: 'from-emerald-400 via-teal-300 to-sky-300',
-      tab: 'text-emerald-600 bg-white/90 shadow-emerald-200/50'
+      primary: 'text-primary',
+      bg: 'bg-primary/10',
+      btn: 'bg-primary hover:bg-primary/90 shadow-primary/20',
+      mesh: 'from-primary/5 via-app-bg to-app-bg',
+      tab: 'text-primary bg-card/90 shadow-primary/10'
     },
     transfer: {
-      primary: 'text-indigo-500',
-      bg: 'bg-indigo-500/10',
-      btn: 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-200',
-      mesh: 'from-indigo-400 via-violet-300 to-purple-300',
-      tab: 'text-indigo-600 bg-white/90 shadow-indigo-200/50'
+      primary: 'text-neutral',
+      bg: 'bg-neutral/10',
+      btn: 'bg-neutral hover:bg-neutral/90 shadow-neutral/20',
+      mesh: 'from-neutral/5 via-app-bg to-app-bg',
+      tab: 'text-neutral bg-card/90 shadow-neutral/10'
     },
     openAccount: {
-      primary: 'text-blue-500',
-      bg: 'bg-blue-500/10',
-      btn: 'bg-blue-500 hover:bg-blue-600 shadow-blue-200',
-      mesh: 'from-blue-400 via-cyan-300 to-teal-200',
-      tab: 'text-blue-600 bg-white/90 shadow-blue-200/50'
+      primary: 'text-accent',
+      bg: 'bg-accent/10',
+      btn: 'bg-accent hover:bg-accent/90 shadow-accent/20',
+      mesh: 'from-accent/5 via-app-bg to-app-bg',
+      tab: 'text-accent bg-card/90 shadow-accent/10'
     },
     deposit: {
-      primary: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
-      btn: 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200',
-      mesh: 'from-emerald-400 via-teal-300 to-sky-300',
-      tab: 'text-emerald-600 bg-white/90 shadow-emerald-200/50'
+      primary: 'text-neutral',
+      bg: 'bg-neutral/10',
+      btn: 'bg-neutral hover:bg-neutral/90 shadow-neutral/20',
+      mesh: 'from-neutral/5 via-app-bg to-app-bg',
+      tab: 'text-neutral bg-card/90 shadow-neutral/10'
     },
     withdraw: {
-      primary: 'text-rose-500',
-      bg: 'bg-rose-500/10',
-      btn: 'bg-rose-500 hover:bg-rose-600 shadow-rose-200',
-      mesh: 'from-rose-400 via-orange-300 to-amber-200',
-      tab: 'text-rose-600 bg-white/90 shadow-rose-200/50'
+      primary: 'text-neutral',
+      bg: 'bg-neutral/10',
+      btn: 'bg-neutral hover:bg-neutral/90 shadow-neutral/20',
+      mesh: 'from-neutral/5 via-app-bg to-app-bg',
+      tab: 'text-neutral bg-card/90 shadow-neutral/10'
     }
   };
 
@@ -215,22 +215,22 @@ import {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white w-full">
-      <Loader2 className="animate-spin text-gray-300" size={48} strokeWidth={1} />
+    <div className="min-h-screen flex items-center justify-center bg-app-bg w-full">
+      <Loader2 className="animate-spin text-text-muted/20" size={48} strokeWidth={1} />
     </div>
   );
 
   return (
-    <div className="h-screen w-full relative flex flex-col overflow-hidden antialiased bg-gray-50/50">
+    <div className="h-screen w-full relative flex flex-col overflow-hidden antialiased bg-transparent text-text-main">
       
       {/* Animated Mesh Background */}
-      <div className={`fixed inset-0 z-0 mesh-bg bg-gradient-to-tr ${theme.mesh} transition-colors duration-1000 opacity-60`} />
+      <div className={`fixed inset-0 z-0 mesh-bg bg-gradient-to-tr ${theme.mesh} transition-colors duration-1000`} />
 
       {/* Top Navigation Bar */}
       <div className="fixed top-4 left-4 z-30">
         <button 
           onClick={() => setIsSidebarOpen(true)}
-          className="p-2.5 bg-white/70 backdrop-blur-xl rounded-xl shadow-lg hover:bg-white transition-all text-gray-800 border border-white/40 active:scale-95"
+          className="p-2.5 bg-glass backdrop-blur-xl rounded-xl shadow-lg hover:bg-glass-hover transition-all text-text-on-dark border border-glass-border active:scale-95"
           title="Menu"
         >
           <Menu size={18} strokeWidth={2.5} />
@@ -240,22 +240,22 @@ import {
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+          className="fixed inset-0 bg-transparent z-40 transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div 
-        className={`fixed top-0 left-0 h-full w-80 bg-white/95 backdrop-blur-2xl shadow-2xl z-50 transform transition-transform duration-500 ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-80 bg-glass backdrop-blur-xl shadow-2xl z-50 transform transition-transform duration-500 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col`}
+        } flex flex-col border-r border-glass-border`}
       >
-        <div className="p-8 flex justify-between items-center border-b border-gray-100">
-          <h2 className="text-2xl font-black text-gray-900 tracking-tighter">Brøkeli</h2>
+        <div className="p-8 flex justify-between items-center border-b border-glass-border">
+          <h2 className="text-2xl font-black text-text-on-dark tracking-tighter">Brøkeli</h2>
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="p-2 bg-gray-100/50 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
+            className="p-2 bg-glass-dark rounded-full hover:bg-glass-dark-hover transition-colors text-text-on-dark"
           >
             <X size={20} strokeWidth={2.5} />
           </button>
@@ -263,83 +263,83 @@ import {
         <div className="flex-1 p-6 space-y-2">
           <button
             onClick={() => { setCurrentView('home'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-[20px] transition-all font-black uppercase tracking-[0.2em] text-[10px] group border ${
               currentView === 'home' 
-                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-accent/20 backdrop-blur-md text-text-on-dark border-accent/30 shadow-lg scale-[1.02]' 
+                : 'text-text-on-dark border-transparent hover:bg-glass-dark-hover hover:scale-[1.02]'
             }`}
           >
-            <Home size={20} strokeWidth={2.5} />
+            <Home size={18} strokeWidth={3} />
             <span>Ledger</span>
           </button>
           <button
             onClick={() => { setCurrentView('balances'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-[20px] transition-all font-black uppercase tracking-[0.2em] text-[10px] group border ${
               currentView === 'balances' 
-                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-accent/20 backdrop-blur-md text-text-on-dark border-accent/30 shadow-lg scale-[1.02]' 
+                : 'text-text-on-dark border-transparent hover:bg-glass-dark-hover hover:scale-[1.02]'
             }`}
           >
-            <BarChart3 size={20} strokeWidth={2.5} />
+            <PieChart size={18} strokeWidth={3} />
             <span>Balances</span>
           </button>
           <button
             onClick={() => { setCurrentView('budget'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold ${
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-[20px] transition-all font-black uppercase tracking-[0.2em] text-[10px] group border ${
               currentView === 'budget' 
-                ? 'bg-gray-900 text-white shadow-xl scale-[1.02]' 
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-accent/20 backdrop-blur-md text-text-on-dark border-accent/30 shadow-lg scale-[1.02]' 
+                : 'text-text-on-dark border-transparent hover:bg-glass-dark-hover hover:scale-[1.02]'
             }`}
           >
-            <PieChart size={20} strokeWidth={2.5} />
+            <BarChart3 size={18} strokeWidth={3} />
             <span>Budget</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full relative z-10 overflow-hidden">
+      <main className="flex-1 w-full relative z-10 overflow-hidden bg-transparent">
         {currentView === 'home' ? (
           <div className="w-full h-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-12 transition-all duration-500 animate-in fade-in zoom-in-100 duration-1000 px-6 pb-6 lg:px-10 lg:pb-10 pt-2 lg:pt-2">
             <div className="w-full lg:w-[440px] flex flex-col shrink-0 min-h-0">
               {/* Alignment Spacer: Matches Transactions Filter height + gap */}
               <div className="h-[54px] shrink-0" />
               
-              {/* Main Panel Content */}
-              <div className="bg-white/80 backdrop-blur-3xl rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] border border-white/60 p-8 relative overflow-hidden group flex flex-col flex-1 min-h-0">
+              {/* Main Panel Content (WHITE CARD) */}
+              <div className="bg-card rounded-[40px] shadow-sm hover:shadow-xl border border-border-pearl p-8 relative overflow-hidden group flex flex-col flex-1 min-h-0 transition-all duration-300">
                 
                 {/* Success Overlay */}
-                <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-white/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-                   <div className={`w-20 h-20 ${theme.btn} text-white rounded-full flex items-center justify-center mb-4 shadow-2xl animate-bounce`}>
+                <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-app-bg/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+                   <div className="w-20 h-20 bg-primary text-white rounded-full flex items-center justify-center mb-4 shadow-2xl animate-bounce">
                      <Check size={40} strokeWidth={4} />
                    </div>
-                   <h3 className="text-3xl font-black text-gray-900 tracking-tight">Saved!</h3>
+                   <h3 className="text-3xl font-black text-text-main tracking-tight">Saved!</h3>
                 </div>
 
+
                 {/* Error Overlay */}
-                <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-                   <div className={`w-20 h-20 bg-rose-500 text-white rounded-full flex items-center justify-center mb-4 shadow-2xl animate-bounce`}>
+                <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-app-bg/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+                   <div className="w-20 h-20 bg-negative text-white rounded-full flex items-center justify-center mb-4 shadow-2xl animate-bounce">
                      <XCircle size={40} strokeWidth={4} />
                    </div>
-                   <h3 className="text-3xl font-black text-gray-900 tracking-tight text-center px-6">Error</h3>
-                   <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-[10px] text-center px-10 leading-relaxed">{errorMessage}</p>
+                   <h3 className="text-3xl font-black text-text-main tracking-tight text-center px-6">Error</h3>
+                   <p className="text-negative font-bold mt-2 uppercase tracking-widest text-[10px] text-center px-10 leading-relaxed">{errorMessage}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
                   
                   {/* Type Selector (TABS) */}
-                  <div className="grid grid-cols-3 p-1 bg-gray-100/80 rounded-[24px] gap-1 shadow-inner shrink-0">
+                  <div className="grid grid-cols-3 p-1 bg-card-muted rounded-[24px] gap-1 shadow-inner shrink-0">
                     {(['expense', 'income', 'transfer', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setType(t)}
                         className={`flex flex-col items-center py-3 rounded-[20px] transition-all duration-500 ease-out ${
-                          type === t 
-                            ? `${theme.tab} scale-[1.02] shadow-lg` 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
+                          type === t
+                            ? `text-accent scale-[1.05]`
+                            : 'text-text-muted hover:text-text-main'
+                        }`}                      >
                         {t === 'expense' && <ArrowDownLeft size={18} strokeWidth={2.5} />}
                         {t === 'income' && <ArrowUpRight size={18} strokeWidth={2.5} />}
                         {t === 'transfer' && <ArrowRightLeft size={18} strokeWidth={2.5} />}
@@ -363,8 +363,8 @@ import {
                           onClick={() => setCurrency(c)}
                           className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
                             currency === c 
-                              ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
-                              : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                              ? `bg-accent/10 text-accent border-accent/20 scale-105` 
+                              : 'bg-transparent text-text-muted/30 border-border-pearl hover:border-text-muted/20'
                           }`}
                         >
                           {c}
@@ -377,7 +377,7 @@ import {
                   {type !== 'openAccount' && (
                     <div className="text-center relative group/input">
                       <div className="flex items-center justify-center gap-2">
-                        <span className={`text-3xl font-black transition-colors duration-500 ${theme.primary}`}>
+                        <span className={`text-3xl font-black transition-colors duration-500 text-accent-secondary`}>
                            {currency === 'EUR' ? '€' : currency === 'DKK' ? 'kr' : currency}
                         </span>
                         <input 
@@ -387,8 +387,7 @@ import {
                           placeholder="0.00"
                           value={amount} 
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full max-w-[160px] text-center text-6xl font-black outline-none bg-transparent placeholder:text-gray-100 transition-all caret-indigo-500"
-                          style={{ color: '#111827' }}
+                          className="w-full max-w-[160px] text-center text-6xl font-black outline-none bg-transparent placeholder:text-border-pearl transition-all caret-accent text-text-main"
                         />
                       </div>
 
@@ -401,8 +400,8 @@ import {
                             onClick={() => setCurrency(c)}
                             className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
                               currency === c 
-                                ? `${theme.bg} ${theme.primary} border-transparent scale-105` 
-                                : 'bg-transparent text-gray-300 border-gray-100 hover:border-gray-200'
+                                ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                : 'bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20'
                             }`}
                           >
                             {c}
@@ -420,35 +419,35 @@ import {
                       <div className="flex flex-col gap-2">
                         <div className="relative group/field">
                           <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                            <Banknote size={12} className="text-gray-300" />
-                            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
+                            <Banknote size={12} className="text-text-muted/40" />
+                            <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">
                               {type === 'transfer' ? 'From' : 'Account'}
                             </span>
                           </div>
                           <select 
                             value={accountId}
                             onChange={(e) => setAccountId(e.target.value)}
-                            className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
+                            className="w-full bg-card-muted hover:bg-border-pearl border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-accent/5 text-text-main"
                           >
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                           </select>
-                          <ChevronDown size={16} className="absolute right-4 bottom-3.5 text-gray-300 pointer-events-none" />
+                          <ChevronDown size={16} className="absolute right-4 bottom-3.5 text-text-muted/40 pointer-events-none" />
                         </div>
 
                         {type === 'transfer' && (
                           <div className="relative animate-in slide-in-from-top-2 duration-500">
                             <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                              <ArrowRightLeft size={12} className="text-gray-300" />
-                              <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">To</span>
+                              <ArrowRightLeft size={12} className="text-text-muted/40" />
+                              <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">To</span>
                             </div>
                             <select 
                               value={toAccountId}
                               onChange={(e) => setToAccountId(e.target.value)}
-                              className="w-full bg-gray-50/50 hover:bg-gray-100 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-indigo-50"
+                              className="w-full bg-card-muted hover:bg-border-pearl border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold appearance-none outline-none transition-all cursor-pointer focus:ring-4 focus:ring-accent/5 text-text-main"
                             >
                               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                             </select>
-                            <ChevronDown size={16} className="absolute right-4 bottom-3.5 text-gray-300 pointer-events-none" />
+                            <ChevronDown size={16} className="absolute right-4 bottom-3.5 text-text-muted/40 pointer-events-none" />
                           </div>
                         )}
                       </div>
@@ -458,15 +457,15 @@ import {
                     {type !== 'openAccount' && (
                       <div className="relative">
                         <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                          <Calendar size={12} className="text-gray-300" />
-                          <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Date & Time</span>
+                          <Calendar size={12} className="text-text-muted/40" />
+                          <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Date & Time</span>
                         </div>
                         <input 
                           type="datetime-local" 
                           required
                           value={happenedAtDateTime} 
                           onChange={(e) => setHappenedAtDateTime(e.target.value)}
-                          className="w-full bg-gray-50/50 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50"
+                          className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main"
                         />
                       </div>
                     )}
@@ -476,8 +475,8 @@ import {
                       <div className="grid grid-cols-1 gap-2">
                         <div className="relative">
                           <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                            <Tag size={12} className="text-gray-300" />
-                            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Category</span>
+                            <Tag size={12} className="text-text-muted/40" />
+                            <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Category</span>
                           </div>
                           <input 
                             type="text" 
@@ -485,7 +484,7 @@ import {
                             list="category-suggestions"
                             value={category} 
                             onChange={(e) => setCategory(e.target.value)}
-                            className="w-full bg-gray-50/50 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                            className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main placeholder:text-text-muted/20"
                           />
                           <datalist id="category-suggestions">
                             {categories.map(cat => (
@@ -496,15 +495,15 @@ import {
 
                         <div className="relative">
                           <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                            <AlignLeft size={12} className="text-gray-300" />
-                            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Note</span>
+                            <AlignLeft size={12} className="text-text-muted/40" />
+                            <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Note</span>
                           </div>
                           <input 
                             type="text" 
                             placeholder="Brief note"
                             value={description} 
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-gray-50/50 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                            className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main placeholder:text-text-muted/20"
                           />
                         </div>
                       </div>
@@ -514,8 +513,8 @@ import {
                     {type === 'openAccount' && (
                       <div className="relative group/field">
                         <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
-                          <Tag size={12} className="text-gray-300" />
-                          <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Account Name</span>
+                          <Tag size={12} className="text-text-muted/40" />
+                          <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Account Name</span>
                         </div>
                         <input 
                           type="text" 
@@ -523,7 +522,7 @@ import {
                           placeholder="e.g. Main Wallet"
                           value={accountName} 
                           onChange={(e) => setAccountName(e.target.value)}
-                          className="w-full bg-gray-50/50 border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-200"
+                          className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main placeholder:text-text-muted/20"
                         />
                       </div>
                     )}
@@ -534,7 +533,7 @@ import {
                   <button 
                     type="submit" 
                     disabled={isSubmitting || (type !== 'openAccount' && !amount) || (type === 'openAccount' && !accountName)}
-                    className={`w-full ${theme.btn} text-white font-black py-5 rounded-[28px] transition-all duration-500 shadow-2xl active:scale-95 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.3em] disabled:bg-gray-200 disabled:shadow-none shrink-0`}
+                    className={`w-full bg-accent text-white font-black py-5 rounded-[28px] transition-all duration-500 shadow-2xl shadow-accent/20 hover:bg-accent/90 active:scale-95 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.3em] disabled:bg-card-muted disabled:text-text-muted/20 disabled:shadow-none shrink-0`}
                   >
                     {isSubmitting ? (
                       <Loader2 className="animate-spin" size={18} strokeWidth={4} />

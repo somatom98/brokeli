@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Trash2, X, PlusCircle, Save, Check, Loader2, ChevronLeft, Layout, XCircle, Pencil, ChevronDown, ChevronRight, Calendar } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -7,6 +7,7 @@ import { api } from './api';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 import type { Account, Transaction, TransactionFilter, BudgetItem, BudgetData } from './api';
+import { getCSSVariableValue } from './utils/colors';
 
 // Fallback for crypto.randomUUID() if not in a secure context
 const generateId = () => {
@@ -18,10 +19,10 @@ const generateId = () => {
 };
 
 const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account[] }> = ({ transactions, accounts }) => {
-  if (transactions.length === 0) return <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest py-4 px-2 italic">No transactions</div>;
+  if (transactions.length === 0) return <div className="text-[10px] font-bold text-text-muted/40 uppercase tracking-widest py-4 px-2 italic">No transactions</div>;
   
   return (
-    <div className="mt-4 border-t border-gray-50 pt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className="mt-4 border-t border-border-pearl pt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
       {transactions.map((t) => {
         const amount = Math.abs(parseFloat(t.amount));
         const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
@@ -31,21 +32,21 @@ const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account
         const systemAmount = amount * rate;
         
         return (
-          <div key={t.id} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-xl transition-colors">
+          <div key={t.id} className="flex items-center justify-between py-2 px-3 hover:bg-card-muted rounded-xl transition-colors">
             <div className="flex flex-col">
-              <span className="text-[11px] font-bold text-gray-900 leading-tight">
+              <span className="text-[11px] font-bold text-text-main leading-tight">
                 {t.description || t.category || 'Transaction'}
               </span>
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+              <span className="text-[9px] font-bold text-text-muted/40 uppercase tracking-tighter">
                 {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
               </span>
             </div>
-            <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${isDebit ? 'text-rose-500' : 'text-emerald-500'}`}>
+            <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${!isDebit ? 'text-accent-secondary' : 'text-black'}`}>
               {isDebit ? '-' : '+'}
               {amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               <span className="text-[8px] opacity-70 ml-0.5">{t.currency}</span>
               {rate !== 1 && (
-                <span className="text-[9px] text-gray-400 font-bold ml-1 italic opacity-60">
+                <span className="text-[9px] text-text-muted/60 font-bold ml-1 italic">
                   (System: {systemAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {t.currency})
                 </span>
               )}
@@ -79,6 +80,18 @@ const Budget: React.FC = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  const monthInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMonthClick = () => {
+    if (monthInputRef.current) {
+      try {
+        monthInputRef.current.showPicker();
+      } catch {
+        monthInputRef.current.click();
+      }
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
@@ -297,52 +310,52 @@ const Budget: React.FC = () => {
   }, [selectedBudget, transactions, selectedMonth]);
 
   const renderBudgetItemRow = (item: ProcessedBudgetItem, id: string) => (
-    <div key={id} className="space-y-3 p-4 hover:bg-gray-50/50 rounded-3xl transition-colors cursor-pointer group/item" onClick={() => toggleSection(id)}>
+    <div key={id} className="space-y-3 p-4 hover:bg-card-muted rounded-3xl transition-colors cursor-pointer group/item" onClick={() => toggleSection(id)}>
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-gray-800">{item.name}</span>
-            {expandedSections.includes(id) ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-300 group-hover/item:text-indigo-400 transition-colors" />}
+            <span className="text-xl font-bold text-text-main">{item.name}</span>
+            {expandedSections.includes(id) ? <ChevronDown size={16} className="text-text-muted/40" /> : <ChevronRight size={16} className="text-text-muted/20 group-hover/item:text-accent transition-colors" />}
           </div>
           {item.categories && item.categories.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {item.categories.slice(0, 3).map((c: string) => (
-                <span key={c} className="text-[8px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{c}</span>
+                <span key={c} className="text-[8px] font-bold bg-card-muted text-text-muted/40 px-2 py-0.5 rounded-full uppercase tracking-wider border border-border-pearl">{c}</span>
               ))}
               {item.categories.length > 3 && (
-                  <span className="text-[8px] font-bold text-gray-400 px-1 py-0.5 uppercase tracking-wider">+{item.categories.length - 3} more</span>
+                  <span className="text-[8px] font-bold text-text-muted/20 px-1 py-0.5 uppercase tracking-wider">+{item.categories.length - 3} more</span>
               )}
             </div>
           )}
         </div>
         <div className="text-right flex flex-col items-end gap-3">
           <div className="flex flex-col items-end">
-            <div className="text-lg font-bold text-gray-900">{item.actualSpent?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            <div className={`text-[10px] font-bold uppercase tracking-widest ${item.actualPercentage > item.percentage ? 'text-rose-500' : 'text-indigo-500'}`}>
+            <div className={`text-lg font-bold ${(item.actualSpent ?? 0) < 0 ? 'text-accent-secondary' : 'text-black'}`}>{item.actualSpent?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-widest ${item.actualPercentage > item.percentage ? 'text-accent-secondary' : 'text-text-muted/40'}`}>
               {item.actualPercentage?.toFixed(1)}% vs {item.percentage}%
             </div>
           </div>
           
-          <div className="flex gap-4 border-t border-gray-50 pt-2">
+          <div className="flex gap-4 border-t border-border-pearl pt-2">
             <div className="flex flex-col items-end">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Prev. Month</span>
-              <span className={`text-[10px] font-bold ${(item.prevMonthPercentage ?? 0) > item.percentage ? 'text-rose-300' : 'text-gray-500'}`}>{item.prevMonthPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+              <span className="text-[7px] font-black text-text-muted/20 uppercase tracking-widest">Prev. Month</span>
+              <span className={`text-[10px] font-bold ${(item.prevMonthPercentage ?? 0) > item.percentage ? 'text-accent-secondary' : 'text-text-muted/40'}`}>{item.prevMonthPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">12M Avg</span>
-              <span className={`text-[10px] font-bold ${(item.avg12MonthsPercentage ?? 0) > item.percentage ? 'text-rose-300' : 'text-gray-500'}`}>{item.avg12MonthsPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
+              <span className="text-[7px] font-black text-text-muted/20 uppercase tracking-widest">12M Avg</span>
+              <span className={`text-[10px] font-bold ${(item.avg12MonthsPercentage ?? 0) > item.percentage ? 'text-accent-secondary' : 'text-text-muted/40'}`}>{item.avg12MonthsPercentage?.toFixed(1)}% <span className="text-[8px] font-normal opacity-50">inc</span></span>
             </div>
           </div>
         </div>
       </div>
-      <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex relative">
+      <div className="h-3 bg-glass-dark rounded-full overflow-hidden flex relative border border-border-pearl shadow-inner">
         <div 
-          className={`h-full transition-all duration-1000 ${item.actualPercentage > item.percentage ? 'bg-rose-500' : 'bg-indigo-500'}`}
+          className={`h-full transition-all duration-1000 ${item.actualPercentage > item.percentage ? 'bg-accent' : 'bg-glass-dark-hover'}`}
           style={{ width: `${Math.min(100, item.actualPercentage)}%` }}
         />
         {/* Target line */}
         <div 
-          className="absolute top-0 bottom-0 w-1 bg-gray-900/20 z-10"
+          className="absolute top-0 bottom-0 w-1 z-10 bg-accent-secondary"
           style={{ left: `${item.percentage}%` }}
           title={`Target: ${item.percentage}%`}
         />
@@ -478,16 +491,16 @@ const Budget: React.FC = () => {
 
   if (view === 'list') {
     return (
-      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
+      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20 bg-transparent">
         <div className="w-full max-w-4xl space-y-8">
           <div className="flex items-center justify-between px-4">
             <div>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">Budgets</h1>
-              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-2">Manage your spending plans</p>
+              <h1 className="text-4xl font-black text-text-on-dark tracking-tight">Budgets</h1>
+              <p className="text-text-on-dark/40 font-bold uppercase tracking-widest text-[10px] mt-2">Manage your spending plans</p>
             </div>
             <button 
               onClick={handleCreateNew}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+              className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-bold px-6 py-3 rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
             >
               <PlusCircle size={20} />
               Create New
@@ -495,20 +508,20 @@ const Budget: React.FC = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-xl rounded-[48px] border border-white/50">
-              <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
-              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading budgets...</p>
+            <div className="flex flex-col items-center justify-center py-20 bg-card/5 rounded-[48px] border border-white/5">
+              <Loader2 className="animate-spin text-accent mb-4" size={48} />
+              <p className="text-text-on-dark/40 font-bold uppercase tracking-widest text-xs">Loading budgets...</p>
             </div>
           ) : budgets.length === 0 ? (
-            <div className="bg-white/50 backdrop-blur-xl rounded-[48px] border border-dashed border-gray-200 p-20 flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                <Layout size={32} className="text-gray-400" />
+            <div className="bg-card/5 rounded-[48px] border border-dashed border-white/5 p-20 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-glass-dark rounded-full flex items-center justify-center mb-6">
+                <Layout size={32} className="text-text-on-dark/20" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No budgets found</h3>
-              <p className="text-gray-400 max-w-xs mb-8">You haven't created any budget plans yet. Start by creating your first one!</p>
+              <h3 className="text-xl font-bold text-text-on-dark mb-2">No budgets found</h3>
+              <p className="text-text-on-dark/40 max-w-xs mb-8">You haven't created any budget plans yet. Start by creating your first one!</p>
               <button 
                 onClick={handleCreateNew}
-                className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center gap-2"
+                className="text-accent font-bold hover:text-accent flex items-center gap-2"
               >
                 <PlusCircle size={18} />
                 Create your first budget
@@ -520,12 +533,12 @@ const Budget: React.FC = () => {
                 <div 
                   key={budget.id}
                   onClick={() => handleViewBudget(budget)}
-                  className="bg-white/90 backdrop-blur-2xl rounded-[40px] p-8 border border-white/50 shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
+                  className="bg-card rounded-[40px] p-8 border border-border-pearl shadow-lg hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">{budget.name}</h3>
-                      <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">
+                      <h3 className="text-2xl font-black text-text-main tracking-tight">{budget.name}</h3>
+                      <p className="text-text-muted font-bold uppercase tracking-widest text-[10px] mt-1">
                         {budget.data.items?.length || 0} items • {budget.data.selectedAccounts?.length || 0} accounts
                       </p>
                     </div>
@@ -535,14 +548,14 @@ const Budget: React.FC = () => {
                           e.stopPropagation();
                           handleEditBudget(budget);
                         }}
-                        className="text-gray-300 hover:text-indigo-500 transition-colors p-2"
+                        className="text-text-muted/20 hover:text-accent transition-colors p-2"
                         title="Edit Budget"
                       >
                         <Pencil size={20} />
                       </button>
                       <button 
                         onClick={(e) => handleDeleteBudget(budget.id, e)}
-                        className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                        className="text-text-muted/20 hover:text-negative transition-colors p-2"
                         title="Delete Budget"
                       >
                         <Trash2 size={20} />
@@ -553,20 +566,20 @@ const Budget: React.FC = () => {
                   <div className="space-y-3">
                     {budget.data.items?.slice(0, 3).map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 font-medium">{item.name}</span>
-                        <span className="text-gray-400 font-bold">{item.percentage}%</span>
+                        <span className="text-text-muted font-medium">{item.name}</span>
+                        <span className="text-text-muted/40 font-bold">{item.percentage}%</span>
                       </div>
                     ))}
                     {budget.data.items?.length > 3 && (
-                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest pt-2">
+                      <div className="text-[10px] font-bold text-accent uppercase tracking-widest pt-2">
                         + {budget.data.items.length - 3} more items
                       </div>
                     )}
                   </div>
 
-                  <div className="absolute bottom-0 left-0 h-1.5 bg-indigo-500/10 w-full">
+                  <div className="absolute bottom-0 left-0 h-1.5 bg-accent/10 w-full">
                     <div 
-                      className="h-full bg-indigo-500 transition-all duration-1000" 
+                      className="h-full bg-accent transition-all duration-1000" 
                       style={{ width: `${Math.min(100, (budget.data.items?.reduce((s, i) => s + (i.percentage || 0), 0) || 0))}%` }} 
                     />
                   </div>
@@ -581,44 +594,57 @@ const Budget: React.FC = () => {
 
   if (view === 'view' && selectedBudget) {
     return (
-      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
+      <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20 bg-transparent">
         <div className="w-full max-w-4xl space-y-8">
           <div className="flex items-center justify-between px-4">
-             <button 
-              onClick={() => setView('list')}
-              className="p-4 text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px]"
-            >
-              <ChevronLeft size={16} strokeWidth={3} />
-              Back to List
-            </button>
-            <div className="text-right">
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">{selectedBudget.name}</h1>
-              <div className="flex items-center justify-end mt-2">
+            <div className="flex flex-col">
+              <button 
+                onClick={() => setView('list')}
+                className="text-text-on-dark/30 hover:text-accent transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px] mb-2"
+              >
+                <ChevronLeft size={16} strokeWidth={3} />
+                Back to List
+              </button>
+              <h1 className="text-4xl font-black text-text-on-dark tracking-tight">{selectedBudget.name}</h1>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button 
+                  onClick={handleMonthClick}
+                  className="p-2.5 bg-glass backdrop-blur-xl rounded-xl shadow-lg hover:bg-glass-hover transition-all text-text-on-dark border border-glass-border active:scale-95 flex items-center gap-2 px-4"
+                >
+                  <Calendar size={18} strokeWidth={2.5} />
+                  <span className="text-xs font-bold uppercase tracking-widest">
+                    {new Date(selectedMonth + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                  </span>
+                </button>
                 <input 
+                  ref={monthInputRef}
                   type="month" 
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-gray-100/50 border-none rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/20 text-gray-500"
+                  className="absolute inset-0 opacity-0 pointer-events-none"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] p-10 border border-white/50 shadow-sm relative overflow-hidden">
+          <div className="bg-card rounded-[48px] p-10 border border-border-pearl shadow-2xl relative overflow-hidden">
             {isFetchingTransactions ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Analyzing transactions...</p>
+                <Loader2 className="animate-spin text-accent mb-4" size={48} />
+                <p className="text-text-muted font-bold uppercase tracking-widest text-xs">Analyzing transactions...</p>
               </div>
             ) : (
               <div className="flex flex-col gap-12">
                 {/* 1. Total Income */}
                 <div className="cursor-pointer group/stat" onClick={() => toggleSection('income')}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Income</div>
-                    {expandedSections.includes('income') ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-300 group-hover/stat:text-indigo-500 transition-colors" />}
+                    <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Income</div>
+                    {expandedSections.includes('income') ? <ChevronDown size={14} className="text-text-muted" /> : <ChevronRight size={14} className="text-text-muted/20 group-hover/stat:text-accent transition-colors" />}
                   </div>
-                  <div className="text-6xl font-black text-gray-900 tracking-tighter">
+                  <div className="text-5xl font-black text-black tracking-tighter">
                     + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   {expandedSections.includes('income') && <TransactionList transactions={budgetStats.incomeTransactions || []} accounts={accounts} />}
@@ -627,23 +653,23 @@ const Budget: React.FC = () => {
                 {/* 2. Total Outcome with Expenses Breakdown */}
                 <div className="cursor-pointer group/stat" onClick={() => toggleSection('breakdown')}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Outcome</div>
-                    {expandedSections.includes('breakdown') ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-300 group-hover/stat:text-indigo-500 transition-colors" />}
+                    <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Outcome</div>
+                    {expandedSections.includes('breakdown') ? <ChevronDown size={14} className="text-text-muted" /> : <ChevronRight size={14} className="text-text-muted/20 group-hover/stat:text-accent transition-colors" />}
                   </div>
                   <div className="flex items-center justify-end mb-4">
-                    <div className="text-6xl font-black text-gray-900 tracking-tighter">
+                    <div className="text-5xl font-black text-black tracking-tighter">
                       - {budgetStats.totalOutcome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   
                   {expandedSections.includes('breakdown') && (
-                    <div className="space-y-4 pt-6 border-t border-gray-50 animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
-                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 pb-2">Expenses Breakdown</div>
+                    <div className="space-y-4 pt-6 border-t border-border-pearl animate-in fade-in slide-in-from-top-2 duration-300" onClick={(e) => e.stopPropagation()}>
+                      <div className="text-[10px] font-black text-text-muted px-4 pb-2">Expenses Breakdown</div>
                       <div className="space-y-4">
                         {budgetStats.items?.map((item, i) => renderBudgetItemRow(item, `item-${i}`))}
                         {(budgetStats.otherItem.actualSpent > 0 || budgetStats.otherItem.transactions.length > 0) && renderBudgetItemRow(budgetStats.otherItem, 'item-others')}
                         {budgetStats.items?.length === 0 && budgetStats.otherItem.actualSpent === 0 && (
-                            <div className="text-center py-10 text-gray-400 italic">No expenses recorded</div>
+                            <div className="text-center py-10 text-text-muted/40 italic">No expenses recorded</div>
                         )}
                       </div>
                     </div>
@@ -651,37 +677,13 @@ const Budget: React.FC = () => {
                 </div>
 
                 {/* 3. Net Gain/Loss */}
-                <div className="pt-10 border-t-4 border-gray-900">
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Gain/Loss</div>
+                <div className="pt-10 border-t border-border-pearl">
+                  <div className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Net Gain/Loss</div>
                   {(() => {
                     const netGain = budgetStats.totalIncome - budgetStats.totalOutcome;
-                    const expectedSavingRate = budgetStats.expectedSavingsPercentage / 100;
-                    const expectedSaving = budgetStats.totalIncome * expectedSavingRate;
-                    
-                    let color = 'rgb(107, 114, 128)'; // Gray-500 (neutral)
-                    
-                    if (netGain > 0) {
-                      if (expectedSaving > 0) {
-                        const ratio = Math.pow(Math.min(1, netGain / expectedSaving), 0.5);
-                        // Interpolate between neutral gray and emerald-600 (5, 150, 105)
-                        const r = Math.round(107 + (5 - 107) * ratio);
-                        const g = Math.round(114 + (150 - 114) * ratio);
-                        const b = Math.round(128 + (105 - 128) * ratio);
-                        color = `rgb(${r}, ${g}, ${b})`;
-                      } else {
-                        color = 'rgb(5, 150, 105)'; // Full green if no expected saving but positive gain
-                      }
-                    } else if (netGain < 0) {
-                      // Interpolate between neutral gray and rose-600 (225, 29, 72)
-                      const ratio = Math.pow(Math.min(1, Math.abs(netGain) / (budgetStats.totalIncome || 1)), 0.5);
-                      const r = Math.round(107 + (225 - 107) * ratio);
-                      const g = Math.round(114 + (29 - 114) * ratio);
-                      const b = Math.round(128 + (72 - 128) * ratio);
-                      color = `rgb(${r}, ${g}, ${b})`;
-                    }
 
                     return (
-                      <div className="text-7xl font-black tracking-tighter" style={{ color }}>
+                      <div className={`text-7xl font-black tracking-tighter ${netGain > 0 ? 'text-accent-secondary' : 'text-black'}`}>
                         {netGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     );
@@ -689,8 +691,7 @@ const Budget: React.FC = () => {
                 </div>
 
                 {/* 4. Distribution Chart */}
-                <div className="pt-12 border-t border-gray-100 flex flex-col items-center">
-                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-10 w-full text-left px-4">Distribution of Income</div>
+                <div className="flex flex-col items-center">
                    <div className="w-full max-w-xl aspect-square p-8">
                      <Pie 
                         data={{
@@ -706,9 +707,12 @@ const Budget: React.FC = () => {
                               Math.max(0, budgetStats.totalIncome - budgetStats.totalOutcome)
                             ],
                             backgroundColor: [
-                              '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e',
-                              '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6',
-                              '#06b6d4', '#0ea5e9', '#3b82f6', '#4f46e5', '#94a3b8'
+                              ...budgetStats.items.map((_, i) => {
+                                const varName = `--color-chart-${(i % 12) + 1}`;
+                                return getCSSVariableValue(varName);
+                              }),
+                              getCSSVariableValue('--color-chart-others'), // Specific green for 'Others'
+                              getCSSVariableValue('--color-accent-secondary') // Yellow for Net Savings
                             ],
                             borderWidth: 0,
                           }]
@@ -719,10 +723,10 @@ const Budget: React.FC = () => {
                           },
                           plugins: {
                             legend: {
-                              display: false
+                              display: false,
                             },
                             datalabels: {
-                              color: '#4b5563',
+                              color: getCSSVariableValue('--color-text-main'),
                               anchor: 'end',
                               align: 'end',
                               offset: 10,
@@ -756,31 +760,31 @@ const Budget: React.FC = () => {
   }
 
   return (
-    <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20">
-      <div className="bg-white/90 backdrop-blur-2xl rounded-[48px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 p-8 md:p-10 w-full max-w-4xl flex flex-col items-stretch my-8 relative overflow-hidden group">
+    <div className="w-full flex items-start justify-center p-4 md:p-8 pb-20 bg-transparent">
+      <div className="bg-card rounded-[48px] shadow-2xl border border-border-pearl p-8 md:p-10 w-full max-w-4xl flex flex-col items-stretch my-8 relative overflow-hidden group">
         
         {/* Success Overlay */}
-        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-white/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-            <div className={`w-24 h-24 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-card/95 ${success ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+            <div className="w-24 h-24 bg-accent text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce">
               <Check size={48} strokeWidth={4} />
             </div>
-            <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved!</h3>
-            <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Budget Updated</p>
+            <h3 className="text-4xl font-black text-text-main tracking-tight">Saved!</h3>
+            <p className="text-text-muted font-bold mt-2 uppercase tracking-widest text-xs">Budget Updated</p>
         </div>
 
         {/* Error Overlay */}
-        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-rose-50/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-            <div className={`w-24 h-24 bg-rose-500 text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce`}>
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 bg-card/95 ${error ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+            <div className="w-24 h-24 bg-negative text-white rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce">
               <XCircle size={48} strokeWidth={4} />
             </div>
-            <h3 className="text-4xl font-black text-gray-900 tracking-tight">Error</h3>
-            <p className="text-rose-500 font-bold mt-2 uppercase tracking-widest text-xs text-center px-10">{errorMessage}</p>
+            <h3 className="text-4xl font-black text-text-main tracking-tight">Error</h3>
+            <p className="text-negative font-bold mt-2 uppercase tracking-widest text-xs text-center px-10">{errorMessage}</p>
         </div>
 
         <div className="mb-12 relative">
           <button 
             onClick={() => setView('list')}
-            className="absolute -top-4 -left-4 p-4 text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px]"
+            className="absolute -top-4 -left-4 p-4 text-text-muted hover:text-accent transition-colors flex items-center gap-1 font-bold uppercase tracking-widest text-[10px]"
           >
             <ChevronLeft size={16} strokeWidth={3} />
             Back to List
@@ -791,35 +795,35 @@ const Budget: React.FC = () => {
               type="text"
               value={budgetName}
               onChange={(e) => setBudgetName(e.target.value)}
-              className="text-4xl font-black text-gray-900 tracking-tighter text-center bg-transparent focus:outline-none border-b-2 border-transparent focus:border-indigo-400 pb-2 w-full max-w-lg"
+              className="text-4xl font-black text-text-main tracking-tighter text-center bg-transparent focus:outline-none border-b-2 border-transparent focus:border-accent pb-2 w-full max-w-lg"
               placeholder="Budget Name"
             />
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-4">Personal Spending Plan</p>
+            <p className="text-text-muted font-bold uppercase tracking-widest text-[10px] mt-4">Personal Spending Plan</p>
           </div>
         </div>
         
         {/* Accounts Section */}
-        <div className="mb-10 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
-          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Accounts to Consider</h3>
+        <div className="mb-10 bg-card-muted p-6 rounded-3xl border border-border-pearl">
+          <h3 className="text-sm font-black text-text-muted uppercase tracking-widest mb-4">Accounts to Consider</h3>
           <div className="flex flex-wrap gap-2 mb-4">
             {selectedAccounts.map(accId => {
               const acc = accounts.find(a => a.id === accId);
               return (
-                <div key={accId} className="flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-sm font-semibold">
+                <div key={accId} className="flex items-center gap-2 bg-accent/10 text-accent px-3 py-1.5 rounded-xl text-sm font-semibold">
                   <span>{acc?.name || accId}</span>
-                  <button onClick={() => handleRemoveAccount(accId)} className="hover:text-indigo-900 transition-colors">
+                  <button onClick={() => handleRemoveAccount(accId)} className="hover:text-accent transition-colors">
                     <X size={14} strokeWidth={3} />
                   </button>
                 </div>
               );
             })}
             {selectedAccounts.length === 0 && (
-              <span className="text-gray-400 text-sm font-medium italic">No accounts selected</span>
+              <span className="text-text-muted/40 text-sm font-medium italic">No accounts selected</span>
             )}
           </div>
           
           <select 
-            className="w-full md:w-auto bg-white border border-gray-200 text-gray-700 font-semibold rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+            className="w-full md:w-auto bg-card border border-border-pearl text-text-main font-semibold rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all shadow-sm"
             onChange={(e) => handleAddAccount(e.target.value)}
             value=""
           >
@@ -833,17 +837,17 @@ const Budget: React.FC = () => {
         {/* Budget Items Section */}
         <div className="space-y-6 mb-8">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Budget Items</h3>
-            <span className={`text-sm font-bold ${totalPercentage > 100 ? 'text-red-500' : 'text-gray-500'}`}>
+            <h3 className="text-sm font-black text-text-muted uppercase tracking-widest">Budget Items</h3>
+            <span className={`text-sm font-bold ${totalPercentage > 100 ? 'text-negative' : 'text-text-muted/40'}`}>
               Total: {totalPercentage}%
             </span>
           </div>
 
           {items.map((item, index) => (
-            <div key={index} className="bg-white border border-gray-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4 relative group">
+            <div key={index} className="bg-card border border-border-pearl shadow-sm rounded-3xl p-6 flex flex-col gap-4 relative group">
               <button 
                 onClick={() => handleRemoveItem(index)}
-                className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"
+                className="absolute top-6 right-6 text-text-muted/20 hover:text-negative transition-colors"
                 title="Remove Item"
               >
                 <Trash2 size={20} />
@@ -855,7 +859,7 @@ const Budget: React.FC = () => {
                     type="text"
                     value={item.name}
                     onChange={(e) => handleUpdateItem(index, { name: e.target.value })}
-                    className="w-full bg-transparent text-xl font-bold text-gray-800 focus:outline-none focus:border-b-2 border-gray-200 focus:border-indigo-400 transition-colors pb-1"
+                    className="w-full bg-transparent text-xl font-bold text-text-main focus:outline-none focus:border-b-2 border-border-pearl focus:border-accent transition-colors pb-1"
                     placeholder="Item Name (e.g., Transport)"
                   />
                 </div>
@@ -866,27 +870,27 @@ const Budget: React.FC = () => {
                     max="100"
                     value={item.percentage || ''}
                     onChange={(e) => handleUpdateItem(index, { percentage: parseFloat(e.target.value) || 0 })}
-                    className="w-20 bg-gray-50 border border-gray-200 text-gray-700 font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-20 bg-card-muted border border-border-pearl text-text-main font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all"
                     placeholder="0"
                   />
-                  <span className="text-gray-400 font-bold">%</span>
+                  <span className="text-text-muted/40 font-bold">%</span>
                 </div>
               </div>
 
               <div className="mt-2">
-                <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3">Categories</div>
+                <div className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Categories</div>
                 <div className="flex flex-wrap gap-2">
                   {item.categories.map(cat => (
-                    <div key={cat} className="flex items-center gap-1.5 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-xl text-sm font-medium">
+                    <div key={cat} className="flex items-center gap-1.5 bg-card-muted text-text-main px-3 py-1.5 rounded-xl text-sm font-medium">
                       <span>{cat}</span>
-                      <button onClick={() => handleRemoveCategoryFromItem(index, cat)} className="hover:text-gray-900 transition-colors">
+                      <button onClick={() => handleRemoveCategoryFromItem(index, cat)} className="hover:text-accent transition-colors">
                         <X size={14} strokeWidth={2.5} />
                       </button>
                     </div>
                   ))}
                   
                   <select 
-                    className="bg-gray-50 border border-gray-200 text-gray-600 font-medium rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 transition-all"
+                    className="bg-card-muted border border-border-pearl text-text-main font-medium rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-accent transition-all"
                     onChange={(e) => {
                       if (e.target.value) {
                         handleAddCategoryToItem(index, e.target.value);
@@ -906,11 +910,11 @@ const Budget: React.FC = () => {
         </div>
 
         {/* Other Item */}
-        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-6 flex flex-col gap-4 mb-4">
+        <div className="bg-card-muted border border-dashed border-border-pearl rounded-3xl p-6 flex flex-col gap-4 mb-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <div className="text-xl font-bold text-gray-500">Others</div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Budget for all remaining categories</p>
+              <div className="text-xl font-bold text-text-muted">Others</div>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">Budget for all remaining categories</p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -919,42 +923,42 @@ const Budget: React.FC = () => {
                 max="100"
                 value={otherPercentage || ''}
                 onChange={(e) => setOtherPercentage(parseFloat(e.target.value) || 0)}
-                className="w-20 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-20 bg-card border border-border-pearl text-text-main font-bold rounded-xl px-3 py-2 text-right focus:outline-none focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all"
                 placeholder="0"
               />
-              <span className="text-gray-400 font-bold">%</span>
+              <span className="text-text-muted/40 font-bold">%</span>
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Remaining Categories</div>
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Remaining Categories</div>
             <div className="flex flex-wrap gap-2">
               {unassignedCategories.length > 0 ? (
                 unassignedCategories.map(cat => (
-                  <div key={cat} className="flex items-center gap-1.5 bg-gray-200/50 text-gray-500 px-3 py-1.5 rounded-xl text-sm font-medium">
+                  <div key={cat} className="flex items-center gap-1.5 bg-card text-text-main px-3 py-1.5 rounded-xl text-sm font-medium">
                     {cat}
                   </div>
                 ))
               ) : (
-                <span className="text-gray-400 text-sm font-medium italic">None</span>
+                <span className="text-text-muted/40 text-sm font-medium italic">None</span>
               )}
             </div>
           </div>
         </div>
 
         {/* Expected Savings (Calculated) */}
-        <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 flex flex-col gap-1 mb-8">
-          <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Calculated Expected Savings</div>
+        <div className="bg-accent/5 border border-accent/10 rounded-3xl p-6 flex flex-col gap-1 mb-8">
+          <div className="text-[10px] font-black text-accent/60 uppercase tracking-widest">Calculated Expected Savings</div>
           <div className="flex items-baseline gap-2">
-            <div className="text-4xl font-black text-indigo-600">
+            <div className="text-4xl font-black text-accent">
               {(100 - items.reduce((sum, i) => sum + (i.percentage || 0), 0) - (otherPercentage || 0)).toFixed(1)}%
             </div>
-            <div className="text-sm font-bold text-indigo-400">of total income</div>
+            <div className="text-sm font-bold text-accent/40">of total income</div>
           </div>
         </div>
 
         <button 
           onClick={handleAddItem}
-          className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] mb-4"
+          className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent/90 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] mb-4"
         >
           <PlusCircle size={20} />
           Add Budget Item
@@ -963,7 +967,7 @@ const Budget: React.FC = () => {
         <button 
           onClick={handleSaveBudget}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:bg-gray-200"
+          className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent/90 text-white font-bold rounded-2xl py-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:bg-card-muted disabled:text-text-muted/20"
         >
           {isSaving ? (
             <Loader2 className="animate-spin" size={20} strokeWidth={4} />

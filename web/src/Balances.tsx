@@ -2,8 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Loader2, 
   Wallet, 
-  Calendar,
-  BarChart3
+  Calendar
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -14,11 +13,13 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  type TooltipItem
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { api } from './api';
 import type { Account, BalancePeriod, AccountDistribution } from './api';
+import { getCSSVariableValue } from './utils/colors';
 
 ChartJS.register(
   CategoryScale,
@@ -38,17 +39,11 @@ interface AccountWithMetadata extends Account {
 }
 
 const Sparkline: React.FC<{ data: BalancePeriod[], color: string }> = ({ data, color }) => {
-  const last6Months = useMemo(() => {
-    // Ensure we have a sorted history, take last 6 points
-    const sorted = [...data].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-    return sorted.slice(-6);
-  }, [data]);
-
   const chartData = {
-    labels: last6Months.map(h => h.month),
+    labels: data.map(h => h.month),
     datasets: [
       {
-        data: last6Months.map(h => parseFloat(h.amount)),
+        data: data.map(h => parseFloat(h.amount)),
         borderColor: color,
         borderWidth: 2,
         pointRadius: 0,
@@ -159,11 +154,14 @@ const Balances: React.FC = () => {
         return h ? parseFloat(h.amount) : null;
       });
 
+      const primary = getCSSVariableValue('--color-primary');
+      const secondary = getCSSVariableValue('--color-secondary');
+      const accent = getCSSVariableValue('--color-accent');
+
       const colors = [
-        { border: 'rgb(99, 102, 241)', bg: 'rgba(99, 102, 241, 0.1)' }, // Indigo
-        { border: 'rgb(16, 185, 129)', bg: 'rgba(16, 185, 129, 0.1)' }, // Emerald
-        { border: 'rgb(244, 63, 94)', bg: 'rgba(244, 63, 94, 0.1)' },   // Rose
-        { border: 'rgb(59, 130, 246)', bg: 'rgba(59, 130, 246, 0.1)' }, // Blue
+        { border: primary, bg: `${primary}33` },
+        { border: secondary, bg: `${secondary}33` },
+        { border: accent, bg: `${accent}33` },
       ];
       const color = colors[index % colors.length];
 
@@ -174,7 +172,7 @@ const Balances: React.FC = () => {
         backgroundColor: color.bg,
         fill: true,
         tension: 0.4,
-        pointRadius: 0, // Hidden by default
+        pointRadius: 0,
         hoverPointRadius: 6,
         pointBackgroundColor: color.border,
         borderWidth: 3,
@@ -202,9 +200,10 @@ const Balances: React.FC = () => {
         labels: {
           usePointStyle: true,
           padding: 20,
+          color: getCSSVariableValue('--color-text-main'),
           font: {
             family: 'inherit',
-            weight: 'bold' as any,
+            weight: 'bold' as const,
             size: 11
           }
         }
@@ -213,16 +212,16 @@ const Balances: React.FC = () => {
         display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        titleColor: '#111827',
-        bodyColor: '#111827',
-        borderColor: '#e5e7eb',
+        backgroundColor: getCSSVariableValue('--color-card'),
+        titleColor: getCSSVariableValue('--color-text-main'),
+        bodyColor: getCSSVariableValue('--color-text-main'),
+        borderColor: getCSSVariableValue('--color-border-pearl'),
         borderWidth: 1,
         padding: 12,
         boxPadding: 6,
         usePointStyle: true,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'line'>) => {
             let label = context.dataset.label || '';
             if (label) label += ': ';
             if (context.parsed.y !== null) {
@@ -241,22 +240,22 @@ const Balances: React.FC = () => {
         ticks: {
           font: {
             size: 10,
-            weight: 'bold' as any
+            weight: 'bold' as const
           },
-          color: '#9ca3af'
+          color: getCSSVariableValue('--color-text-muted')
         }
       },
       y: {
         grid: {
-          color: 'rgba(0, 0, 0, 0.03)',
+          color: getCSSVariableValue('--color-border-pearl'),
         },
         ticks: {
           font: {
             size: 10,
-            weight: 'bold' as any
+            weight: 'bold' as const
           },
-          color: '#9ca3af',
-          callback: (value: any) => {
+          color: getCSSVariableValue('--color-text-muted'),
+          callback: (value: string | number) => {
             return value.toLocaleString();
           }
         }
@@ -271,52 +270,82 @@ const Balances: React.FC = () => {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center p-20">
-      <Loader2 className="animate-spin text-gray-300" size={48} strokeWidth={1} />
+    <div className="flex items-center justify-center p-20 bg-transparent w-full h-full">
+      <Loader2 className="animate-spin text-accent" size={48} strokeWidth={1} />
     </div>
   );
 
   if (error) return (
-    <div className="text-center p-20">
-      <p className="text-rose-500 font-bold">Failed to load balance overview</p>
+    <div className="text-center p-20 bg-transparent w-full h-full">
+      <p className="text-negative font-bold">Failed to load balance overview</p>
     </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-8 pb-20">
+    <div className="max-w-6xl mx-auto w-full space-y-8 pb-20 bg-transparent">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-500 text-[10px] font-black uppercase tracking-widest mb-4">
-            <BarChart3 size={12} />
-            Financial Overview
-          </div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tighter">Balances</h1>
-          <p className="text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px]">Net worth and account performance</p>
+          <h1 className="text-5xl font-black text-text-on-dark tracking-tighter">Balances</h1>
+          <p className="text-text-on-dark/40 font-bold mt-2 uppercase tracking-[0.2em] text-[10px]">Net worth and account performance</p>
         </div>
       </div>
 
       {/* Accounts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
         {accounts.map(account => (
-          <div key={account.id} className="bg-white/80 backdrop-blur-xl p-8 rounded-[40px] shadow-sm border border-white hover:shadow-xl transition-all duration-500 group">
+          <div key={account.id} className="bg-card p-8 rounded-[40px] shadow-lg border border-border-pearl hover:shadow-2xl transition-all duration-500 group">
             <div className="flex items-start justify-between mb-8">
-              <div className="p-4 bg-gray-50 rounded-3xl group-hover:bg-indigo-50 transition-colors duration-500">
-                <Wallet className="text-gray-400 group-hover:text-indigo-500 transition-colors duration-500" size={24} />
+              <div className="p-4 bg-card-muted rounded-3xl group-hover:bg-accent/10 transition-colors duration-500">
+                <Wallet className="text-text-muted group-hover:text-accent transition-colors duration-500" size={24} />
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">6M Trend</span>
-                {account.history && <Sparkline data={account.history} color="rgb(99, 102, 241)" />}
+                <span className="text-[10px] font-black text-text-muted/40 uppercase tracking-widest mb-1">6M Trend</span>
+                {account.history && (() => {
+                  // Get current month and create a list of last 6 months in YYYY-MM format
+                  const now = new Date();
+                  const months: string[] = [];
+                  for (let i = 5; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+                  }
+
+                  // Map existing history to these months, defaulting to the oldest known balance or 0
+                  const sortedHistory = [...account.history].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                  
+                  const last6Points = months.map(m => {
+                    const existing = sortedHistory.find(h => h.month.startsWith(m));
+                    if (existing) return existing;
+                    
+                    // If no data for this month, find the last available balance before it
+                    const lastBefore = [...sortedHistory].reverse().find(h => new Date(h.month) < new Date(m));
+                    return {
+                      month: m,
+                      amount: lastBefore?.amount || (sortedHistory.length > 0 ? sortedHistory[0].amount : "0"),
+                      currency: account.history?.[0]?.currency || ""
+                    };
+                  });
+
+                  let color = getCSSVariableValue('--color-text-main'); // Default black
+                  if (last6Points.length >= 2) {
+                    const first = parseFloat(last6Points[0].amount);
+                    const last = parseFloat(last6Points[last6Points.length - 1].amount);
+                    if (last > first) color = getCSSVariableValue('--color-primary'); // Green
+                    else if (last < first) color = getCSSVariableValue('--color-negative'); // Red
+                  }
+                  
+                  return <Sparkline data={last6Points} color={color} />;
+                })()}
               </div>
             </div>
             
             <div>
-              <h3 className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-1">
+              <h3 className="text-text-muted/40 font-bold uppercase tracking-widest text-[10px] mb-1">
                 {account.lastTransactionAt 
                     ? `Last active: ${new Date(account.lastTransactionAt).toLocaleDateString()}` 
                     : account.id.slice(0, 8)}
               </h3>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-6">{account.name}</h2>
+              <h2 className="text-2xl font-black text-text-main tracking-tight mb-6">{account.name}</h2>
               
               <div className="space-y-4">
                 {Object.entries(account.balance).map(([curr, amt]) => {
@@ -325,11 +354,11 @@ const Balances: React.FC = () => {
                   const otherAmt = parseFloat(latestDist?.other_amount || '0');
 
                   return (
-                    <div key={curr} className="flex flex-col gap-2 p-4 bg-gray-50/50 rounded-2xl group-hover:bg-white transition-colors duration-500">
+                    <div key={curr} className="flex flex-col gap-2 p-4 bg-card-muted rounded-2xl group-hover:bg-card transition-colors duration-500 border border-transparent group-hover:border-border-pearl">
                       <div className="flex items-baseline justify-between">
-                        <span className="text-xs font-black text-gray-400">{curr}</span>
+                        <span className="text-xs font-black text-text-muted">{curr}</span>
                         <div className="flex flex-col items-end">
-                          <span className="text-xl font-black text-gray-900 tracking-tighter">
+                          <span className="text-xl font-black text-text-main tracking-tighter">
                             {parseFloat(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           {(() => {
@@ -337,7 +366,7 @@ const Balances: React.FC = () => {
                             const rate = total !== 0 ? systemAmt / total : 0;
                             if (rate === 1 || total === 0) return null;
                             return (
-                              <span className="text-[10px] font-bold text-indigo-500 italic">
+                              <span className="text-[10px] font-bold text-accent italic">
                                 Rate: {(rate * 100).toFixed(1)}%
                               </span>
                             );
@@ -355,16 +384,16 @@ const Balances: React.FC = () => {
 
       {/* History Graph */}
       <div className="px-4">
-        <div className="bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[48px] shadow-sm border border-white">
+        <div className="bg-card p-8 md:p-12 rounded-[48px] shadow-lg border border-border-pearl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
             <div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Balance History</h2>
-              <p className="text-gray-400 font-bold mt-1 uppercase tracking-widest text-[9px]">Monthly progression across currencies</p>
+              <h2 className="text-2xl font-black text-text-main tracking-tight">Balance History</h2>
+              <p className="text-text-muted/40 font-bold mt-1 uppercase tracking-widest text-[9px]">Monthly progression across currencies</p>
             </div>
             <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
-                    <Calendar size={14} className="text-gray-400" />
-                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Timeline</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-card-muted rounded-2xl border border-border-pearl">
+                    <Calendar size={14} className="text-text-muted/40" />
+                    <span className="text-[10px] font-bold text-text-muted/60 uppercase tracking-widest">Timeline</span>
                 </div>
             </div>
           </div>
