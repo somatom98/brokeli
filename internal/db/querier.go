@@ -18,10 +18,10 @@ type Querier interface {
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) error
 	DeleteBudget(ctx context.Context, id uuid.UUID) error
 	GetAccountBalanceForUpdate(ctx context.Context, id uuid.UUID) (json.RawMessage, error)
-	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error)
+	GetAccountDistributions(ctx context.Context, arg GetAccountDistributionsParams) ([]GetAccountDistributionsRow, error)
 	GetAllAccounts(ctx context.Context) ([]GetAllAccountsRow, error)
-	GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error)
-	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error)
+	GetAllBalances(ctx context.Context, balanceType string) ([]GetAllBalancesRow, error)
+	GetBalancesByAccount(ctx context.Context, arg GetBalancesByAccountParams) ([]GetBalancesByAccountRow, error)
 	GetBudgetByID(ctx context.Context, id uuid.UUID) (Budget, error)
 	GetBudgets(ctx context.Context) ([]Budget, error)
 	InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error

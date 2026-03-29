@@ -36,7 +36,9 @@ func (f *Feature) handleGetAccountBalances(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	balances, err := f.balanceUpdatesView.GetBalancesByAccount(r.Context(), id)
+	balanceType := r.URL.Query().Get("balance_type")
+
+	balances, err := f.balanceUpdatesView.GetBalancesByAccount(r.Context(), id, balanceType)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -61,7 +63,9 @@ func (f *Feature) handleGetAccountDistributions(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	distributions, err := f.balanceUpdatesView.GetAccountDistributions(r.Context(), id)
+	balanceType := r.URL.Query().Get("balance_type")
+
+	distributions, err := f.balanceUpdatesView.GetAccountDistributions(r.Context(), id, balanceType)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -79,7 +83,9 @@ func (f *Feature) handleGetAccountDistributions(w http.ResponseWriter, r *http.R
 }
 
 func (f *Feature) handleGetAllBalances(w http.ResponseWriter, r *http.Request) {
-	balances, err := f.balanceUpdatesView.GetAllBalances(r.Context())
+	balanceType := r.URL.Query().Get("balance_type")
+
+	balances, err := f.balanceUpdatesView.GetAllBalances(r.Context(), balanceType)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

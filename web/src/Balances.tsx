@@ -81,7 +81,8 @@ const Sparkline: React.FC<{ data: BalancePeriod[], color: string }> = ({ data, c
 
 const Balances: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountWithMetadata[]>([]);
-  const [balanceHistory, setBalanceHistory] = useState<BalancePeriod[]>([]);
+  const [liquidityHistory, setLiquidityHistory] = useState<BalancePeriod[]>([]);
+  const [investmentHistory, setInvestmentHistory] = useState<BalancePeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [timeFilter, setTimeFilter] = useState<'ytd' | 'year' | '5years' | 'all'>('year');
@@ -89,9 +90,10 @@ const Balances: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [accs, history, transactions] = await Promise.all([
+        const [accs, liqHistory, invHistory, transactions] = await Promise.all([
           api.getAccounts(),
-          api.getBalances(),
+          api.getBalances('LIQUIDITY'),
+          api.getBalances('INVESTMENT'),
           api.getTransactions()
         ]);
 
@@ -104,10 +106,10 @@ const Balances: React.FC = () => {
               ).happened_at
             : undefined;
           
-          // Fetch history for sparkline
+          // Fetch history for sparkline (Total Wealth = Liquidity + Investment)
           const [accHistory, distributions] = await Promise.all([
             api.getBalancesByAccount(acc.id),
-            api.getAccountDistributions(acc.id)
+            api.getAccountDistributions(acc.id, 'LIQUIDITY')
           ]);
 
           return {
@@ -126,7 +128,8 @@ const Balances: React.FC = () => {
         });
 
         setAccounts(accountsWithMetadata);
-        setBalanceHistory(history || []);
+        setLiquidityHistory(liqHistory || []);
+        setInvestmentHistory(invHistory || []);
       } catch (err) {
         console.error('Error fetching balance data:', err);
         setError(true);
@@ -139,7 +142,8 @@ const Balances: React.FC = () => {
 
   const chartData = useMemo(() => {
     const now = new Date();
-    const filteredHistory = balanceHistory.filter(h => {
+    
+    const filterByTime = (history: BalancePeriod[]) => history.filter(h => {
       const date = new Date(h.month);
       switch (timeFilter) {
         case 'ytd':
@@ -154,54 +158,100 @@ const Balances: React.FC = () => {
       }
     });
 
-    const months = Array.from(new Set(filteredHistory.map(h => {
-        const date = new Date(h.month);
-        return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
-    }))).reverse();
+    const filteredLiquidity = filterByTime(liquidityHistory);
+    const filteredInvestment = filterByTime(investmentHistory);
 
-    const currencies = Array.from(new Set(filteredHistory.map(h => h.currency)));
-    
-    const datasets = currencies.map((curr, index) => {
-      const data = months.map(m => {
-        const h = filteredHistory.find(history => {
+    const allFiltered = [...filteredLiquidity, ...filteredInvestment];
+    if (allFiltered.length === 0) return { labels: [], datasets: [] };
+
+    // Find earliest date to start the timeline
+    const earliestDate = allFiltered.reduce((min, h) => {
+        const d = new Date(h.month);
+        return d < min ? d : min;
+    }, new Date());
+
+    const months: string[] = [];
+    const current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    while (current <= end) {
+        months.push(current.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }));
+        current.setMonth(current.getMonth() + 1);
+    }
+
+    const currencies = Array.from(new Set(allFiltered.map(h => h.currency)));
+    const datasets: any[] = [];
+
+    const primary = getCSSVariableValue('--color-primary');
+    const accentSecondary = getCSSVariableValue('--color-accent-secondary');
+
+    currencies.forEach((curr) => {
+      // 1. Liquidity Carrying Forward
+      let lastLiq = 0;
+      const sortedLiq = [...liquidityHistory]
+        .filter(h => h.currency === curr)
+        .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+
+      const liqData = months.map(mLabel => {
+        const h = sortedLiq.find(history => {
             const date = new Date(history.month);
-            const label = date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
-            return label === m && history.currency === curr;
+            return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }) === mLabel;
         });
-        return h ? parseFloat(h.amount) : null;
+        if (h) lastLiq = parseFloat(h.amount);
+        return lastLiq;
       });
 
-      const primary = getCSSVariableValue('--color-primary');
-      const secondary = getCSSVariableValue('--color-secondary');
-      const accent = getCSSVariableValue('--color-accent');
-
-      const colors = [
-        { border: primary, bg: `${primary}33` },
-        { border: secondary, bg: `${secondary}33` },
-        { border: accent, bg: `${accent}33` },
-      ];
-      const color = colors[index % colors.length];
-
-      return {
-        label: curr,
-        data: data,
-        borderColor: color.border,
-        backgroundColor: color.bg,
+      datasets.push({
+        label: `${curr} Liquidity`,
+        data: liqData,
+        borderColor: primary,
+        backgroundColor: `${primary}33`,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
         hoverPointRadius: 6,
-        pointBackgroundColor: color.border,
+        pointBackgroundColor: primary,
         borderWidth: 3,
         pointHitRadius: 10,
-      };
+      });
+
+      // 2. Investment Carrying Forward
+      let lastInv = 0;
+      const sortedInv = [...investmentHistory]
+        .filter(h => h.currency === curr)
+        .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+
+      const invData = months.map(mLabel => {
+        const h = sortedInv.find(history => {
+            const date = new Date(history.month);
+            return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }) === mLabel;
+        });
+        if (h) lastInv = parseFloat(h.amount);
+        return lastInv;
+      });
+
+      if (invData.some(d => d !== 0)) {
+        datasets.push({
+          label: `${curr} Investments`,
+          data: invData,
+          borderColor: accentSecondary,
+          backgroundColor: `${accentSecondary}33`,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          hoverPointRadius: 6,
+          pointBackgroundColor: accentSecondary,
+          borderWidth: 3,
+          pointHitRadius: 10,
+        });
+      }
     });
 
     return {
       labels: months,
       datasets: datasets
     };
-  }, [balanceHistory, timeFilter]);
+  }, [liquidityHistory, investmentHistory, timeFilter]);
 
   const chartOptions = {
     responsive: true,
@@ -361,18 +411,27 @@ const Balances: React.FC = () => {
                     months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
                   }
 
-                  // Map existing history to these months, defaulting to the oldest known balance or 0
+                  // Map existing history to these months, carrying forward balances
                   const sortedHistory = [...account.history].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
                   
+                  let runningBalance = "0";
                   const last6Points = months.map(m => {
                     const existing = sortedHistory.find(h => h.month.startsWith(m));
-                    if (existing) return existing;
-                    
-                    // If no data for this month, find the last available balance before it
-                    const lastBefore = [...sortedHistory].reverse().find(h => new Date(h.month) < new Date(m));
+                    if (existing) {
+                      runningBalance = existing.amount;
+                    } else {
+                      // Carry forward: find the last available balance before this month
+                      const lastBefore = [...sortedHistory].reverse().find(h => h.month < m);
+                      if (lastBefore) {
+                        runningBalance = lastBefore.amount;
+                      } else {
+                        // If no data before this month, it stays at 0 (or last carried value)
+                        // but if we are iterating chronologically, we should just use runningBalance
+                      }
+                    }
                     return {
                       month: m,
-                      amount: lastBefore?.amount || (sortedHistory.length > 0 ? sortedHistory[0].amount : "0"),
+                      amount: runningBalance,
                       currency: account.history?.[0]?.currency || ""
                     };
                   });

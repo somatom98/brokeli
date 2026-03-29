@@ -68,12 +68,9 @@ export const api = {
     const res = await fetch('/api/accounts');
     if (!res.ok) throw new Error('Failed to fetch accounts');
     const data = await res.json();
-    console.log('Raw accounts data:', data);
     
-    // API returns a map { "uuid": { name: "...", balance: {...} } }
-    // We convert it to an array for the UI
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      const accounts = Object.entries(data).map(([id, details]) => {
+      return Object.entries(data).map(([id, details]) => {
         const d = details as { name?: string, balance?: Record<string, string> };
         return {
           id: id,
@@ -81,26 +78,27 @@ export const api = {
           balance: d.balance || {}
         };
       });
-      console.log('Mapped accounts:', accounts);
-      return accounts;
     }
     
     return Array.isArray(data) ? data : [];
   },
-  getBalances: async (): Promise<BalancePeriod[]> => {
-    const res = await fetch('/api/balances');
+  getBalances: async (balanceType?: string): Promise<BalancePeriod[]> => {
+    const url = balanceType ? `/api/balances?balance_type=${balanceType}` : '/api/balances';
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch balances');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  getBalancesByAccount: async (accountId: string): Promise<BalancePeriod[]> => {
-    const res = await fetch(`/api/accounts/${accountId}/balances`);
+  getBalancesByAccount: async (accountId: string, balanceType?: string): Promise<BalancePeriod[]> => {
+    const url = balanceType ? `/api/accounts/${accountId}/balances?balance_type=${balanceType}` : `/api/accounts/${accountId}/balances`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch account balances');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   },
-  getAccountDistributions: async (accountId: string): Promise<AccountDistribution[]> => {
-    const res = await fetch(`/api/accounts/${accountId}/distributions`);
+  getAccountDistributions: async (accountId: string, balanceType?: string): Promise<AccountDistribution[]> => {
+    const url = balanceType ? `/api/accounts/${accountId}/distributions?balance_type=${balanceType}` : `/api/accounts/${accountId}/distributions`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch account distributions');
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -161,6 +159,15 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to register transfer');
+    return res.status;
+  },
+  registerInvestment: async (data: { account_id: string, ticker: string, units: string, price: string, price_currency: string, fee: string, fee_currency: string, happened_at?: string }) => {
+    const res = await fetch('/api/investments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to register investment');
     return res.status;
   },
   openAccount: async (data: { name: string, currency: string }) => {

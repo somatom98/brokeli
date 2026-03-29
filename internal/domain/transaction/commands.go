@@ -162,3 +162,33 @@ func (a *Transaction) RegisterReimbursement(
 		HappenedAt:  happenedAt,
 	}, nil
 }
+
+func (a *Transaction) RegisterInvestment(
+	accountID uuid.UUID,
+	ticker string,
+	units decimal.Decimal,
+	price decimal.Decimal,
+	priceCurrency values.Currency,
+	fee decimal.Decimal,
+	feeCurrency values.Currency,
+	happenedAt time.Time,
+) (evt event_store.Event, err error) {
+	if a.State > State_Created {
+		return nil, nil
+	}
+
+	if !units.IsPositive() || !price.IsPositive() || fee.IsNegative() {
+		return nil, ErrNegativeOrNullAmount
+	}
+
+	return &events.MoneyInvested{
+		AccountID:     accountID,
+		Ticker:        ticker,
+		Units:         units,
+		Price:         price,
+		PriceCurrency: priceCurrency,
+		Fee:           fee,
+		FeeCurrency:   feeCurrency,
+		HappenedAt:    happenedAt,
+	}, nil
+}

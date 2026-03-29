@@ -10,4 +10,5 @@ const (
 	TransactionType_ExpectedReimbursement TransactionType = "EXPECTED_REIMBURSEMENT"
 	TransactionType_Deposit               TransactionType = "DEPOSIT"
 	TransactionType_Withdrawal            TransactionType = "WITHDRAWAL"
+	TransactionType_Investment            TransactionType = "INVESTMENT"
 )

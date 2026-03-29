@@ -31,11 +31,16 @@ type AccountDistribution struct {
 	OtherAmount  decimal.Decimal `json:"other_amount"`
 }
 
+const (
+	BalanceTypeLiquidity  string = "LIQUIDITY"
+	BalanceTypeInvestment string = "INVESTMENT"
+)
+
 type Repository interface {
-	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error
-	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error)
-	GetAllBalances(ctx context.Context) ([]BalancePeriod, error)
-	GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error)
+	InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string, balanceType string) error
+	GetBalancesByAccount(ctx context.Context, accountID uuid.UUID, balanceType string) ([]BalancePeriod, error)
+	GetAllBalances(ctx context.Context, balanceType string) ([]BalancePeriod, error)
+	GetAccountDistributions(ctx context.Context, accountID uuid.UUID, balanceType string) ([]AccountDistribution, error)
 }
 
 type Projection struct {
@@ -60,7 +65,7 @@ func New(
 func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record) error {
 	var aggregateType string
 	switch record.Type() {
-	case transaction_events.TypeMoneySpent, transaction_events.TypeMoneyReceived, transaction_events.TypeReimbursementReceived:
+	case transaction_events.TypeMoneySpent, transaction_events.TypeMoneyReceived, transaction_events.TypeReimbursementReceived, transaction_events.TypeMoneyInvested:
 		aggregateType = "Transaction"
 	case account_events.TypeOpened, account_events.TypeMoneyDeposited, account_events.TypeMoneyWithdrawn:
 		aggregateType = "Account"
@@ -78,6 +83,8 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 		return v.ApplyIncomeCreated(ctx, id, record.Content().(transaction_events.MoneyReceived))
 	case transaction_events.TypeReimbursementReceived:
 		return v.ApplyReimbursementReceived(ctx, id, record.Content().(transaction_events.ReimbursementReceived))
+	case transaction_events.TypeMoneyInvested:
+		return v.ApplyInvestmentCreated(ctx, id, record.Content().(transaction_events.MoneyInvested))
 	case account_events.TypeMoneyDeposited:
 		return v.ApplyMoneyDeposited(ctx, id, record.Content().(account_events.MoneyDeposited))
 	case account_events.TypeMoneyWithdrawn:
@@ -86,14 +93,14 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 	return nil
 }
 
-func (v *Projection) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error) {
-	return v.repository.GetBalancesByAccount(ctx, accountID)
+func (v *Projection) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID, balanceType string) ([]BalancePeriod, error) {
+	return v.repository.GetBalancesByAccount(ctx, accountID, balanceType)
 }
 
-func (v *Projection) GetAllBalances(ctx context.Context) ([]BalancePeriod, error) {
-	return v.repository.GetAllBalances(ctx)
+func (v *Projection) GetAllBalances(ctx context.Context, balanceType string) ([]BalancePeriod, error) {
+	return v.repository.GetAllBalances(ctx, balanceType)
 }
 
-func (v *Projection) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error) {
-	return v.repository.GetAccountDistributions(ctx, accountID)
+func (v *Projection) GetAccountDistributions(ctx context.Context, accountID uuid.UUID, balanceType string) ([]AccountDistribution, error) {
+	return v.repository.GetAccountDistributions(ctx, accountID, balanceType)
 }

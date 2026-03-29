@@ -23,20 +23,24 @@ func NewPostgresRepository(dbConn *sql.DB) (*PostgresRepository, error) {
 	}, nil
 }
 
-func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
+func (r *PostgresRepository) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string, balanceType string) error {
 	return r.queries.InsertBalanceUpdate(ctx, db.InsertBalanceUpdateParams{
-		ID:        id,
-		AccountID: accountID,
-		Currency:  string(currency),
-		Amount:    amount.String(),
-		UserID:    userID,
-		ValueDate: valueDate,
-		Origin:    origin,
+		ID:          id,
+		AccountID:   accountID,
+		Currency:    string(currency),
+		Amount:      amount.String(),
+		UserID:      userID,
+		ValueDate:   valueDate,
+		Origin:      origin,
+		BalanceType: balanceType,
 	})
 }
 
-func (r *PostgresRepository) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]BalancePeriod, error) {
-	rows, err := r.queries.GetBalancesByAccount(ctx, accountID)
+func (r *PostgresRepository) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID, balanceType string) ([]BalancePeriod, error) {
+	rows, err := r.queries.GetBalancesByAccount(ctx, db.GetBalancesByAccountParams{
+		AccountID:   accountID,
+		BalanceType: balanceType,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +65,8 @@ func (r *PostgresRepository) GetBalancesByAccount(ctx context.Context, accountID
 	return balances, nil
 }
 
-func (r *PostgresRepository) GetAllBalances(ctx context.Context) ([]BalancePeriod, error) {
-	rows, err := r.queries.GetAllBalances(ctx)
+func (r *PostgresRepository) GetAllBalances(ctx context.Context, balanceType string) ([]BalancePeriod, error) {
+	rows, err := r.queries.GetAllBalances(ctx, balanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +91,11 @@ func (r *PostgresRepository) GetAllBalances(ctx context.Context) ([]BalancePerio
 	return balances, nil
 }
 
-func (r *PostgresRepository) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]AccountDistribution, error) {
-	rows, err := r.queries.GetAccountDistributions(ctx, accountID)
+func (r *PostgresRepository) GetAccountDistributions(ctx context.Context, accountID uuid.UUID, balanceType string) ([]AccountDistribution, error) {
+	rows, err := r.queries.GetAccountDistributions(ctx, db.GetAccountDistributionsParams{
+		AccountID:   accountID,
+		BalanceType: balanceType,
+	})
 	if err != nil {
 		return nil, err
 	}

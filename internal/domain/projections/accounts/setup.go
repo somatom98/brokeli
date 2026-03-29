@@ -57,6 +57,8 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 		return v.ApplyMoneyDeposited(ctx, record.Content().(account_events.MoneyDeposited))
 	case account_events.TypeMoneyWithdrawn:
 		return v.ApplyMoneyWithdrawn(ctx, record.Content().(account_events.MoneyWithdrawn))
+	case transaction_events.TypeMoneyInvested:
+		return v.ApplyMoneyInvested(ctx, record.Content().(transaction_events.MoneyInvested))
 	}
 	return nil
 }

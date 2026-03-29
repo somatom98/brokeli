@@ -81,6 +81,7 @@ func Setup(ctx context.Context) (*App, error) {
 		transaction_events.TypeMoneyTransfered:          func() any { return &transaction_events.MoneyTransfered{} },
 		transaction_events.TypeReimbursementReceived:    func() any { return &transaction_events.ReimbursementReceived{} },
 		transaction_events.TypeExpectedReimbursementSet: func() any { return &transaction_events.ExpectedReimbursementSet{} },
+		transaction_events.TypeMoneyInvested:            func() any { return &transaction_events.MoneyInvested{} },
 	}
 
 	transactionES, err = postgres.NewPostgresStore(db, transaction.New, transactionEventsFactory)

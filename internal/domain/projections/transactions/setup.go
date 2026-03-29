@@ -74,7 +74,7 @@ func New(
 func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record) error {
 	var aggregateType string
 	switch record.Type() {
-	case transaction_events.TypeMoneySpent, transaction_events.TypeMoneyReceived, transaction_events.TypeMoneyTransfered, transaction_events.TypeReimbursementReceived:
+	case transaction_events.TypeMoneySpent, transaction_events.TypeMoneyReceived, transaction_events.TypeMoneyTransfered, transaction_events.TypeReimbursementReceived, transaction_events.TypeMoneyInvested:
 		aggregateType = "Transaction"
 	case account_events.TypeMoneyDeposited, account_events.TypeMoneyWithdrawn:
 		aggregateType = "Account"
@@ -93,6 +93,8 @@ func (v *Projection) HandleRecord(ctx context.Context, record event_store.Record
 		return v.ApplyMoneyTransfered(ctx, idStr, record.Content().(transaction_events.MoneyTransfered))
 	case transaction_events.TypeReimbursementReceived:
 		return v.ApplyReimbursementReceived(ctx, idStr, record.Content().(transaction_events.ReimbursementReceived))
+	case transaction_events.TypeMoneyInvested:
+		return v.ApplyMoneyInvested(ctx, idStr, record.Content().(transaction_events.MoneyInvested))
 	case account_events.TypeMoneyDeposited:
 		return v.ApplyMoneyDeposited(ctx, idStr, record.Content().(account_events.MoneyDeposited))
 	case account_events.TypeMoneyWithdrawn:

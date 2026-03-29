@@ -212,6 +212,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                   <option value="INCOME">Income</option>
                   <option value="TRANSFER">Transfer</option>
                   <option value="REIMBURSEMENT">Reimbursement</option>
+                  <option value="INVESTMENT">Investment</option>
                   <option value="DEPOSIT">Deposit</option>
                   <option value="WITHDRAWAL">Withdrawal</option>
                 </select>
@@ -269,6 +270,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                 const typeColorClasses = 
                   t.transaction_type === 'TRANSFER' ? 'bg-neutral/20 text-neutral' :
                   t.transaction_type === 'REIMBURSEMENT' ? 'bg-primary/20 text-primary' :
+                  t.transaction_type === 'INVESTMENT' ? 'bg-accent-secondary/20 text-accent-secondary' :
                   t.transaction_type === 'WITHDRAWAL' ? 'bg-neutral/20 text-neutral' :
                   isInterest ? 'bg-primary/20 text-primary' :
                   isDebit ? 'bg-negative/20 text-negative' : 'bg-primary/20 text-primary';
@@ -278,15 +280,18 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                     key={t.id} 
                     ref={isLast ? lastElementRef : undefined}
                     className={`bg-card rounded-[24px] p-4 lg:p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group flex items-center gap-3 lg:gap-5 ${
-                        isDebit 
-                          ? 'border-border-pearl' 
-                          : 'border-primary/20'
+                        t.transaction_type === 'INVESTMENT'
+                          ? 'border-accent-secondary/20'
+                          : isDebit 
+                            ? 'border-border-pearl' 
+                            : 'border-primary/20'
                     }`}
                   >
                     {/* Left: Type Icon/Badge */}
                     <div className={`p-3 lg:p-4 rounded-2xl shrink-0 shadow-sm ${typeColorClasses}`}>
                       {t.transaction_type === 'TRANSFER' ? <ArrowRightLeft size={22} strokeWidth={2.5} /> :
                        t.transaction_type === 'REIMBURSEMENT' ? <RotateCcw size={22} strokeWidth={2.5} /> :
+                       t.transaction_type === 'INVESTMENT' ? <TrendingUp size={22} strokeWidth={2.5} /> :
                        t.transaction_type === 'WITHDRAWAL' ? <ArrowDownLeft size={22} strokeWidth={2.5} /> :
                        isInterest ? <TrendingUp size={22} strokeWidth={2.5} /> :
                        isDebit ? <ArrowDownLeft size={22} strokeWidth={2.5} /> : 
@@ -299,7 +304,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                         <span className={`text-sm lg:text-base font-bold line-clamp-2 tracking-tight text-text-main`}>
                           {t.description || 'No description'}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap w-fit ${typeColorClasses.replace('bg-accent/20', 'bg-accent/10').replace('bg-negative/20', 'bg-negative/10').replace('bg-primary/20', 'bg-primary/10').replace('bg-neutral/20', 'bg-neutral/10')}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap w-fit ${typeColorClasses.replace('bg-accent/20', 'bg-accent/10').replace('bg-negative/20', 'bg-negative/10').replace('bg-primary/20', 'bg-primary/10').replace('bg-neutral/20', 'bg-neutral/10').replace('bg-accent-secondary/20', 'bg-accent-secondary/10')}`}>
                           {t.category || 'General'}
                         </span>
                       </div>
@@ -308,6 +313,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             t.transaction_type === 'TRANSFER' || t.transaction_type === 'WITHDRAWAL' || t.transaction_type === 'REIMBURSEMENT'
                               ? 'bg-neutral/40' 
+                              : t.transaction_type === 'INVESTMENT' ? 'bg-accent-secondary/40'
                               : isDebit ? 'bg-negative/40' : 'bg-primary/40'
                           }`} />
                           <span className="uppercase tracking-wider">
@@ -326,6 +332,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                       <div className={`flex items-center gap-1 font-black text-lg lg:text-xl tracking-tighter ${
                         t.transaction_type === 'TRANSFER' ? 'text-neutral' :
                         t.transaction_type === 'REIMBURSEMENT' ? 'text-primary' :
+                        t.transaction_type === 'INVESTMENT' ? 'text-accent-secondary' :
                         t.transaction_type === 'WITHDRAWAL' ? 'text-neutral' :
                         isDebit ? 'text-negative' : 'text-primary'
                       }`}>
@@ -337,6 +344,7 @@ const Transactions: React.FC<TransactionsProps> = ({ refreshKey, hideHeader }) =
                         <span className={`text-[10px] font-black uppercase tracking-widest ${
                           t.transaction_type === 'TRANSFER' ? 'text-neutral/60' :
                           t.transaction_type === 'REIMBURSEMENT' ? 'text-primary/60' :
+                          t.transaction_type === 'INVESTMENT' ? 'text-accent-secondary/60' :
                           t.transaction_type === 'WITHDRAWAL' ? 'text-neutral/60' :
                           isDebit ? 'text-negative/60' : 'text-primary/60'
                         }`}>

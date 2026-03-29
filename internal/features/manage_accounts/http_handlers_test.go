@@ -25,19 +25,19 @@ type BalanceUpdatesRepositoryMock struct {
 	Distributions []balance_updates.AccountDistribution
 }
 
-func (m *BalanceUpdatesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string) error {
+func (m *BalanceUpdatesRepositoryMock) InsertBalanceUpdate(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, userID string, valueDate time.Time, origin string, balanceType string) error {
 	return nil
 }
 
-func (m *BalanceUpdatesRepositoryMock) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]balance_updates.BalancePeriod, error) {
+func (m *BalanceUpdatesRepositoryMock) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID, balanceType string) ([]balance_updates.BalancePeriod, error) {
 	return m.Balances, nil
 }
 
-func (m *BalanceUpdatesRepositoryMock) GetAllBalances(ctx context.Context) ([]balance_updates.BalancePeriod, error) {
+func (m *BalanceUpdatesRepositoryMock) GetAllBalances(ctx context.Context, balanceType string) ([]balance_updates.BalancePeriod, error) {
 	return m.Balances, nil
 }
 
-func (m *BalanceUpdatesRepositoryMock) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]balance_updates.AccountDistribution, error) {
+func (m *BalanceUpdatesRepositoryMock) GetAccountDistributions(ctx context.Context, accountID uuid.UUID, balanceType string) ([]balance_updates.AccountDistribution, error) {
 	return m.Distributions, nil
 }
 

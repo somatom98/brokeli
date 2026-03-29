@@ -146,6 +146,14 @@ func (m *DispatcherMock) RegisterReimbursement(ctx context.Context, id uuid.UUID
 	return nil
 }
 
+func (m *DispatcherMock) RegisterInvestment(ctx context.Context, id uuid.UUID, accountID uuid.UUID, ticker string, units decimal.Decimal, price decimal.Decimal, priceCurrency values.Currency, fee decimal.Decimal, feeCurrency values.Currency, happenedAt time.Time) error {
+	return nil
+}
+
+func (m *DispatcherMock) SetExpectedReimbursement(ctx context.Context, id uuid.UUID, accountID uuid.UUID, currency values.Currency, amount decimal.Decimal, happenedAt time.Time) error {
+	return nil
+}
+
 func (m *DispatcherMock) Open(ctx context.Context, id uuid.UUID, name string, currency values.Currency, happenedAt time.Time) error {
 	return nil
 }

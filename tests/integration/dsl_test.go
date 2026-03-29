@@ -65,4 +65,6 @@ func (s *Suite) Then() *Then {
 
 const (
 	EUR = "EUR"
+	USD = "USD"
+	DKK = "DKK"
 )

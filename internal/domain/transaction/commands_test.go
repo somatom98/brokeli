@@ -357,3 +357,69 @@ func TestRegisterReimbursement(t *testing.T) {
 		assert.Nil(t, evt)
 	})
 }
+
+func TestRegisterInvestment(t *testing.T) {
+	t.Run("should emit money invested event when units and price are positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+		accountID := uuid.New()
+		units := decimal.NewFromFloat(10.5)
+		price := decimal.NewFromInt(100)
+		priceCurrency := values.Currency("USD")
+		fee := decimal.NewFromInt(5)
+		feeCurrency := values.Currency("EUR")
+		now := time.Now()
+
+		// act
+		evt, err := tx.RegisterInvestment(accountID, "AAPL", units, price, priceCurrency, fee, feeCurrency, now)
+
+		// assert
+		require.NoError(t, err)
+		assert.Equal(t, &events.MoneyInvested{
+			AccountID:     accountID,
+			Ticker:        "AAPL",
+			Units:         units,
+			Price:         price,
+			PriceCurrency: priceCurrency,
+			Fee:           fee,
+			FeeCurrency:   feeCurrency,
+			HappenedAt:    now,
+		}, evt)
+	})
+
+	t.Run("should return error when units is not positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+
+		// act
+		evt, err := tx.RegisterInvestment(uuid.New(), "AAPL", decimal.NewFromInt(0), decimal.NewFromInt(100), values.Currency("USD"), decimal.NewFromInt(5), values.Currency("EUR"), time.Now())
+
+		// assert
+		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
+		assert.Nil(t, evt)
+	})
+
+	t.Run("should return error when price is not positive", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+
+		// act
+		evt, err := tx.RegisterInvestment(uuid.New(), "AAPL", decimal.NewFromInt(10), decimal.NewFromInt(-1), values.Currency("USD"), decimal.NewFromInt(5), values.Currency("EUR"), time.Now())
+
+		// assert
+		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
+		assert.Nil(t, evt)
+	})
+
+	t.Run("should return error when fee is negative", func(t *testing.T) {
+		// arrange
+		tx := transaction.New(uuid.New())
+
+		// act
+		evt, err := tx.RegisterInvestment(uuid.New(), "AAPL", decimal.NewFromInt(10), decimal.NewFromInt(100), values.Currency("USD"), decimal.NewFromInt(-1), values.Currency("EUR"), time.Now())
+
+		// assert
+		require.ErrorIs(t, err, transaction.ErrNegativeOrNullAmount)
+		assert.Nil(t, evt)
+	})
+}

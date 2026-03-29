@@ -21,14 +21,15 @@ type AccountsProjection struct {
 }
 
 type BalanceUpdate struct {
-	ID        uuid.UUID `json:"id"`
-	AccountID uuid.UUID `json:"account_id"`
-	Currency  string    `json:"currency"`
-	Amount    string    `json:"amount"`
-	UserID    string    `json:"user_id"`
-	Origin    string    `json:"origin"`
-	ValueDate time.Time `json:"value_date"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          uuid.UUID `json:"id"`
+	AccountID   uuid.UUID `json:"account_id"`
+	Currency    string    `json:"currency"`
+	Amount      string    `json:"amount"`
+	UserID      string    `json:"user_id"`
+	Origin      string    `json:"origin"`
+	ValueDate   time.Time `json:"value_date"`
+	CreatedAt   time.Time `json:"created_at"`
+	BalanceType string    `json:"balance_type"`
 }
 
 type Budget struct {

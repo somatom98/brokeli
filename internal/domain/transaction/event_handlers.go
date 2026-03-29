@@ -72,3 +72,37 @@ func (t *Transaction) ApplyReimbursementReceived(e events.ReimbursementReceived)
 	t.Category = e.Category
 	t.Description = e.Description
 }
+
+func (t *Transaction) ApplyInvestmentCreated(e events.MoneyInvested) {
+	t.State = State_Created
+	t.Type = values.TransactionType_Investment
+
+	if e.PriceCurrency == e.FeeCurrency {
+		amount := e.Units.Mul(e.Price).Add(e.Fee)
+		entry := values.Entry{
+			AccountID: e.AccountID,
+			Currency:  e.PriceCurrency,
+			Amount:    amount,
+			Side:      values.Side_Debit,
+		}
+		t.Entries = append(t.Entries, entry)
+	} else {
+		priceAmount := e.Units.Mul(e.Price)
+		priceEntry := values.Entry{
+			AccountID: e.AccountID,
+			Currency:  e.PriceCurrency,
+			Amount:    priceAmount,
+			Side:      values.Side_Debit,
+		}
+		feeEntry := values.Entry{
+			AccountID: e.AccountID,
+			Currency:  e.FeeCurrency,
+			Amount:    e.Fee,
+			Side:      values.Side_Debit,
+		}
+		t.Entries = append(t.Entries, priceEntry, feeEntry)
+	}
+
+	t.Category = "Investments"
+	t.Description = e.Ticker
+}

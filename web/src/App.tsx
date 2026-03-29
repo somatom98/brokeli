@@ -19,7 +19,8 @@ import {
   Home,
   PieChart,
   BarChart3,
-  Calendar
+  Calendar,
+  TrendingUp
   } from 'lucide-react';
   import { api } from './api';
   import type { Account } from './api';
@@ -42,7 +43,7 @@ import {
   const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
 
   // Form State
-  const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw'>('expense');
+  const [type, setType] = useState<'expense' | 'income' | 'transfer' | 'openAccount' | 'deposit' | 'withdraw' | 'investment'>('expense');
   const [accountId, setAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [amount, setAmount] = useState('');
@@ -50,12 +51,21 @@ import {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [ticker, setTicker] = useState('');
+  const [units, setUnits] = useState('');
+  const [price, setPrice] = useState('');
+  const [priceCurrency, setPriceCurrency] = useState('EUR');
+  const [fee, setFee] = useState('0');
+  const [feeCurrency, setFeeCurrency] = useState('EUR');
   const [happenedAtDateTime, setHappenedAtDateTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCurrencyInput, setShowCurrencyInput] = useState(false);
+  const [showPriceCurrencyInput, setShowPriceCurrencyInput] = useState(false);
+  const [showFeeCurrencyInput, setShowFeeCurrencyInput] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -130,6 +140,13 @@ import {
       btn: 'bg-neutral hover:bg-neutral/90 shadow-neutral/20',
       mesh: 'from-neutral/5 via-app-bg to-app-bg',
       tab: 'text-neutral bg-card/90 shadow-neutral/10'
+    },
+    investment: {
+      primary: 'text-accent-secondary',
+      bg: 'bg-accent-secondary/10',
+      btn: 'bg-accent-secondary hover:bg-accent-secondary/90 shadow-accent-secondary/20',
+      mesh: 'from-accent-secondary/5 via-app-bg to-app-bg',
+      tab: 'text-accent-secondary bg-card/90 shadow-accent-secondary/10'
     }
   };
 
@@ -138,8 +155,9 @@ import {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (type !== 'openAccount' && !amount) return;
-    if (type === 'openAccount' && !accountName) return;
+    if (type === 'openAccount' && (!accountName || !currency)) return;
+    if (type === 'investment' && (!ticker || !units || !price || !priceCurrency || !feeCurrency)) return;
+    if (type !== 'openAccount' && type !== 'investment' && (!amount || !currency)) return;
     
     setIsSubmitting(true);
     try {
@@ -193,12 +211,29 @@ import {
           amount,
           happened_at: happenedAt
         });
+      } else if (type === 'investment') {
+        await api.registerInvestment({
+          account_id: accountId,
+          ticker,
+          units,
+          price,
+          price_currency: priceCurrency,
+          fee,
+          fee_currency: feeCurrency,
+          happened_at: happenedAt
+        });
       }
       setSuccess(true);
       setAmount('');
       setCategory('');
       setDescription('');
       setAccountName('');
+      setTicker('');
+      setUnits('');
+      setPrice('');
+      setPriceCurrency('EUR');
+      setFee('0');
+      setFeeCurrency('EUR');
       setHappenedAtDateTime(() => {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -334,13 +369,13 @@ import {
                 <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
                   
                   {/* Type Selector (TABS) */}
-                  <div className="grid grid-cols-3 p-1 bg-card-muted rounded-[24px] gap-1 shadow-inner shrink-0">
-                    {(['expense', 'income', 'transfer', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
+                  <div className="flex items-center gap-1 p-1 bg-card-muted rounded-[24px] shadow-inner shrink-0 overflow-x-auto custom-scrollbar no-scrollbar whitespace-nowrap">
+                    {(['expense', 'income', 'transfer', 'investment', 'openAccount', 'deposit', 'withdraw'] as const).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setType(t)}
-                        className={`flex flex-col items-center py-3 rounded-[20px] transition-all duration-500 ease-out ${
+                        className={`flex flex-col items-center py-3 px-6 rounded-[20px] transition-all duration-500 ease-out shrink-0 ${
                           type === t
                             ? `text-accent scale-[1.05]`
                             : 'text-text-muted hover:text-text-main'
@@ -348,6 +383,7 @@ import {
                         {t === 'expense' && <ArrowDownLeft size={18} strokeWidth={2.5} />}
                         {t === 'income' && <ArrowUpRight size={18} strokeWidth={2.5} />}
                         {t === 'transfer' && <ArrowRightLeft size={18} strokeWidth={2.5} />}
+                        {t === 'investment' && <TrendingUp size={18} strokeWidth={2.5} />}
                         {t === 'openAccount' && <PlusSquare size={18} strokeWidth={2.5} />}
                         {t === 'deposit' && <ArrowDownToLine size={18} strokeWidth={2.5} />}
                         {t === 'withdraw' && <ArrowUpFromLine size={18} strokeWidth={2.5} />}
@@ -360,26 +396,52 @@ import {
 
                   {/* Currency Badges for openAccount */}
                   {type === 'openAccount' && (
-                    <div className="flex justify-center items-center gap-2 mt-2">
-                      {['EUR', 'DKK'].map(c => (
+                    <div className="flex flex-col items-center gap-3 mt-2">
+                      <div className="flex justify-center items-center gap-2">
+                        {['EUR', 'DKK', 'USD'].map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => { setCurrency(c); setShowCurrencyInput(false); }}
+                            className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                              currency === c && !showCurrencyInput
+                                ? `bg-accent/10 text-accent border-accent/20 scale-105` 
+                                : 'bg-transparent text-text-muted/30 border-border-pearl hover:border-text-muted/20'
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        ))}
                         <button
-                          key={c}
                           type="button"
-                          onClick={() => setCurrency(c)}
+                          onClick={() => { setShowCurrencyInput(true); if (['EUR', 'DKK', 'USD'].includes(currency)) setCurrency(''); }}
                           className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
-                            currency === c 
+                            showCurrencyInput
                               ? `bg-accent/10 text-accent border-accent/20 scale-105` 
                               : 'bg-transparent text-text-muted/30 border-border-pearl hover:border-text-muted/20'
                           }`}
                         >
-                          {c}
+                          Other
                         </button>
-                      ))}
+                      </div>
+                      
+                      {showCurrencyInput && (
+                        <div className="relative animate-in fade-in zoom-in-95 duration-300 w-full max-w-[120px]">
+                          <input 
+                            type="text" 
+                            placeholder="CUR"
+                            value={currency} 
+                            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                            className="w-full text-center bg-card-muted border-none rounded-xl px-2 py-2 text-xs font-black outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main uppercase placeholder:text-text-muted/20"
+                            maxLength={4}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Huge Amount Input */}
-                  {type !== 'openAccount' && (
+                  {type !== 'openAccount' && type !== 'investment' && (
                     <div className="text-center relative group/input">
                       <div className="flex items-center justify-center gap-2">
                         <span className={`text-3xl font-black transition-colors duration-500 text-accent-secondary`}>
@@ -397,21 +459,200 @@ import {
                       </div>
 
                       {/* Currency Badges */}
-                      <div className="flex justify-center items-center gap-2 mt-2">
-                        {['EUR', 'DKK'].map(c => (
+                      <div className="flex flex-col items-center gap-3 mt-2">
+                        <div className="flex justify-center items-center gap-2">
+                          {['EUR', 'DKK', 'USD'].map(c => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => { setCurrency(c); setShowCurrencyInput(false); }}
+                              className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                                currency === c && !showCurrencyInput
+                                  ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                  : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
+                              }`}
+                            >
+                              {c}
+                            </button>
+                          ))}
                           <button
-                            key={c}
                             type="button"
-                            onClick={() => setCurrency(c)}
+                            onClick={() => { setShowCurrencyInput(true); if (['EUR', 'DKK', 'USD'].includes(currency)) setCurrency(''); }}
                             className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
-                              currency === c 
+                              showCurrencyInput
                                 ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
-                                : 'bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20'
+                                : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
                             }`}
                           >
-                            {c}
+                            Other
                           </button>
-                        ))}
+                        </div>
+
+                        {showCurrencyInput && (
+                          <div className="relative animate-in fade-in zoom-in-95 duration-300 w-full max-w-[120px]">
+                            <input 
+                              type="text" 
+                              placeholder="CUR"
+                              value={currency} 
+                              onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                              className="w-full text-center bg-card-muted border-none rounded-xl px-2 py-2 text-xs font-black outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main uppercase placeholder:text-text-muted/20"
+                              maxLength={4}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Investment Fields */}
+                  {type === 'investment' && (
+                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                      <div className="text-center relative group/input mb-6">
+                        <div className="flex items-center justify-center gap-2">
+                          <input 
+                            type="text" 
+                            required 
+                            placeholder="TICKER"
+                            value={ticker} 
+                            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                            className="w-full max-w-[240px] text-center text-5xl font-black outline-none bg-transparent placeholder:text-border-pearl transition-all caret-accent text-text-main uppercase"
+                          />
+                        </div>
+                        <p className="text-[10px] font-black text-text-muted/40 uppercase tracking-widest mt-2 text-center">Asset Identifier</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative group/field">
+                          <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
+                            <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Units</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            step="0.00000001"
+                            required
+                            placeholder="0.00"
+                            value={units} 
+                            onChange={(e) => setUnits(e.target.value)}
+                            className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main"
+                          />
+                        </div>
+                        <div className="relative group/field">
+                          <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
+                            <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Price ({priceCurrency})</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            required
+                            placeholder="0.00"
+                            value={price} 
+                            onChange={(e) => setPrice(e.target.value)}
+                            className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Price Currency Badges */}
+                      <div className="flex flex-col items-center gap-3 mt-2">
+                        <div className="flex justify-center items-center gap-2">
+                          {['EUR', 'DKK', 'USD'].map(c => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => { setPriceCurrency(c); setShowPriceCurrencyInput(false); }}
+                              className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                                priceCurrency === c && !showPriceCurrencyInput
+                                  ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                  : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
+                              }`}
+                            >
+                              {c}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => { setShowPriceCurrencyInput(true); if (['EUR', 'DKK', 'USD'].includes(priceCurrency)) setPriceCurrency(''); }}
+                            className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                              showPriceCurrencyInput
+                                ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
+                            }`}
+                          >
+                            Other
+                          </button>
+                        </div>
+
+                        {showPriceCurrencyInput && (
+                          <div className="relative animate-in fade-in zoom-in-95 duration-300 w-full max-w-[120px]">
+                            <input 
+                              type="text" 
+                              placeholder="CUR"
+                              value={priceCurrency} 
+                              onChange={(e) => setPriceCurrency(e.target.value.toUpperCase())}
+                              className="w-full text-center bg-card-muted border-none rounded-xl px-2 py-2 text-xs font-black outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main uppercase placeholder:text-text-muted/20"
+                              maxLength={4}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative group/field">
+                        <div className="absolute left-4 top-2.5 flex items-center gap-2 pointer-events-none">
+                          <span className="text-[8px] font-black text-text-muted/40 uppercase tracking-widest">Fee ({feeCurrency})</span>
+                        </div>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          required
+                          placeholder="0.00"
+                          value={fee} 
+                          onChange={(e) => setFee(e.target.value)}
+                          className="w-full bg-card-muted border-none rounded-[20px] px-4 pt-7 pb-3 text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main"
+                        />
+                      </div>
+
+                      {/* Fee Currency Badges */}
+                      <div className="flex flex-col items-center gap-3 mt-2">
+                        <div className="flex justify-center items-center gap-2">
+                          {['EUR', 'DKK', 'USD'].map(c => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => { setFeeCurrency(c); setShowFeeCurrencyInput(false); }}
+                              className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                                feeCurrency === c && !showFeeCurrencyInput
+                                  ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                  : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
+                              }`}
+                            >
+                              {c}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => { setShowFeeCurrencyInput(true); if (['EUR', 'DKK', 'USD'].includes(feeCurrency)) setFeeCurrency(''); }}
+                            className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest transition-all duration-500 border ${
+                              showFeeCurrencyInput
+                                ? `bg-accent text-white border-accent scale-105 shadow-lg shadow-accent/20` 
+                                : `bg-transparent text-text-muted border-border-pearl hover:border-text-muted/20`
+                            }`}
+                          >
+                            Other
+                          </button>
+                        </div>
+
+                        {showFeeCurrencyInput && (
+                          <div className="relative animate-in fade-in zoom-in-95 duration-300 w-full max-w-[120px]">
+                            <input 
+                              type="text" 
+                              placeholder="CUR"
+                              value={feeCurrency} 
+                              onChange={(e) => setFeeCurrency(e.target.value.toUpperCase())}
+                              className="w-full text-center bg-card-muted border-none rounded-xl px-2 py-2 text-xs font-black outline-none transition-all focus:ring-4 focus:ring-accent/5 text-text-main uppercase placeholder:text-text-muted/20"
+                              maxLength={4}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -537,7 +778,10 @@ import {
                   {/* Submission Button */}
                   <button 
                     type="submit" 
-                    disabled={isSubmitting || (type !== 'openAccount' && !amount) || (type === 'openAccount' && !accountName)}
+                    disabled={isSubmitting || 
+                      (type === 'openAccount' && (!accountName || !currency)) || 
+                      (type === 'investment' && (!ticker || !units || !price || !priceCurrency || !feeCurrency)) || 
+                      (type !== 'openAccount' && type !== 'investment' && (!amount || !currency))}
                     className={`w-full bg-accent text-white font-black py-5 rounded-[28px] transition-all duration-500 shadow-2xl shadow-accent/20 hover:bg-accent/90 active:scale-95 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.3em] disabled:bg-card-muted disabled:text-text-muted/20 disabled:shadow-none shrink-0`}
                   >
                     {isSubmitting ? (

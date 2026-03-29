@@ -14,6 +14,7 @@ const (
 	TypeMoneyTransfered          string = "MoneyTransfered"
 	TypeReimbursementReceived    string = "ReimbursementReceived"
 	TypeExpectedReimbursementSet string = "ExpectedReimbursementSet"
+	TypeMoneyInvested            string = "MoneyInvested"
 )
 
 type MoneySpent struct {
@@ -80,6 +81,14 @@ type ReimbursementReceived struct {
 	HappenedAt  time.Time
 }
 
+func (e ReimbursementReceived) Type() string {
+	return TypeReimbursementReceived
+}
+
+func (e ReimbursementReceived) Content() any {
+	return e
+}
+
 type ExpectedReimbursementSet struct {
 	AccountID  uuid.UUID
 	Currency   values.Currency
@@ -95,10 +104,21 @@ func (e ExpectedReimbursementSet) Content() any {
 	return e
 }
 
-func (e ReimbursementReceived) Type() string {
-	return TypeReimbursementReceived
+type MoneyInvested struct {
+	AccountID     uuid.UUID
+	Ticker        string
+	Units         decimal.Decimal
+	Price         decimal.Decimal
+	PriceCurrency values.Currency
+	Fee           decimal.Decimal
+	FeeCurrency   values.Currency
+	HappenedAt    time.Time
 }
 
-func (e ReimbursementReceived) Content() any {
+func (e MoneyInvested) Type() string {
+	return TypeMoneyInvested
+}
+
+func (e MoneyInvested) Content() any {
 	return e
 }

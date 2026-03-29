@@ -34,3 +34,16 @@ func (v *Projection) ApplyMoneyDeposited(ctx context.Context, e account_events.M
 func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, e account_events.MoneyWithdrawn) error {
 	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Amount.Neg(), e.Currency)
 }
+
+func (v *Projection) ApplyMoneyInvested(ctx context.Context, e transaction_events.MoneyInvested) error {
+	// Treat investments as a reduction of the account's liquid balance.
+	// Since price and fee can be in different currencies, we update both.
+	
+	priceAmount := e.Units.Mul(e.Price)
+	err := v.repository.UpdateAccountBalance(ctx, e.AccountID, priceAmount.Neg(), e.PriceCurrency)
+	if err != nil {
+		return err
+	}
+
+	return v.repository.UpdateAccountBalance(ctx, e.AccountID, e.Fee.Neg(), e.FeeCurrency)
+}

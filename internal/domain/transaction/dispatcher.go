@@ -98,3 +98,20 @@ func (d *Dispatcher) RegisterReimbursement(
 		return aggr.RegisterReimbursement(accountID, from, currency, amount, category, description, happenedAt)
 	})
 }
+
+func (d *Dispatcher) RegisterInvestment(
+	ctx context.Context,
+	id uuid.UUID,
+	accountID uuid.UUID,
+	ticker string,
+	units decimal.Decimal,
+	price decimal.Decimal,
+	priceCurrency values.Currency,
+	fee decimal.Decimal,
+	feeCurrency values.Currency,
+	happenedAt time.Time,
+) error {
+	return d.es.Execute(ctx, id, func(aggr *Transaction, version uint64) (event_store.Event, error) {
+		return aggr.RegisterInvestment(accountID, ticker, units, price, priceCurrency, fee, feeCurrency, happenedAt)
+	})
+}

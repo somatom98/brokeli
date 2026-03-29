@@ -288,7 +288,9 @@ func (s *PostgresStore[A]) handleEvents(ctx context.Context) error {
 		s.mu.RUnlock()
 
 		for _, h := range handlers {
-			_ = h(ctx, record)
+			if err := h(ctx, record); err != nil {
+				log.Printf("Event Store handler error: %v", err)
+			}
 		}
 
 		err = s.queries.DeleteOutboxEvent(ctx, row.ID)

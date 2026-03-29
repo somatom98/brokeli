@@ -143,6 +143,15 @@ body {
   background: var(--color-text-muted);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @media (max-width: 1024px) {
   .mesh-bg {
     filter: blur(80px); /* Heavier blur on mobile for better text readability */

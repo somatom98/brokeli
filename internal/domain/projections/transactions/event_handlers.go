@@ -117,3 +117,49 @@ func (v *Projection) ApplyMoneyWithdrawn(ctx context.Context, idStr string, e ac
 	})
 }
 
+func (v *Projection) ApplyMoneyInvested(ctx context.Context, idStr string, e transaction_events.MoneyInvested) error {
+	id := uuid.NewMD5(uuid.NameSpaceOID, []byte(idStr))
+
+	if e.PriceCurrency == e.FeeCurrency {
+		amount := e.Units.Mul(e.Price).Add(e.Fee)
+		return v.repository.CreateTransaction(ctx, TransactionRecord{
+			ID:              id,
+			AccountID:       e.AccountID,
+			TransactionType: string(values.TransactionType_Investment),
+			Amount:          amount.Neg(), // Money is leaving liquidity
+			Currency:        e.PriceCurrency,
+			Category:        "Investments",
+			Description:     e.Ticker,
+			HappenedAt:      e.HappenedAt,
+		})
+	}
+
+	// Currencies are different, create two records
+	priceAmount := e.Units.Mul(e.Price)
+	err := v.repository.CreateTransaction(ctx, TransactionRecord{
+		ID:              id,
+		AccountID:       e.AccountID,
+		TransactionType: string(values.TransactionType_Investment),
+		Amount:          priceAmount.Neg(),
+		Currency:        e.PriceCurrency,
+		Category:        "Investments",
+		Description:     e.Ticker,
+		HappenedAt:      e.HappenedAt,
+	})
+	if err != nil {
+		return err
+	}
+
+	idFee := uuid.NewMD5(uuid.NameSpaceOID, []byte(fmt.Sprintf("%s_fee", idStr)))
+	return v.repository.CreateTransaction(ctx, TransactionRecord{
+		ID:              idFee,
+		AccountID:       e.AccountID,
+		TransactionType: string(values.TransactionType_Investment),
+		Amount:          e.Fee.Neg(),
+		Currency:        e.FeeCurrency,
+		Category:        "Investments",
+		Description:     fmt.Sprintf("%s (Fee)", e.Ticker),
+		HappenedAt:      e.HappenedAt,
+	})
+}
+

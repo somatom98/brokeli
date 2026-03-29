@@ -18,9 +18,14 @@ SELECT
     SUM(CASE WHEN user_id = 'system' THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY value_date ASC, id ASC)::TEXT as system_amount,
     SUM(CASE WHEN user_id != 'system' THEN amount ELSE 0 END) OVER (PARTITION BY account_id, currency ORDER BY value_date ASC, id ASC)::TEXT as other_amount
 FROM balance_updates
-WHERE account_id = $1 AND origin = 'movement'
+WHERE account_id = $1 AND origin = 'movement' AND (balance_type = $2 OR $2 = '')
 ORDER BY value_date DESC, id DESC
 `
+
+type GetAccountDistributionsParams struct {
+	AccountID   uuid.UUID `json:"account_id"`
+	BalanceType string    `json:"balance_type"`
+}
 
 type GetAccountDistributionsRow struct {
 	ID           uuid.UUID `json:"id"`
@@ -33,8 +38,8 @@ type GetAccountDistributionsRow struct {
 	OtherAmount  string    `json:"other_amount"`
 }
 
-func (q *Queries) GetAccountDistributions(ctx context.Context, accountID uuid.UUID) ([]GetAccountDistributionsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAccountDistributions, accountID)
+func (q *Queries) GetAccountDistributions(ctx context.Context, arg GetAccountDistributionsParams) ([]GetAccountDistributionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAccountDistributions, arg.AccountID, arg.BalanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +73,7 @@ func (q *Queries) GetAccountDistributions(ctx context.Context, accountID uuid.UU
 const getAllBalances = `-- name: GetAllBalances :many
 SELECT DATE_TRUNC('month', value_date)::TIMESTAMP AS month, currency, SUM(amount)::TEXT AS amount
 FROM balance_updates
+WHERE (balance_type = $1 OR $1 = '')
 GROUP BY month, currency
 ORDER BY month DESC
 `
@@ -78,8 +84,8 @@ type GetAllBalancesRow struct {
 	Amount   string    `json:"amount"`
 }
 
-func (q *Queries) GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllBalances)
+func (q *Queries) GetAllBalances(ctx context.Context, balanceType string) ([]GetAllBalancesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllBalances, balanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -104,10 +110,15 @@ func (q *Queries) GetAllBalances(ctx context.Context) ([]GetAllBalancesRow, erro
 const getBalancesByAccount = `-- name: GetBalancesByAccount :many
 SELECT DATE_TRUNC('month', value_date)::TIMESTAMP AS month, currency, SUM(amount)::TEXT AS amount
 FROM balance_updates
-WHERE account_id = $1
+WHERE account_id = $1 AND (balance_type = $2 OR $2 = '')
 GROUP BY month, currency
 ORDER BY month DESC
 `
+
+type GetBalancesByAccountParams struct {
+	AccountID   uuid.UUID `json:"account_id"`
+	BalanceType string    `json:"balance_type"`
+}
 
 type GetBalancesByAccountRow struct {
 	Month    time.Time `json:"month"`
@@ -115,8 +126,8 @@ type GetBalancesByAccountRow struct {
 	Amount   string    `json:"amount"`
 }
 
-func (q *Queries) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID) ([]GetBalancesByAccountRow, error) {
-	rows, err := q.db.QueryContext(ctx, getBalancesByAccount, accountID)
+func (q *Queries) GetBalancesByAccount(ctx context.Context, arg GetBalancesByAccountParams) ([]GetBalancesByAccountRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBalancesByAccount, arg.AccountID, arg.BalanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -139,19 +150,20 @@ func (q *Queries) GetBalancesByAccount(ctx context.Context, accountID uuid.UUID)
 }
 
 const insertBalanceUpdate = `-- name: InsertBalanceUpdate :exec
-INSERT INTO balance_updates (id, account_id, currency, amount, user_id, origin, value_date)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO balance_updates (id, account_id, currency, amount, user_id, origin, value_date, balance_type)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (id) DO NOTHING
 `
 
 type InsertBalanceUpdateParams struct {
-	ID        uuid.UUID `json:"id"`
-	AccountID uuid.UUID `json:"account_id"`
-	Currency  string    `json:"currency"`
-	Amount    string    `json:"amount"`
-	UserID    string    `json:"user_id"`
-	Origin    string    `json:"origin"`
-	ValueDate time.Time `json:"value_date"`
+	ID          uuid.UUID `json:"id"`
+	AccountID   uuid.UUID `json:"account_id"`
+	Currency    string    `json:"currency"`
+	Amount      string    `json:"amount"`
+	UserID      string    `json:"user_id"`
+	Origin      string    `json:"origin"`
+	ValueDate   time.Time `json:"value_date"`
+	BalanceType string    `json:"balance_type"`
 }
 
 func (q *Queries) InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpdateParams) error {
@@ -163,6 +175,7 @@ func (q *Queries) InsertBalanceUpdate(ctx context.Context, arg InsertBalanceUpda
 		arg.UserID,
 		arg.Origin,
 		arg.ValueDate,
+		arg.BalanceType,
 	)
 	return err
 }

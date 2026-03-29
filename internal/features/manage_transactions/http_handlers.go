@@ -232,6 +232,49 @@ func (f *Feature) handleSetExpectedReimbursement(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (f *Feature) handleRegisterInvestment(w http.ResponseWriter, r *http.Request) {
+	type RegisterInvestmentRequest struct {
+		AccountID     uuid.UUID       `json:"account_id"`
+		Ticker        string          `json:"ticker"`
+		Units         decimal.Decimal `json:"units"`
+		Price         decimal.Decimal `json:"price"`
+		PriceCurrency values.Currency `json:"price_currency"`
+		Fee           decimal.Decimal `json:"fee"`
+		FeeCurrency   values.Currency `json:"fee_currency"`
+		HappenedAt    time.Time       `json:"happened_at"`
+	}
+
+	var req RegisterInvestmentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if req.HappenedAt.IsZero() {
+		req.HappenedAt = time.Now()
+	}
+
+	if err := f.dispatcher.RegisterInvestment(
+		r.Context(),
+		uuid.Must(uuid.NewV7()),
+		req.AccountID,
+		req.Ticker,
+		req.Units,
+		req.Price,
+		req.PriceCurrency,
+		req.Fee,
+		req.FeeCurrency,
+		req.HappenedAt,
+	); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+}
+
 func (f *Feature) handleGetTransactions(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 

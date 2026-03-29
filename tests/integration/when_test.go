@@ -107,3 +107,26 @@ func (w *When) Transfer(amount interface{}, currency string, fromAlias string, t
 
 	return w
 }
+
+func (w *When) Investment(ticker string, units interface{}, price interface{}, priceCurrency string, fee interface{}, feeCurrency string, accountAlias string) *When {
+	accountID := w.s.accounts[accountAlias]
+	require.NotEmpty(w.s.t, accountID, "Account alias %s not found", accountAlias)
+
+	w.s.t.Logf("Registering investment for %s: %v units of %s at %v %s (fee: %v %s)...", accountAlias, units, ticker, price, priceCurrency, fee, feeCurrency)
+	investmentReq := map[string]interface{}{
+		"account_id":     accountID,
+		"ticker":         ticker,
+		"units":          fmt.Sprint(units),
+		"price":          fmt.Sprint(price),
+		"price_currency": priceCurrency,
+		"fee":            fmt.Sprint(fee),
+		"fee_currency":   feeCurrency,
+	}
+	investmentBody, _ := json.Marshal(investmentReq)
+	resp, err := w.s.client.Post(w.s.baseURL+"/investments", "application/json", bytes.NewBuffer(investmentBody))
+	require.NoError(w.s.t, err)
+	assert.Equal(w.s.t, http.StatusCreated, resp.StatusCode)
+	resp.Body.Close()
+
+	return w
+}

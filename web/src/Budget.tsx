@@ -20,17 +20,21 @@ const generateId = () => {
 
 const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account[] }> = ({ transactions, accounts }) => {
   if (transactions.length === 0) return <div className="text-[10px] font-bold text-text-muted/40 uppercase tracking-widest py-4 px-2 italic">No transactions</div>;
-  
+
   return (
     <div className="mt-4 border-t border-border-pearl pt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
       {transactions.map((t) => {
         const amount = Math.abs(parseFloat(t.amount));
-        const isDebit = ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) || 
+        const isInvestment = t.transaction_type === 'INVESTMENT';
+        const isDebit = isInvestment || 
+                       ['EXPENSE', 'WITHDRAWAL'].includes(t.transaction_type) ||
                        (t.transaction_type === 'TRANSFER' && parseFloat(t.amount) < 0) ||
                        parseFloat(t.amount) < 0;
         const rate = (parseFloat(t.system_total_rate || '1') || 1);
         const systemAmount = amount * rate;
-        
+
+        const textColor = isInvestment ? 'text-accent-secondary' : (!isDebit ? 'text-accent-secondary' : 'text-black');
+
         return (
           <div key={t.id} className="flex items-center justify-between py-2 px-3 hover:bg-card-muted rounded-xl transition-colors">
             <div className="flex flex-col">
@@ -41,7 +45,7 @@ const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account
                 {new Date(t.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {accounts.find(a => a.id === t.account_id)?.name || 'Unknown'}
               </span>
             </div>
-            <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${!isDebit ? 'text-accent-secondary' : 'text-black'}`}>
+            <div className={`flex items-center gap-1.5 font-black text-xs tracking-tighter ${textColor}`}>
               {isDebit ? '-' : '+'}
               {amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               <span className="text-[8px] opacity-70 ml-0.5">{t.currency}</span>
@@ -57,7 +61,6 @@ const TransactionList: React.FC<{ transactions: Transaction[], accounts: Account
     </div>
   );
 };
-
 interface ProcessedBudgetItem extends BudgetItem {
   actualSpent: number;
   actualPercentage: number;
@@ -211,7 +214,7 @@ const Budget: React.FC = () => {
     });
 
     const incomeTransactions = currentTransactions
-      .filter(t => t.transaction_type !== 'DEPOSIT' && t.transaction_type !== 'TRANSFER' &&
+      .filter(t => t.transaction_type !== 'DEPOSIT' && t.transaction_type !== 'TRANSFER' && t.transaction_type !== 'INVESTMENT' &&
                    (['INCOME'].includes(t.transaction_type) || 
                    (t.transaction_type === '' && parseFloat(t.amount) > 0)));
 
@@ -221,9 +224,19 @@ const Budget: React.FC = () => {
         return sum + (parseFloat(t.amount) * rate);
       }, 0);
 
+    const investmentTransactions = currentTransactions
+      .filter(t => t.transaction_type === 'INVESTMENT');
+
+    const totalInvestments = investmentTransactions
+      .reduce((sum, t) => {
+        const rate = parseFloat(t.system_total_rate || '1') || 1;
+        const amount = Math.abs(parseFloat(t.amount));
+        return sum + (amount * rate);
+      }, 0);
+
     const outcomeTransactions = currentTransactions
       .filter(t => t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
-                   (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || 
+                   (['EXPENSE', 'REIMBURSEMENT', 'INVESTMENT'].includes(t.transaction_type) || 
                    (t.transaction_type === '' && parseFloat(t.amount) < 0)));
 
     const totalOutcome = outcomeTransactions
@@ -252,7 +265,7 @@ const Budget: React.FC = () => {
 
       const periodSpent = periodTransactions
         .filter(t => t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
-                     (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
+                     (['EXPENSE', 'REIMBURSEMENT', 'INVESTMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
                      (cats === null ? !assignedCategories.has(t.category) : cats.includes(t.category)))
         .reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
 
@@ -274,7 +287,7 @@ const Budget: React.FC = () => {
     const items = (selectedBudget.data.items || []).map(item => {
       const itemTransactions = currentTransactions.filter(t => 
         t.transaction_type !== 'WITHDRAWAL' && t.transaction_type !== 'TRANSFER' &&
-        (['EXPENSE', 'REIMBURSEMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
+        (['EXPENSE', 'REIMBURSEMENT', 'INVESTMENT'].includes(t.transaction_type) || (t.transaction_type === '' && parseFloat(t.amount) < 0)) &&
         item.categories.includes(t.category)
       );
       const itemSpent = itemTransactions.reduce((sum, t) => sum + ((-parseFloat(t.amount)) * (parseFloat(t.system_total_rate || '1') || 1)), 0);
@@ -293,8 +306,10 @@ const Budget: React.FC = () => {
       totalSpending,
       totalIncome,
       totalOutcome,
+      totalInvestments,
       incomeTransactions,
       outcomeTransactions,
+      investmentTransactions,
       otherItem: {
         name: 'Others',
         actualSpent: otherSpent,
@@ -664,6 +679,18 @@ const Budget: React.FC = () => {
                     + {budgetStats.totalIncome?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   {expandedSections.includes('income') && <TransactionList transactions={budgetStats.incomeTransactions || []} accounts={accounts} />}
+                </div>
+
+                {/* Total Investments */}
+                <div className="cursor-pointer group/stat text-right" onClick={() => toggleSection('investments')}>
+                  <div className="flex items-center justify-end gap-2 mb-1">
+                    <div className="text-[8px] font-black text-accent uppercase tracking-widest">Total Investments</div>
+                    {expandedSections.includes('investments') ? <ChevronDown size={12} className="text-accent" /> : <ChevronRight size={12} className="text-accent/20 group-hover/stat:text-accent transition-colors" />}
+                  </div>
+                  <div className="text-2xl font-black text-accent tracking-tighter">
+                    {budgetStats.totalInvestments?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {expandedSections.includes('investments') && <div className="text-left"><TransactionList transactions={budgetStats.investmentTransactions || []} accounts={accounts} /></div>}
                 </div>
 
                 {/* 2. Total Outcome with Expenses Breakdown */}

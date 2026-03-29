@@ -15,13 +15,21 @@ type Then struct {
 }
 
 func (t *Then) BalanceShouldBe(accountAlias string, currency string, expectedAmount interface{}) *Then {
+	return t.BalanceTypeShouldBe(accountAlias, currency, expectedAmount, "")
+}
+
+func (t *Then) BalanceTypeShouldBe(accountAlias string, currency string, expectedAmount interface{}, balanceType string) *Then {
 	accountID := t.s.accounts[accountAlias]
 	require.NotEmpty(t.s.t, accountID, "Account alias %s not found", accountAlias)
 
 	expectedAmountStr := fmt.Sprint(expectedAmount)
-	t.s.t.Logf("Checking balance for %s should be %s %s...", accountAlias, expectedAmountStr, currency)
+	t.s.t.Logf("Checking %s balance for %s should be %s %s...", balanceType, accountAlias, expectedAmountStr, currency)
 	assert.Eventually(t.s.t, func() bool {
-		resp, err := t.s.client.Get(t.s.baseURL + "/accounts/" + accountID + "/balances")
+		url := t.s.baseURL + "/accounts/" + accountID + "/balances"
+		if balanceType != "" {
+			url += "?balance_type=" + balanceType
+		}
+		resp, err := t.s.client.Get(url)
 		if err != nil {
 			return false
 		}
@@ -43,7 +51,7 @@ func (t *Then) BalanceShouldBe(accountAlias string, currency string, expectedAmo
 		}
 
 		return false
-	}, 30*time.Second, 1*time.Second, "Balance should be %s %s", expectedAmountStr, currency)
+	}, 30*time.Second, 1*time.Second, "%s Balance should be %s %s", balanceType, expectedAmountStr, currency)
 
 	return t
 }

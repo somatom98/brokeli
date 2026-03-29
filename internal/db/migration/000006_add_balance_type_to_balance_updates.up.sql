@@ -1,0 +1,1 @@
+ALTER TABLE balance_updates ADD COLUMN balance_type TEXT NOT NULL DEFAULT 'LIQUIDITY';
