@@ -80,6 +80,7 @@ const Budget: React.FC = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [timeframe, setTimeframe] = useState<'month' | 'year'>('month');
 
   const monthInputRef = useRef<HTMLInputElement>(null);
 
@@ -199,7 +200,7 @@ const Budget: React.FC = () => {
     const selectedAccIds = selectedBudget.data.selectedAccounts || [];
 
     const [year, month] = selectedMonth.split('-').map(Number);
-    const start = new Date(year, month - 1, 1);
+    const start = timeframe === 'year' ? new Date(year, month - 13, 1) : new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
 
     const currentTransactions = transactions.filter(t => {
@@ -307,7 +308,7 @@ const Budget: React.FC = () => {
       expectedSavingsPercentage,
       items
     };
-  }, [selectedBudget, transactions, selectedMonth]);
+  }, [selectedBudget, transactions, selectedMonth, timeframe]);
 
   const renderBudgetItemRow = (item: ProcessedBudgetItem, id: string) => (
     <div key={id} className="space-y-3 p-4 hover:bg-card-muted rounded-3xl transition-colors cursor-pointer group/item" onClick={() => toggleSection(id)}>
@@ -609,6 +610,21 @@ const Budget: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <div className="flex bg-glass backdrop-blur-xl rounded-xl border border-glass-border p-1 overflow-hidden">
+                <button
+                  onClick={() => setTimeframe('month')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeframe === 'month' ? 'bg-accent text-white shadow-lg' : 'text-text-on-dark/40 hover:text-text-on-dark'}`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => setTimeframe('year')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeframe === 'year' ? 'bg-accent text-white shadow-lg' : 'text-text-on-dark/40 hover:text-text-on-dark'}`}
+                >
+                  Year
+                </button>
+              </div>
+              
               <div className="relative">
                 <button 
                   onClick={handleMonthClick}
