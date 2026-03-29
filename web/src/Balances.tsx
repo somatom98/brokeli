@@ -84,6 +84,7 @@ const Balances: React.FC = () => {
   const [balanceHistory, setBalanceHistory] = useState<BalancePeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<'ytd' | 'year' | '5years' | 'all'>('year');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,16 +138,32 @@ const Balances: React.FC = () => {
   }, []);
 
   const chartData = useMemo(() => {
-    const months = Array.from(new Set(balanceHistory.map(h => {
+    const now = new Date();
+    const filteredHistory = balanceHistory.filter(h => {
+      const date = new Date(h.month);
+      switch (timeFilter) {
+        case 'ytd':
+          return date >= new Date(now.getFullYear(), 0, 1);
+        case 'year':
+          return date >= new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        case '5years':
+          return date >= new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+        case 'all':
+        default:
+          return true;
+      }
+    });
+
+    const months = Array.from(new Set(filteredHistory.map(h => {
         const date = new Date(h.month);
         return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
     }))).reverse();
 
-    const currencies = Array.from(new Set(balanceHistory.map(h => h.currency)));
+    const currencies = Array.from(new Set(filteredHistory.map(h => h.currency)));
     
     const datasets = currencies.map((curr, index) => {
       const data = months.map(m => {
-        const h = balanceHistory.find(history => {
+        const h = filteredHistory.find(history => {
             const date = new Date(history.month);
             const label = date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
             return label === m && history.currency === curr;
@@ -184,7 +201,7 @@ const Balances: React.FC = () => {
       labels: months,
       datasets: datasets
     };
-  }, [balanceHistory]);
+  }, [balanceHistory, timeFilter]);
 
   const chartOptions = {
     responsive: true,
@@ -291,6 +308,40 @@ const Balances: React.FC = () => {
         </div>
       </div>
 
+      {/* History Graph */}
+      <div className="px-4">
+        <div className="bg-card p-8 md:p-12 rounded-[48px] shadow-lg border border-border-pearl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div>
+              <h2 className="text-2xl font-black text-text-main tracking-tight">Balance History</h2>
+              <p className="text-text-muted/40 font-bold mt-1 uppercase tracking-widest text-[9px]">Progression across currencies</p>
+            </div>
+            <div className="flex items-center gap-4">
+                <Calendar size={16} className="text-text-muted/20" />
+                <div className="flex items-center gap-2 bg-card-muted p-1.5 rounded-2xl border border-border-pearl">
+                  {(['ytd', 'year', '5years', 'all'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setTimeFilter(f)}
+                      className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                        timeFilter === f 
+                          ? 'bg-accent text-white shadow-lg shadow-accent/20' 
+                          : 'text-text-muted/40 hover:text-text-muted hover:bg-card'
+                      }`}
+                    >
+                      {f === '5years' ? '5Y' : f}
+                    </button>
+                  ))}
+                </div>
+            </div>
+          </div>
+          
+          <div className="h-[400px] w-full">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        </div>
+      </div>
+
       {/* Accounts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
         {accounts.map(account => (
@@ -380,28 +431,6 @@ const Balances: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* History Graph */}
-      <div className="px-4">
-        <div className="bg-card p-8 md:p-12 rounded-[48px] shadow-lg border border-border-pearl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-            <div>
-              <h2 className="text-2xl font-black text-text-main tracking-tight">Balance History</h2>
-              <p className="text-text-muted/40 font-bold mt-1 uppercase tracking-widest text-[9px]">Monthly progression across currencies</p>
-            </div>
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-card-muted rounded-2xl border border-border-pearl">
-                    <Calendar size={14} className="text-text-muted/40" />
-                    <span className="text-[10px] font-bold text-text-muted/60 uppercase tracking-widest">Timeline</span>
-                </div>
-            </div>
-          </div>
-          
-          <div className="h-[400px] w-full">
-            <Line data={chartData} options={chartOptions} />
-          </div>
-        </div>
       </div>
     </div>
   );
